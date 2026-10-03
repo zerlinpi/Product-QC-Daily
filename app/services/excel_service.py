@@ -5,6 +5,7 @@ from pathlib import Path
 from openpyxl import Workbook
 from sqlalchemy import select
 
+from app.core.labels import import_status_label
 from app.database.models import InspectionRecord
 from app.services.excel_common import write_text
 from app.services.excel_export import export_workbook, style_table
@@ -72,7 +73,7 @@ class ExcelService:
                     preview.sheet,
                     item.row_number,
                     item.inspection_no,
-                    item.status,
+                    import_status_label(item.status),
                     item.message,
                     str(item.raw),
                 ]

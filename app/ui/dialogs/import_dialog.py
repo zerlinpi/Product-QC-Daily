@@ -2,15 +2,8 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QComboBox, QDialog, QFileDialog, QHBoxLayout, QVBoxLayout
 
+from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
 from app.ui.common import button, label, populate, table
-
-STATUS = {
-    "valid": "正常",
-    "duplicate": "重复",
-    "conflict": "ID冲突",
-    "invalid": "异常",
-    "unrecognized": "无法识别",
-}
 
 
 class ImportDialog(QDialog):
@@ -26,7 +19,7 @@ class ImportDialog(QDialog):
         layout.addWidget(label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "muted"))
         layout.addWidget(
             label(
-                "   ".join(f"{STATUS[key]} {value}" for key, value in preview.counts.items()),
+                "   ".join(f"{import_status_label(key)} {value}" for key, value in preview.counts.items()),
                 "section",
             )
         )
@@ -35,7 +28,7 @@ class ImportDialog(QDialog):
         )
         self.filter = QComboBox()
         self.filter.addItem("全部状态", "")
-        for key, value in STATUS.items():
+        for key, value in IMPORT_STATUS_LABELS.items():
             self.filter.addItem(value, key)
         self.filter.currentIndexChanged.connect(self.reset_page)
         layout.addWidget(self.filter)
@@ -80,7 +73,7 @@ class ImportDialog(QDialog):
                 [
                     r.row_number,
                     r.inspection_no,
-                    STATUS[r.status],
+                    import_status_label(r.status),
                     r.message or "可导入；逐项件数以原表提供内容为准",
                 ]
                 for r in rows[(self.page - 1) * 200 : self.page * 200]

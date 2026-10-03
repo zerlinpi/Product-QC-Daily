@@ -8,9 +8,21 @@ SOURCE_LABELS = {
     "all": "全部数据",
 }
 
+IMPORT_STATUS_LABELS = {
+    "valid": "正常",
+    "duplicate": "重复",
+    "conflict": "ID冲突",
+    "invalid": "异常",
+    "unrecognized": "无法识别",
+}
+
 
 def source_label(value: str) -> str:
     return SOURCE_LABELS.get(value, "未知来源")
+
+
+def import_status_label(value: str) -> str:
+    return IMPORT_STATUS_LABELS.get(value, "未知状态")
 
 
 def imported_source(value) -> str:

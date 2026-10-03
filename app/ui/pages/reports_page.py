@@ -3,6 +3,7 @@ from pathlib import Path
 from PySide6.QtCore import QDate
 from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QHBoxLayout
 
+from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import Page, button, card, guarded, label
@@ -95,7 +96,9 @@ class ReportsPage(Page):
     def import_done(self, count, preview):
         self.import_status.setText(
             f"已导入 {count} 条 · "
-            + " / ".join(f"{key}: {value}" for key, value in preview.counts.items())
+            + " / ".join(
+                f"{import_status_label(key)}: {value}" for key, value in preview.counts.items()
+            )
         )
         self.window.notify(f"成功导入 {count} 条记录；历史日期数据可在检验记录页查询")
 
