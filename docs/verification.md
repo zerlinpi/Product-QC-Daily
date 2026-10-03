@@ -2,6 +2,9 @@
 
 ## 已执行
 
+- 本地 39 项 pytest 全部通过；Ruff 检查通过。
+- GitHub Actions 的 Linux / Windows Python 3.12 测试全部通过；Windows PyInstaller 构建通过，实际打包 EXE 自检通过。
+- 10 万条记录、2 万条不良明细的本地性能抽查：末页 50 条查询约 13.3 ms，汇总约 87.8 ms。仅代表本次开发环境，不作为所有电脑的性能保证。
 - 真实临时 SQLite CRUD、重新打开持久化、多不良关联、事务回滚、软删除恢复、分页筛选。
 - 跨年月份、跨年 ISO 周区间、24 项完整统计、未知逐项数量与已知件数分开、演示隔离。
 - 原表 460 条记录实测：429 正常、5 异常、26 无法识别；正常记录的 429 个签名引用可解析；重复导入 0 新增。
@@ -33,3 +36,5 @@
 - 独立审查未判断实际 EXE、Windows 文件锁、COM、视觉与完整测试；前四者分别交由 Windows CI、Windows CI、文档明确限制、作者截图检查；完整测试由作者和 CI 运行。
 
 最新远程测试、Windows EXE 构建及实际可执行文件自检结果以 GitHub Actions 和发布包内 `verification.json` 为准。
+
+首轮全部通过的远程验证：[Desktop CI #37081011912](https://github.com/zerlinpi/Product-QC-Daily/actions/runs/37081011912)，代码提交 `c75199d8a42f0c786615a52b6557677c71081884`。最终主分支发布会重新执行测试、构建和 EXE 自检。
