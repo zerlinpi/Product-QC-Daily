@@ -169,3 +169,148 @@ def test_legacy_demo_export_cannot_turn_into_production(ctx, payload, tmp_path):
         assert other.inspections.query(RecordFilter(source="demo"))[1] == 1
     finally:
         other.db.dispose()
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_export_full_timestamp_fits_and_stays_a_real_date(ctx, payload, tmp_path, legacy):
+    from app.core.schemas import InspectionInput, RecordFilter
+
+    stamp = datetime(2026, 12, 31, 23, 59, 59)
+    ctx.inspections.save(
+        InspectionInput(
+            **(
+                payload.model_dump()
+                | {
+                    "inspection_date": stamp.date(),
+                    "inspection_time": stamp.time(),
+                }
+            )
+        )
+    )
+    path = ctx.excel.export(tmp_path / "date.xlsx", RecordFilter(), legacy=legacy, prefer_com=False)
+    wb = load_workbook(path)
+    ws = wb["成品日检表" if legacy else "检验记录"]
+    assert ws["B2"].value == stamp
+    assert ws["B2"].is_date
+    assert ws["B2"].number_format == "yyyy-mm-dd hh:mm:ss"
+    assert ws.column_dimensions["B"].width >= 24
+    wb.close()
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_chinese_source_exports_and_demo_roundtrip(ctx, payload, tmp_path, legacy):
+    from app.core.context import AppContext
+    from app.core.schemas import InspectionInput, RecordFilter
+
+    for source in ("manual", "excel", "demo"):
+        ctx.inspections.save(InspectionInput(**(payload.model_dump() | {"source": source})))
+    path = ctx.excel.export(
+        tmp_path / "sources.xlsx", RecordFilter(source="all"), legacy=legacy, prefer_com=False
+    )
+    wb = load_workbook(path)
+    ws = wb["成品日检表" if legacy else "检验记录"]
+    column = 14 if legacy else 13
+    assert {ws.cell(r, column).value for r in range(2, 5)} == {"手动录入", "表格导入", "演示数据"}
+    if not legacy:
+        assert dict(wb["统计摘要"].values)["数据范围"] == "全部数据"
+    wb.close()
+    other = AppContext(tmp_path / "other-source")
+    try:
+        assert other.excel.import_preview(other.excel.preview(path)) == 3
+        assert other.inspections.query(RecordFilter(source="demo"))[1] == 1
+        assert other.inspections.query(RecordFilter())[1] == 2
+    finally:
+        other.db.dispose()
+
+
+def test_legacy_layout_keeps_original_chart_positions_and_signature_cell(ctx, payload, tmp_path):
+    from PIL import Image
+
+    from app.core.schemas import InspectionInput, RecordFilter
+
+    signature = tmp_path / "signature.png"
+    Image.new("RGB", (400, 100), "white").save(signature)
+    ctx.inspections.save(
+        InspectionInput(**(payload.model_dump() | {"signature_path": str(signature)}))
+    )
+    path = ctx.excel.export(tmp_path / "layout.xlsx", RecordFilter(), legacy=True, prefer_com=False)
+    wb = load_workbook(path)
+    ws, analysis = wb["成品日检表"], wb["数据分析表"]
+    assert [(c.anchor._from.col, c.anchor._from.row) for c in analysis._charts] == [
+        (4, 12),
+        (7, 4),
+        (4, 17),
+        (7, 34),
+        (3, 49),
+        (3, 42),
+    ]
+    assert analysis._charts[2].series[0].val.numRef.f.endswith("$B$4:$B$27")
+    assert analysis._charts[3].series[0].val.numRef.f.endswith("$H$34:$K$34")
+    assert ws.column_dimensions["A"].hidden
+    assert ws.row_dimensions[2].height == pytest.approx(34.45)
+    assert ws["C2"].font.name == "微软雅黑"
+    anchor = ws._images[0].anchor
+    assert (anchor._from.col, anchor._from.row) == (9, 1)
+    assert (anchor._from.colOff + anchor.ext.cx) / 9525 <= ws.column_dimensions["J"].width * 7 + 5
+    assert (anchor._from.rowOff + anchor.ext.cy) / 9525 <= ws.row_dimensions[2].height * 4 / 3
+    wb.close()
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [("demo", "demo"), ("演示数据", "demo"), ("manual", "excel"), ("表格导入", "excel")],
+)
+def test_source_import_accepts_old_and_chinese_labels(ctx, tmp_path, value, expected):
+    path = workbook(tmp_path / "source-input.xlsx", [row()])
+    wb = load_workbook(path)
+    wb.active["N1"], wb.active["N2"] = "数据来源", value
+    wb.save(path)
+    preview = ctx.excel.preview(path)
+    assert preview.counts["valid"] == 1
+    assert preview.rows[0].data.source == expected
+
+
+def test_template_keeps_chart_design_and_removes_production_caches(ctx, payload, tmp_path):
+    from copy import copy
+    from zipfile import ZipFile
+
+    from openpyxl.chart.data_source import NumData, NumVal
+
+    from app.core.schemas import RecordFilter
+    from app.services.excel_export import create_empty_template
+
+    source, target = tmp_path / "private-template.xlsx", tmp_path / "blank-template.xlsx"
+    wb = load_workbook(ctx.paths.template)
+    wb["成品日检表"]["A2"] = "PRIVATE-PRODUCTION-RECORD"
+    chart = wb["数据分析表"]._charts[0]
+    chart.series[0].graphicalProperties.solidFill = "00AA44"
+    chart.series[0].val.numRef.numCache = NumData(ptCount=1, pt=[NumVal(idx=0, v=123456789)])
+    original_anchor = (copy(chart.anchor._from), copy(chart.anchor.to))
+    wb.save(source)
+    wb.close()
+    before = source.read_bytes()
+    create_empty_template(source, target)
+    cleaned = load_workbook(target)
+    assert (
+        cleaned["数据分析表"]._charts[0].series[0].graphicalProperties.solidFill.srgbClr == "00AA44"
+    )
+    saved_anchor = cleaned["数据分析表"]._charts[0].anchor
+    assert (saved_anchor._from, saved_anchor.to) == original_anchor
+    assert cleaned["成品日检表"]["A2"].value is None
+    assert source.read_bytes() == before
+    with ZipFile(target) as archive:
+        assert not any(name.startswith("xl/media/") for name in archive.namelist())
+        for name in archive.namelist():
+            if name.startswith("xl/charts/"):
+                content = archive.read(name)
+                assert b"123456789" not in content
+                assert b"numCache" not in content
+    cleaned.close()
+    # Selecting an external populated template must not reuse its old chart values either.
+    ctx.inspections.save(payload)
+    ctx.settings.update({"template_path": str(source)})
+    output = ctx.excel.export(
+        tmp_path / "external.xlsx", RecordFilter(), legacy=True, prefer_com=False
+    )
+    with ZipFile(output) as archive:
+        assert b"123456789" not in archive.read("xl/charts/chart1.xml")

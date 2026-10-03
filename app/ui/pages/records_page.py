@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from app.core.labels import source_label
 from app.core.schemas import RecordFilter
 from app.ui.common import Page, button, card, guarded, label, populate, table
 
@@ -164,7 +165,9 @@ class RecordsPage(Page):
             self.table,
             [
                 [
-                    row[key]
+                    source_label(row[key])
+                    if key == "source"
+                    else row[key]
                     if key != "inspection_date"
                     else f"{row[key]} {row['inspection_time'][:5]}"
                     for key in self.columns
@@ -269,16 +272,21 @@ class RecordsPage(Page):
         ids = self.selected_ids()
         if ids:
             filters = filters.model_copy(update={"ids": ids})
-        path, _ = QFileDialog.getSaveFileName(
+        path, selected_format = QFileDialog.getSaveFileName(
             self,
             "导出选中或全部筛选记录",
             str(self.ctx.paths.exports / f"检验记录_{date.today()}.xlsx"),
-            "Excel (*.xlsx)",
+            "原表格式 (*.xlsx);;标准报表 (*.xlsx)",
         )
         if path:
             self.window.run_job(
                 "导出检验记录",
-                partial(self.ctx.excel.export, Path(path), filters),
+                partial(
+                    self.ctx.excel.export,
+                    Path(path),
+                    filters,
+                    legacy=not selected_format.startswith("标准报表"),
+                ),
                 lambda result: self.window.notify(f"已导出：{result}"),
             )
 
