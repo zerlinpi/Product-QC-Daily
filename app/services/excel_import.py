@@ -7,9 +7,12 @@ from datetime import date, datetime
 from pathlib import Path
 
 from openpyxl.utils.datetime import from_excel
+from pydantic import ValidationError
 from sqlalchemy import select
 
+from app.core.labels import imported_source
 from app.core.schemas import InspectionInput
+from app.core.validation import validation_message
 from app.database.models import InspectionRecord
 from app.services.excel_common import load_compatible, wps_images
 
@@ -204,7 +207,7 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
                 raise ValueError("组别不存在或已停用，请先在系统设置中添加")
             if fields.get("defect_quantity") in (None, "") and codes:
                 raise ValueError("填写了不良项目但缺少不良件数，请核对原表")
-            source = "demo" if fields.get("source") == "demo" else "excel"
+            source = imported_source(fields.get("source"))
             item.data = InspectionInput(
                 inspection_date=timestamp.date(),
                 inspection_time=timestamp.time(),
@@ -241,7 +244,8 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
             else:
                 seen[no] = item.fingerprint
         except (ValueError, TypeError) as exc:
-            item.status, item.message = "invalid", str(exc)
+            item.status = "invalid"
+            item.message = validation_message(exc) if isinstance(exc, ValidationError) else str(exc)
     with ctx.db.session() as session:
         identifiers = list(seen)
         existing = {}

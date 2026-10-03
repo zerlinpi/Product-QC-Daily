@@ -1,6 +1,7 @@
 import logging
 from functools import wraps
 
+from pydantic import ValidationError
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -16,17 +17,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from app.core.validation import validation_message
+
 
 def friendly_error(parent, error):
     logging.getLogger("qc.ui").error("操作失败", exc_info=(type(error), error, error.__traceback__))
-    if isinstance(error, ValueError):
+    if isinstance(error, ValidationError):
+        message = validation_message(error)
+        location = error.errors()[0]["loc"]
+        widget = getattr(parent, str(location[0]), None) if location else None
+        if isinstance(widget, QWidget):
+            widget.setFocus()
+    elif isinstance(error, ValueError):
         message = str(error)
-        if "validation error" in message:
-            message = (
-                "请检查必填项、数量及不良项目。\n" + "\n".join(e["msg"] for e in error.errors())
-                if hasattr(error, "errors")
-                else message
-            )
     elif isinstance(error, PermissionError):
         message = "文件可能已被 Excel 打开，或目录没有写入权限。请关闭文件后重试。"
     elif isinstance(error, OSError):
@@ -92,7 +95,7 @@ def populate(widget, rows):
     for row, values in enumerate(rows):
         for col, value in enumerate(values):
             item = QTableWidgetItem(str(value if value is not None else "—"))
-            if value in ("合格", "返工", "demo"):
+            if value in ("合格", "返工", "演示数据"):
                 item.setForeground(QColor("#12805c" if value == "合格" else "#c96c16"))
                 item.setBackground(QColor("#e7f6ee" if value == "合格" else "#fff0dd"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)

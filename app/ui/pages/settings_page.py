@@ -253,7 +253,7 @@ class SettingsPage(Page):
             QMessageBox.warning(
                 self,
                 "清理演示数据",
-                "永久删除所有 source=demo 的记录（包括回收站）。正式记录不受影响。确定继续？",
+                "永久删除所有演示数据记录（包括回收站）。正式记录不受影响。确定继续？",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No,
             )

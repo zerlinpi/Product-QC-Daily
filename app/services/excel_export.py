@@ -7,11 +7,14 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from openpyxl import Workbook
-from openpyxl.chart import BarChart, Reference
 from openpyxl.drawing.image import Image
+from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
+from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils.units import pixels_to_EMU
 from openpyxl.workbook.properties import CalcProperties
 
+from app.core.labels import source_label
 from app.services.excel_common import load_compatible, write_text
 
 HEADERS = [
@@ -44,14 +47,26 @@ def style_table(ws):
         ws.column_dimensions[letter].width = min(42, max(15, len(str(col[0].value or "")) * 2 + 4))
 
 
-def add_signature(ws, index: int, path: Path):
+def add_signature(ws, index: int, path: Path, preserve_height=False):
     if not path.is_file():
         raise ValueError(f"签名图片丢失：{path.name}，请补充后再导出")
     image = Image(BytesIO(path.read_bytes()))
-    scale = min(140 / image.width, 48 / image.height)
+    if not preserve_height:
+        ws.row_dimensions[index].height = max(ws.row_dimensions[index].height or 18, 40)
+    width = (ws.column_dimensions["J"].width or 13) * 7 + 5
+    height = (ws.row_dimensions[index].height or ws.sheet_format.defaultRowHeight) * 4 / 3
+    scale = min(max(1, width - 8) / image.width, max(1, height - 8) / image.height, 1)
     image.width, image.height = image.width * scale, image.height * scale
-    ws.add_image(image, f"J{index}")
-    ws.row_dimensions[index].height = max(ws.row_dimensions[index].height or 18, 40)
+    image.anchor = OneCellAnchor(
+        _from=AnchorMarker(
+            col=9,
+            row=index - 1,
+            colOff=pixels_to_EMU((width - image.width) / 2),
+            rowOff=pixels_to_EMU((height - image.height) / 2),
+        ),
+        ext=XDRPositiveSize2D(pixels_to_EMU(image.width), pixels_to_EMU(image.height)),
+    )
+    ws.add_image(image)
 
 
 def repair_analysis(wb, start: date, end: date, record_count: int):
@@ -66,11 +81,13 @@ def repair_analysis(wb, start: date, end: date, record_count: int):
     ws["L32"], ws["M32"] = week_start, week_start + timedelta(days=6)
     ws["L1"], ws["M1"] = "开始日期（含）", "结束日期（含）"
     ws["L31"], ws["M31"] = "周开始（含）", "周结束（含）"
+    ws["A2"] = '=IF(AND(YEAR(L2)=YEAR(M2),MONTH(L2)=MONTH(M2)),MONTH(L2),"区间")'
+    ws["A32"] = "=WEEKNUM(L32,21)"
     for cell in ("L2", "M2", "L32", "M32"):
         ws[cell].number_format = "yyyy-mm-dd"
     for first, total_row, control in ((4, 28, 2), (34, 58, 32)):
         date_args = f'{dates},">="&$L${control},{dates},"<"&($M${control}+1)'
-        ws.cell(control, 2, "区间出货抽检不良统计表" if first == 4 else "周出货抽检不良统计表")
+        ws.cell(control, 2, "月出货抽检不良统计表" if first == 4 else "周出货抽检不良统计表")
         for i in range(24):
             r, code = first + i, chr(97 + i)
             ws.cell(r, 2, f'=COUNTIFS({date_args},{codes},"*{code}*")')
@@ -87,7 +104,12 @@ def repair_analysis(wb, start: date, end: date, record_count: int):
         ws[f"K{first}"] = f"=IFERROR(J{first}/I{first},0)"
         ws[f"K{first}"].number_format = "0.00%"
     ws["A61"] = "项目统计为出现批次；不良率=不良件数/抽检件数。逐项已知数量见标准报表。"
-    ws.column_dimensions["L"].width = ws.column_dimensions["M"].width = 18
+    for column in ("L", "M"):
+        ws.column_dimensions[column].width = max(ws.column_dimensions[column].width, 12)
+        for row in (1, 31):
+            ws.cell(row, 12 if column == "L" else 13).alignment = Alignment(
+                wrap_text=True, vertical="center"
+            )
     ws.data_validations.dataValidation.clear()
     wb.calculation = CalcProperties(calcId=191029, fullCalcOnLoad=True, forceFullCalc=True)
 
@@ -143,10 +165,14 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         write_text(ws["N1"], "数据来源")
         ws.column_dimensions["N"].hidden = True
         row_style = [copy(c._style) for c in ws[2]]
+        row_height = ws.row_dimensions[2].height or ws.sheet_format.defaultRowHeight
         for name in ("成品日检表", "成品日检表报表"):
             sheet = wb[name]
             sheet.delete_rows(2, max(sheet.max_row - 1, 1))
             sheet._images.clear()
+            for index in list(sheet.row_dimensions):
+                if index > 1:
+                    del sheet.row_dimensions[index]
     else:
         wb = Workbook()
         ws = wb.active
@@ -191,7 +217,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             "",
         ]
         if not legacy:
-            values += [row["inspector"], row["remark"], row["source"]]
+            values += [row["inspector"], row["remark"], source_label(row["source"])]
         for col, value in enumerate(values, 1):
             cell = ws.cell(index, col)
             write_text(cell, value)
@@ -199,9 +225,10 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
                 cell._style = copy(row_style[col - 1])
         ws.cell(index, 2).number_format = "yyyy-mm-dd hh:mm:ss"
         if legacy:
-            write_text(ws.cell(index, 14), row["source"])
+            write_text(ws.cell(index, 14), source_label(row["source"]))
+            ws.row_dimensions[index].height = row_height
         if row["signature_path"]:
-            add_signature(ws, index, ctx.paths.signatures / row["signature_path"])
+            add_signature(ws, index, ctx.paths.signatures / row["signature_path"], legacy)
         if not legacy:
             for d in row["defects"]:
                 detail.append(
@@ -215,6 +242,9 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             filters.end or maximum or date.today(),
             count,
         )
+        for chart in wb["数据分析表"]._charts:
+            clear_chart_caches(chart)
+            repair_chart_ranges(chart)
         ws.freeze_panes = "C2"
     else:
         summary = wb.create_sheet("统计摘要")
@@ -235,13 +265,16 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             if key.endswith("rate"):
                 summary.cell(summary.max_row, 2).number_format = "0.00%"
         summary.append(["口径", "不良率=不良件数/抽检件数；项目件数未知保留空白，多缺陷可重叠。"])
-        summary.append(["数据范围", filters.source])
+        summary.append(["数据范围", source_label(filters.source)])
         for sheet in wb:
             for cells in sheet:
                 for cell in cells:
                     if cell.data_type == "f":
                         cell.data_type = "s"
             style_table(sheet)
+    # A full timestamp needs more room than the short date in the old template.
+    # Apply this after standard table styling, which otherwise resets B to 15.
+    ws.column_dimensions["B"].width = max(ws.column_dimensions["B"].width, 26)
     with NamedTemporaryFile(suffix=".xlsx", dir=path.parent, delete=False) as handle:
         temp = Path(handle.name)
     try:
@@ -256,6 +289,41 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
     return path
 
 
+def clear_chart_caches(chart):
+    """Keep native chart formatting while removing saved production values."""
+    sources = [chart.title.tx] if chart.title and chart.title.tx else []
+    for series in chart.series:
+        sources.extend(
+            getattr(series, name, None)
+            for name in ("cat", "val", "xVal", "yVal", "bubbleSize", "tx")
+        )
+    for source in sources:
+        for reference in ("numRef", "strRef", "multiLvlStrRef"):
+            ref = getattr(source, reference, None)
+            for cache in ("numCache", "strCache", "multiLvlStrCache"):
+                if ref is not None and hasattr(ref, cache):
+                    setattr(ref, cache, None)
+
+
+def repair_chart_ranges(chart):
+    """Preserve the source design without restoring its known range bugs."""
+    for series in chart.series:
+        for data in (series.cat, series.val):
+            if data is None:
+                continue
+            for name in ("numRef", "strRef"):
+                ref = getattr(data, name, None)
+                if ref is None or not ref.f:
+                    continue
+                ref.f = ref.f.replace("$A$4:$A$24", "$A$4:$A$27").replace(
+                    "$B$4:$B$24", "$B$4:$B$27"
+                )
+                if getattr(chart.anchor, "_from", None) and chart.anchor._from.row >= 30:
+                    ref.f = ref.f.replace("$H$3:$K$3", "$H$33:$K$33").replace(
+                        "$H$4:$K$4", "$H$34:$K$34"
+                    )
+
+
 def create_empty_template(source: Path, target: Path) -> None:
     """Developer utility: preserve the layout but remove ALL production content."""
     wb = load_compatible(source)
@@ -266,30 +334,15 @@ def create_empty_template(source: Path, target: Path) -> None:
                 cell.value = None
         ws.delete_rows(3, ws.max_row)
         ws._images.clear()
+        for index in list(ws.row_dimensions):
+            if index > 2:
+                del ws.row_dimensions[index]
     analysis = wb["数据分析表"]
     analysis.delete_rows(62, max(analysis.max_row - 61, 1))
-    # Rebuild the six charts to eliminate source caches and invalid WPS objects.
-    analysis._charts.clear()
-    for offset, first in enumerate((4, 34)):
-        for series, anchor, title in (
-            (2, f"A{63 + offset * 18}", "不良项目出现批次"),
-            (6, f"F{63 + offset * 18}", "组别返工批次"),
-            (8, f"K{63 + offset * 18}", "检验数量"),
-        ):
-            chart = BarChart()
-            chart.title = title
-            chart.height, chart.width = 8, 13
-            final = first + 23 if series == 2 else first + 7 if series == 6 else first
-            chart.add_data(Reference(analysis, min_col=series, min_row=first, max_row=final))
-            chart.set_categories(
-                Reference(
-                    analysis,
-                    min_col=1 if series == 2 else 5 if series == 6 else 8,
-                    min_row=first,
-                    max_row=final,
-                )
-            )
-            analysis.add_chart(chart, anchor)
+    analysis["M17"] = None  # An unused scratch calculation from the source data.
+    for chart in analysis._charts:
+        clear_chart_caches(chart)
+        repair_chart_ranges(chart)
     repair_analysis(wb, date(2026, 1, 1), date(2026, 1, 31), 0)
     wb.properties.creator = "Product-QC-Daily"
     wb.properties.lastModifiedBy = "Product-QC-Daily"

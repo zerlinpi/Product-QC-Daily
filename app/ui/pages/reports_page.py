@@ -52,11 +52,11 @@ class ReportsPage(Page):
         )
         layout.addWidget(
             button(
-                "导出标准报表 · 记录 + 不良明细 + 统计", lambda: self.export(False), primary=True
+                "按原表导出 · 保留表格与图表布局", lambda: self.export(True), primary=True
             )
         )
         layout.addWidget(
-            button("导出原表兼容格式 · 模板 + 分析表 + 图表", lambda: self.export(True))
+            button("导出标准报表 · 记录 + 不良明细 + 统计", lambda: self.export(False))
         )
         layout.addWidget(
             label(

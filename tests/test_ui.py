@@ -136,3 +136,65 @@ def test_editor_preserves_per_defect_remarks(ctx, payload, qtbot):
     window.pages[1].defects.reload()
     window.pages[1].save_record()
     assert ctx.inspections.get(saved["id"])["defects"][0]["remark"] == "已返修确认"
+
+
+def test_required_popup_names_every_missing_field_in_chinese(ctx, qtbot, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+
+    from app.core.schemas import RecordFilter
+    from app.ui.main_window import MainWindow
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window, before_close_func=lambda w: setattr(w.pages[1], "dirty", False))
+    window.navigate(1)
+    messages = []
+    monkeypatch.setattr(QMessageBox, "warning", lambda parent, title, text: messages.append(text))
+    entry = window.pages[1]
+    entry.team.setCurrentIndex(-1)
+    entry.work_order.setText("  ")
+    entry.inspector.clear()
+    entry.inspection_quantity.setValue(0)
+    entry.sampling_quantity.setValue(0)
+    entry.save_record()
+    assert len(messages) == 1
+    for name in ("组别", "加工单号", "检验员", "检验数量", "抽检数量"):
+        assert name in messages[0]
+    assert "大于 0" in messages[0]
+    assert "String should" not in messages[0]
+    assert "Input should" not in messages[0]
+    assert ctx.inspections.query(RecordFilter())[1] == 0
+
+
+def test_record_source_cells_use_chinese(ctx, payload, qtbot):
+    from app.core.schemas import InspectionInput
+    from app.ui.main_window import MainWindow
+
+    for source in ("manual", "excel", "demo"):
+        ctx.inspections.save(InspectionInput(**(payload.model_dump() | {"source": source})))
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[2]
+    page.source.setCurrentIndex(2)
+    page.refresh()
+    assert {page.table.item(r, 9).text() for r in range(3)} == {"手动录入", "表格导入", "演示数据"}
+
+
+def test_record_export_defaults_to_original_layout(ctx, payload, qtbot, monkeypatch, tmp_path):
+    from openpyxl import load_workbook
+    from PySide6.QtWidgets import QFileDialog
+
+    from app.ui.main_window import MainWindow
+
+    ctx.inspections.save(payload)
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[2]
+    page.refresh()
+    output = tmp_path / "ui-export.xlsx"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *args: (str(output), ""))
+    monkeypatch.setattr(window, "run_job", lambda title, work, done: done(work()))
+    page.export()
+    wb = load_workbook(output)
+    assert "成品日检表" in wb.sheetnames
+    assert "数据分析表" in wb.sheetnames
+    wb.close()
