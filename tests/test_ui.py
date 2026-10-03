@@ -198,3 +198,29 @@ def test_record_export_defaults_to_original_layout(ctx, payload, qtbot, monkeypa
     assert "成品日检表" in wb.sheetnames
     assert "数据分析表" in wb.sheetnames
     wb.close()
+
+
+
+def test_report_import_summary_uses_chinese_status_labels(ctx, qtbot):
+    from types import SimpleNamespace
+
+    from app.ui.main_window import MainWindow
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[5]
+    preview = SimpleNamespace(
+        counts={
+            "valid": 2,
+            "duplicate": 1,
+            "conflict": 1,
+            "invalid": 1,
+            "unrecognized": 1,
+        }
+    )
+    page.import_done(2, preview)
+    summary = page.import_status.text()
+    for status in ("正常", "重复", "ID冲突", "异常", "无法识别"):
+        assert status in summary
+    for internal in ("valid", "duplicate", "conflict", "invalid", "unrecognized"):
+        assert internal not in summary
