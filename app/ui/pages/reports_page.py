@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QHBoxLayout
+from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QGridLayout
 
 from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
@@ -30,7 +30,9 @@ class ReportsPage(Page):
         self.layout.addWidget(panel)
         panel, layout = card()
         layout.addWidget(label("导出质量报表", "section"))
-        filters = QHBoxLayout()
+        filters = QGridLayout()
+        filters.setHorizontalSpacing(12)
+        filters.setVerticalSpacing(6)
         self.preset, self.source = QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)
         self.preset.setCurrentText("本月")
@@ -39,10 +41,20 @@ class ReportsPage(Page):
         for widget in (self.start, self.end):
             widget.setCalendarPopup(True)
             widget.setDisplayFormat("yyyy-MM-dd")
-        for widget in (self.preset, self.start, self.end, self.source):
-            filters.addWidget(widget)
+        controls = [
+            ("报表周期", self.preset),
+            ("开始日期", self.start),
+            ("结束日期", self.end),
+            ("数据范围", self.source),
+        ]
+        for col, (title, widget) in enumerate(controls):
+            filters.addWidget(label(title, "fieldLabel"), 0, col)
+            filters.addWidget(widget, 1, col)
         layout.addLayout(filters)
+        self.export_scope = label("", "muted")
+        layout.addWidget(self.export_scope)
         self.preset.currentTextChanged.connect(self.set_range)
+        self.source.currentIndexChanged.connect(self.update_scope_text)
         self.set_range("本月")
         layout.addWidget(
             label(
@@ -76,6 +88,12 @@ class ReportsPage(Page):
             start, end = date_range(name)
             self.start.setDate(QDate(start))
             self.end.setDate(QDate(end))
+        self.update_scope_text()
+
+    def update_scope_text(self, *_):
+        self.export_scope.setText(
+            f"将导出：{self.start.date().toPython()} 至 {self.end.date().toPython()} · {self.source.currentText()}"
+        )
 
     def import_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "选择成品日检表", "", "Excel (*.xlsx)")

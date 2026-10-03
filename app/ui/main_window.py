@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
             item = button(title, lambda _, index=i: self.navigate(index))
             item.setCheckable(True)
             item.setObjectName("nav")
+            item.setToolTip(f"{title.strip()} · Ctrl+{i + 1}")
             nav.addWidget(item)
             self.nav_buttons.append(item)
         nav.addStretch()
@@ -111,6 +112,16 @@ class MainWindow(QMainWindow):
                 lambda fn=action: fn() if self.stack.currentIndex() == 1 and not self._job else None
             )
             self.shortcuts.append(shortcut)
+        for index in range(7):
+            shortcut = QShortcut(QKeySequence(f"Ctrl+{index + 1}"), self)
+            shortcut.activated.connect(
+                lambda page=index: self.navigate(page) if not self._job else None
+            )
+            self.shortcuts.append(shortcut)
+        for key, action in [("Ctrl+F", self.focus_search), ("F5", self.refresh_current_page)]:
+            shortcut = QShortcut(QKeySequence(key), self)
+            shortcut.activated.connect(action)
+            self.shortcuts.append(shortcut)
         self.update_company()
         self.navigate(0)
         size = ctx.settings.get("window_size")
@@ -126,6 +137,24 @@ class MainWindow(QMainWindow):
             )
             or "成品质量管理"
         )
+
+    def focus_search(self):
+        page = self.pages[self.stack.currentIndex()]
+        widget = getattr(page, "search", None)
+        if widget is None:
+            self.notify("当前页面没有搜索框")
+            return
+        widget.setFocus()
+        if hasattr(widget, "selectAll"):
+            widget.selectAll()
+
+    @guarded
+    def refresh_current_page(self):
+        if self._job:
+            self.notify("当前任务执行中，暂不能刷新")
+            return
+        self.pages[self.stack.currentIndex()].refresh()
+        self.notify("当前页面已刷新")
 
     def notify(self, message):
         self.statusBar().showMessage(message, 15000)

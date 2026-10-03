@@ -85,6 +85,10 @@ def table(headers):
     widget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     widget.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     widget.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+    widget.setWordWrap(False)
+    widget.setMouseTracking(True)
+    widget.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
+    widget.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
     widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     widget.horizontalHeader().setStretchLastSection(True)
     return widget

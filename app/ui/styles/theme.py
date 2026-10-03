@@ -13,6 +13,8 @@ def apply_theme(mode="light"):
         if dark
         else ("#f4f6fb", "#ffffff", "#172640", "#64748b", "#dfe5ef", "#ffffff", "#e8efff")
     )
+    danger_bg = "#3a2427" if dark else "#fff2f0"
+    danger_border = "#7e4148" if dark else "#efb5ae"
     palette = QPalette()
     for role, color in [
         (QPalette.ColorRole.Window, bg),
@@ -33,6 +35,7 @@ def apply_theme(mode="light"):
         QLabel#title {{ font-size: 25px; font-weight: 700; letter-spacing: 1px; }}
         QLabel#subtitle, QLabel#muted {{ color: {muted}; }}
         QLabel#section {{ font-size: 15px; font-weight: 600; }}
+        QLabel#fieldLabel {{ color: {muted}; font-size: 11px; font-weight: 600; }}
         QLabel#metric {{ font-size: 28px; font-weight: 700; }}
         QFrame#card, QGroupBox {{ background: {card}; border: 1px solid {border}; border-radius: 12px; }}
         QGroupBox {{ margin-top: 16px; padding: 18px 12px 12px; font-weight: 600; }}
@@ -47,25 +50,32 @@ def apply_theme(mode="light"):
         QFrame#topbar {{ background: {card}; border-bottom: 1px solid {border}; }}
         QPushButton {{ background: {card}; border: 1px solid {border}; border-radius: 7px; padding: 8px 14px; min-height: 20px; font-weight: 500; }}
         QPushButton:hover {{ background: {selected}; border-color: #9ab0ef; }}
+        QPushButton:focus {{ border: 2px solid #6f89e8; padding: 7px 13px; }}
         QPushButton:pressed {{ background: #365cdd; color: white; }}
         QPushButton#primary {{ background: #365cdd; color: #ffffff; border: 1px solid #365cdd; font-weight: 600; }}
         QPushButton#primary:hover {{ background: #284bbd; }}
         QPushButton#danger {{ color: #d3544c; }}
+        QPushButton#danger:hover {{ background: {danger_bg}; border-color: {danger_border}; }}
         QPushButton:disabled {{ color: {muted}; border-color: {border}; }}
         QLineEdit, QSpinBox, QDoubleSpinBox, QDateEdit, QTimeEdit, QComboBox, QTextEdit {{ background: {field}; border: 1px solid {border}; border-radius: 6px; padding: 7px 9px; selection-background-color: #365cdd; min-height: 20px; }}
         QLineEdit:focus, QSpinBox:focus, QDateEdit:focus, QTimeEdit:focus, QComboBox:focus, QTextEdit:focus {{ border-color: #5e7dea; }}
+        QLineEdit:disabled, QSpinBox:disabled, QDateEdit:disabled, QTimeEdit:disabled, QComboBox:disabled, QTextEdit:disabled {{ background: {bg}; color: {muted}; }}
         QComboBox QAbstractItemView {{ background: {card}; selection-background-color: {selected}; }}
-        QTableWidget {{ background: {card}; alternate-background-color: {bg}; gridline-color: {border}; border: 1px solid {border}; border-radius: 8px; selection-background-color: {selected}; selection-color: {text}; }}
+        QTableWidget {{ background: {card}; alternate-background-color: {bg}; gridline-color: {border}; border: 1px solid {border}; border-radius: 8px; selection-background-color: #365cdd; selection-color: #ffffff; }}
         QTableWidget::item {{ padding: 7px; border: none; }}
         QTableWidget::item:hover {{ background: {selected}; }}
         QHeaderView::section {{ background: {bg}; color: {muted}; border: none; border-bottom: 1px solid {border}; padding: 9px; font-weight: 600; }}
         QScrollArea {{ border: none; background: transparent; }}
         QScrollBar:vertical {{ background: {bg}; width: 9px; margin: 0; }}
         QScrollBar::handle:vertical {{ background: {border}; border-radius: 4px; min-height: 30px; }}
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+        QScrollBar:horizontal {{ background: {bg}; height: 9px; margin: 0; }}
+        QScrollBar::handle:horizontal {{ background: {border}; border-radius: 4px; min-width: 30px; }}
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical, QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{ height: 0; width: 0; }}
         QCheckBox {{ spacing: 7px; padding: 3px; }}
         QCheckBox::indicator {{ width: 16px; height: 16px; }}
         QStatusBar {{ background: {card}; color: {muted}; }}
+        QProgressBar {{ background: {bg}; border: 1px solid {border}; border-radius: 4px; min-height: 7px; max-height: 7px; text-align: center; }}
+        QProgressBar::chunk {{ background: #365cdd; border-radius: 3px; }}
         QDialog {{ background: {bg}; }}
         QToolTip {{ background: {card}; color: {text}; border: 1px solid {border}; padding: 5px; }}
     """)

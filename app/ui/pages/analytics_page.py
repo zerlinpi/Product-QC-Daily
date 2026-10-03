@@ -1,5 +1,5 @@
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QComboBox, QDateEdit, QGridLayout, QHBoxLayout, QScrollArea, QWidget
+from PySide6.QtWidgets import QComboBox, QDateEdit, QGridLayout, QScrollArea, QWidget
 
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
@@ -17,7 +17,11 @@ class AnalyticsPage(Page):
             "质量分析",
             "按完整日期范围统计 · 不良率以抽检件数为分母 · 支持上一周期对比",
         )
-        filters = QHBoxLayout()
+        filter_card, filter_box = card()
+        filter_box.addWidget(label("分析范围", "section"))
+        filters = QGridLayout()
+        filters.setHorizontalSpacing(12)
+        filters.setVerticalSpacing(6)
         self.preset, self.source, self.metric_choice = QComboBox(), QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)
         self.preset.setCurrentText("本月")
@@ -27,10 +31,21 @@ class AnalyticsPage(Page):
         for widget in (self.start, self.end):
             widget.setCalendarPopup(True)
             widget.setDisplayFormat("yyyy-MM-dd")
-        for widget in (self.preset, self.start, self.end, self.source, self.metric_choice):
-            filters.addWidget(widget)
-        filters.addWidget(button("分析", self.refresh, primary=True))
-        self.layout.addLayout(filters)
+        controls = [
+            ("统计周期", self.preset),
+            ("开始日期", self.start),
+            ("结束日期", self.end),
+            ("数据范围", self.source),
+            ("排行口径", self.metric_choice),
+        ]
+        for col, (title, widget) in enumerate(controls):
+            filters.addWidget(label(title, "fieldLabel"), 0, col)
+            filters.addWidget(widget, 1, col)
+        filters.addWidget(button("开始分析", self.refresh, primary=True), 1, len(controls))
+        filter_box.addLayout(filters)
+        self.scope = label("", "muted")
+        filter_box.addWidget(self.scope)
+        self.layout.addWidget(filter_card)
         self.preset.currentTextChanged.connect(self.set_range)
         self.set_range("本月")
         scroll = QScrollArea()
@@ -94,6 +109,9 @@ class AnalyticsPage(Page):
             start=self.start.date().toPython(),
             end=self.end.date().toPython(),
             source="demo" if self.source.currentIndex() else "production",
+        )
+        self.scope.setText(
+            f"当前范围：{filters.start} 至 {filters.end} · {self.source.currentText()} · {self.metric_choice.currentText()}"
         )
         comparison = self.ctx.statistics.comparison(filters)
         for widget, key in self.metrics:
