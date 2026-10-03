@@ -1,0 +1,19 @@
+{
+  "company": "",
+  "factory": "",
+  "default_inspector": "",
+  "default_team": "U1",
+  "theme": "light",
+  "auto_backup": true,
+  "backup_retention_days": 30,
+  "backup_directory": "",
+  "export_directory": "",
+  "template_path": "",
+  "keep_fields": [
+    "team",
+    "work_order",
+    "inspection_quantity",
+    "sampling_quantity",
+    "inspector"
+  ]
+}

@@ -1,0 +1,221 @@
+from PySide6.QtCore import Qt, QThread, Slot
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QMainWindow,
+    QProgressBar,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
+)
+
+from app import __version__
+from app.ui.common import button, friendly_error, guarded, label
+from app.ui.pages.analytics_page import AnalyticsPage
+from app.ui.pages.dashboard_page import DashboardPage
+from app.ui.pages.defects_page import DefectsPage
+from app.ui.pages.inspection_page import InspectionPage
+from app.ui.pages.records_page import RecordsPage
+from app.ui.pages.reports_page import ReportsPage
+from app.ui.pages.settings_page import SettingsPage
+from app.ui.styles.theme import apply_theme
+from app.ui.worker import Worker
+
+
+class MainWindow(QMainWindow):
+    def __init__(self, ctx):
+        super().__init__()
+        self.ctx, self._job = ctx, None
+        self.setWindowTitle("成品日检管理系统 · Product-QC-Daily")
+        self.resize(1440, 920)
+        self.setMinimumSize(1080, 720)
+        apply_theme(ctx.settings.get("theme"))
+        central = QWidget()
+        root = QHBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+        sidebar = QFrame()
+        sidebar.setObjectName("sidebar")
+        sidebar.setFixedWidth(200)
+        nav = QVBoxLayout(sidebar)
+        nav.setContentsMargins(18, 30, 18, 22)
+        nav.setSpacing(8)
+        nav.addWidget(label("QC  DAILY", "brand"))
+        nav.addWidget(label("成品日检管理系统", "muted"))
+        nav.addSpacing(34)
+        self.nav_buttons = []
+        for i, title in enumerate(
+            [
+                "◈  仪表盘",
+                "＋  日检录入",
+                "▤  检验记录",
+                "↗  质量分析",
+                "▦  不良项目",
+                "▧  报表中心",
+                "⚙  系统设置",
+            ]
+        ):
+            item = button(title, lambda _, index=i: self.navigate(index))
+            item.setCheckable(True)
+            item.setObjectName("nav")
+            nav.addWidget(item)
+            self.nav_buttons.append(item)
+        nav.addStretch()
+        nav.addWidget(label("●  本地数据库已连接", "muted"))
+        nav.addWidget(label(f"v{__version__}  ·  完全离线运行", "muted"))
+        root.addWidget(sidebar)
+        right = QVBoxLayout()
+        right.setContentsMargins(0, 0, 0, 0)
+        right.setSpacing(0)
+        top = QFrame()
+        top.setObjectName("topbar")
+        toolbar = QHBoxLayout(top)
+        toolbar.setContentsMargins(28, 15, 28, 15)
+        self.company = label("成品质量管理", "section")
+        toolbar.addWidget(self.company)
+        toolbar.addStretch()
+        toolbar.addWidget(label("本地工作空间  /  数据保存在此电脑", "muted"))
+        right.addWidget(top)
+        self.stack = QStackedWidget()
+        right.addWidget(self.stack, 1)
+        root.addLayout(right, 1)
+        self.setCentralWidget(central)
+        self.pages = [
+            cls(ctx, self)
+            for cls in (
+                DashboardPage,
+                InspectionPage,
+                RecordsPage,
+                AnalyticsPage,
+                DefectsPage,
+                ReportsPage,
+                SettingsPage,
+            )
+        ]
+        for page in self.pages:
+            self.stack.addWidget(page)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 0)
+        self.progress.setMaximumWidth(150)
+        self.progress.hide()
+        self.statusBar().addPermanentWidget(self.progress)
+        self.shortcuts = []
+        for key, action in [
+            ("Ctrl+S", self.pages[1].save_record),
+            ("Ctrl+N", self.pages[1].new_record),
+            ("Ctrl+D", self.pages[1].copy_last),
+        ]:
+            shortcut = QShortcut(QKeySequence(key), self)
+            shortcut.activated.connect(
+                lambda fn=action: fn() if self.stack.currentIndex() == 1 and not self._job else None
+            )
+            self.shortcuts.append(shortcut)
+        self.update_company()
+        self.navigate(0)
+        size = ctx.settings.get("window_size")
+        if isinstance(size, list) and len(size) == 2:
+            self.resize(max(1080, min(size[0], 2400)), max(720, min(size[1], 1600)))
+        if ctx.settings.get("window_maximized", False):
+            self.setWindowState(Qt.WindowState.WindowMaximized)
+
+    def update_company(self):
+        self.company.setText(
+            " · ".join(
+                filter(None, [self.ctx.settings.get("company"), self.ctx.settings.get("factory")])
+            )
+            or "成品质量管理"
+        )
+
+    def notify(self, message):
+        self.statusBar().showMessage(message, 15000)
+
+    @guarded
+    def navigate(self, index):
+        current = self.stack.currentIndex()
+        if (
+            hasattr(self, "pages")
+            and current == 1
+            and index != 1
+            and not self.pages[1].can_discard()
+        ):
+            return
+        if current == 1 and index != 1:
+            if self.pages[1].dirty:
+                self.pages[1].discard_changes()
+        self.stack.setCurrentIndex(index)
+        for i, item in enumerate(self.nav_buttons):
+            item.setChecked(i == index)
+        self.pages[index].refresh()
+        if index == 1:
+            self.pages[1].defects.reload()
+
+    @guarded
+    def open_record(self, identifier, copy_record=False):
+        if not self.pages[1].can_discard():
+            return
+        record = self.ctx.inspections.get(identifier)
+        self.pages[1].dirty = False
+        self.navigate(1)
+        self.pages[1].load_record(record, copy_record)
+
+    def run_job(self, name, function, callback=None, finished=None):
+        if self._job:
+            self.notify("当前任务仍在执行，请稍候")
+            return
+        thread = QThread(self)
+        worker = Worker(function)
+        worker.moveToThread(thread)
+        self._job = (thread, worker, callback, finished)
+        self._job_result = None
+        self.centralWidget().setEnabled(False)
+        self.progress.show()
+        self.statusBar().showMessage(name + "…")
+        thread.started.connect(worker.run)
+        worker.completed.connect(self._job_completed)
+        worker.completed.connect(thread.quit)
+        worker.completed.connect(worker.deleteLater)
+        thread.finished.connect(self._job_finished)
+        thread.start()
+
+    @Slot(object, object)
+    def _job_completed(self, result, error):
+        self._job_result = (result, error)
+
+    @Slot()
+    def _job_finished(self):
+        thread, _, callback, finished = self._job
+        result, error = self._job_result
+        self._job = None
+        thread.deleteLater()
+        self.centralWidget().setEnabled(True)
+        self.progress.hide()
+        self.statusBar().clearMessage()
+        if finished:
+            finished()
+        if error:
+            friendly_error(self, error)
+        elif callback:
+            try:
+                callback(result)
+            except Exception as exc:
+                friendly_error(self, exc)
+
+    def closeEvent(self, event):
+        if self._job:
+            self.notify("任务正在执行，完成后再关闭软件")
+            event.ignore()
+            return
+        if not self.pages[1].can_discard():
+            event.ignore()
+            return
+        try:
+            self.ctx.settings.update(
+                {
+                    "window_size": [self.normalGeometry().width(), self.normalGeometry().height()],
+                    "window_maximized": self.isMaximized(),
+                }
+            )
+        except Exception as exc:
+            friendly_error(self, exc)
+        event.accept()
