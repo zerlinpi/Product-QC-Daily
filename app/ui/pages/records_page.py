@@ -41,8 +41,11 @@ class RecordsPage(Page):
         )
         self.page, self.sort, self.descending, self.rows = 1, "inspection_date", True, []
         filters, box = card()
+        box.addWidget(label("筛选条件", "section"))
         grid = QGridLayout()
-        self.range_enabled = QCheckBox("日期范围")
+        grid.setHorizontalSpacing(12)
+        grid.setVerticalSpacing(6)
+        self.range_enabled = QCheckBox("启用日期范围")
         self.start, self.end = (
             QDateEdit(QDate.currentDate().addMonths(-1)),
             QDateEdit(QDate.currentDate()),
@@ -50,6 +53,8 @@ class RecordsPage(Page):
         for widget in (self.start, self.end):
             widget.setCalendarPopup(True)
             widget.setDisplayFormat("yyyy-MM-dd")
+            widget.setEnabled(False)
+        self.range_enabled.toggled.connect(self.set_date_range_enabled)
         self.team, self.judgment, self.source, self.defect, self.has_defects = [
             QComboBox() for _ in range(5)
         ]
@@ -64,34 +69,55 @@ class RecordsPage(Page):
         ]:
             widget.setPlaceholderText(placeholder)
             widget.returnPressed.connect(self.search_records)
-        self.trash = QCheckBox("回收站")
-        grid.addWidget(self.range_enabled, 0, 0)
-        grid.addWidget(self.start, 0, 1)
-        grid.addWidget(self.end, 0, 2)
-        grid.addWidget(self.team, 0, 3)
-        grid.addWidget(self.judgment, 0, 4)
-        grid.addWidget(self.search, 1, 0, 1, 2)
-        grid.addWidget(self.work_order, 1, 2)
-        grid.addWidget(self.inspector, 1, 3)
-        grid.addWidget(self.source, 1, 4)
-        grid.addWidget(self.defect, 2, 0, 1, 2)
-        grid.addWidget(self.has_defects, 2, 2)
-        grid.addWidget(self.trash, 2, 3)
-        grid.addWidget(button("查询", self.search_records, primary=True), 2, 4)
+        self.trash = QCheckBox("查看回收站")
+        first_row = [
+            ("日期筛选", self.range_enabled),
+            ("开始日期", self.start),
+            ("结束日期", self.end),
+            ("组别", self.team),
+            ("判定", self.judgment),
+        ]
+        second_row = [
+            ("综合搜索", self.search),
+            ("加工单号", self.work_order),
+            ("检验员", self.inspector),
+            ("数据范围", self.source),
+            ("不良情况", self.has_defects),
+        ]
+        for col, (title, widget) in enumerate(first_row):
+            grid.addWidget(label(title, "fieldLabel"), 0, col)
+            grid.addWidget(widget, 1, col)
+        for col, (title, widget) in enumerate(second_row):
+            grid.addWidget(label(title, "fieldLabel"), 2, col)
+            grid.addWidget(widget, 3, col)
+        grid.addWidget(label("不良项目", "fieldLabel"), 4, 0)
+        grid.addWidget(self.defect, 5, 0, 1, 2)
+        grid.addWidget(label("记录状态", "fieldLabel"), 4, 2)
+        grid.addWidget(self.trash, 5, 2)
         box.addLayout(grid)
+        filter_actions = QHBoxLayout()
+        filter_actions.addStretch()
+        filter_actions.addWidget(button("重置筛选", self.reset_filters))
+        filter_actions.addWidget(button("查询", self.search_records, primary=True))
+        box.addLayout(filter_actions)
         self.layout.addWidget(filters)
         actions = QHBoxLayout()
-        for text, callback in [
-            ("查看 / 编辑", self.edit),
-            ("复制选中", self.copy),
-            ("批量改组别", self.change_team),
-            ("批量改检验员", self.change_inspector),
-            ("删除", self.delete),
-            ("恢复", self.restore),
-            ("导出", self.export),
+        self.action_buttons = {}
+        for key, text, callback in [
+            ("edit", "查看 / 编辑", self.edit),
+            ("copy", "复制选中", self.copy),
+            ("team", "批量改组别", self.change_team),
+            ("inspector", "批量改检验员", self.change_inspector),
+            ("delete", "删除", self.delete),
+            ("restore", "恢复", self.restore),
+            ("export", "导出", self.export),
         ]:
-            actions.addWidget(button(text, callback, danger=text == "删除"))
+            control = button(text, callback, danger=key == "delete")
+            self.action_buttons[key] = control
+            actions.addWidget(control)
         actions.addStretch()
+        self.selection_count = label("未选择记录", "muted")
+        actions.addWidget(self.selection_count)
         self.layout.addLayout(actions)
         self.table = table(
             [
@@ -114,13 +140,49 @@ class RecordsPage(Page):
         self.table.cellDoubleClicked.connect(lambda *_: self.edit())
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.context_menu)
+        self.table.itemSelectionChanged.connect(self.update_selection_state)
         self.layout.addWidget(self.table, 1)
         footer = QHBoxLayout()
         self.count = label("暂无记录", "muted")
         footer.addWidget(self.count, 1)
-        footer.addWidget(button("上一页", lambda: self.turn(-1)))
-        footer.addWidget(button("下一页", lambda: self.turn(1)))
+        self.previous_button = button("上一页", lambda: self.turn(-1))
+        self.next_button = button("下一页", lambda: self.turn(1))
+        footer.addWidget(self.previous_button)
+        footer.addWidget(self.next_button)
         self.layout.addLayout(footer)
+        self.update_selection_state()
+
+    def set_date_range_enabled(self, enabled):
+        self.start.setEnabled(enabled)
+        self.end.setEnabled(enabled)
+
+    def reset_filters(self):
+        self.range_enabled.setChecked(False)
+        self.start.setDate(QDate.currentDate().addMonths(-1))
+        self.end.setDate(QDate.currentDate())
+        for widget in (self.team, self.judgment, self.source, self.defect, self.has_defects):
+            if widget.count():
+                widget.setCurrentIndex(0)
+        self.search.clear()
+        self.work_order.clear()
+        self.inspector.clear()
+        self.trash.setChecked(False)
+        self.table.clearSelection()
+        self.page = 1
+        self.load_rows()
+
+    def update_selection_state(self):
+        ids = self.selected_ids() if hasattr(self, "table") else []
+        count = len(ids)
+        trash = self.trash.isChecked()
+        self.selection_count.setText(f"已选择 {count} 条" if count else "未选择记录")
+        self.action_buttons["edit"].setEnabled(count == 1 and not trash)
+        self.action_buttons["copy"].setEnabled(count == 1 and not trash)
+        self.action_buttons["team"].setEnabled(count > 0 and not trash)
+        self.action_buttons["inspector"].setEnabled(count > 0 and not trash)
+        self.action_buttons["delete"].setEnabled(count > 0 and not trash)
+        self.action_buttons["restore"].setEnabled(count > 0 and trash)
+        self.action_buttons["export"].setEnabled(True)
 
     def filters(self):
         return RecordFilter(
@@ -175,11 +237,15 @@ class RecordsPage(Page):
                 for row in self.rows
             ],
         )
+        pages = max(1, (total + 49) // 50)
         self.count.setText(
-            f"共 {total:,} 条 · 第 {self.page} / {max(1, (total + 49) // 50)} 页 · 每页 50 条"
+            f"共 {total:,} 条 · 第 {self.page} / {pages} 页 · 每页 50 条"
             + (" · 回收站" if self.trash.isChecked() else "")
         )
         self.total = total
+        self.previous_button.setEnabled(self.page > 1)
+        self.next_button.setEnabled(self.page < pages)
+        self.update_selection_state()
 
     def selected_ids(self):
         return [

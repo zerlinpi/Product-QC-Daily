@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from PySide6.QtWidgets import QComboBox, QGridLayout, QHBoxLayout, QScrollArea, QWidget
 
@@ -15,10 +15,14 @@ class DashboardPage(Page):
         toolbar = QHBoxLayout()
         toolbar.addWidget(label(date.today().strftime("%Y 年 %m 月 %d 日"), "muted"))
         toolbar.addStretch()
+        toolbar.addWidget(label("数据范围", "fieldLabel"))
         self.source = QComboBox()
         self.source.addItems(["正式数据", "演示数据"])
+        self.source.setMinimumWidth(110)
         self.source.currentIndexChanged.connect(self.refresh)
         toolbar.addWidget(self.source)
+        self.refreshed = label("", "muted")
+        toolbar.addWidget(self.refreshed)
         toolbar.addWidget(button("刷新", self.refresh))
         toolbar.addWidget(button("+ 新建检验", lambda: self.window.navigate(1), primary=True))
         self.layout.addLayout(toolbar)
@@ -115,3 +119,4 @@ class DashboardPage(Page):
         self.charts[5].draw(
             [r["date"].strftime("%m/%d") for r in trend], [r["inspection_quantity"] for r in trend]
         )
+        self.refreshed.setText(f"更新于 {datetime.now():%H:%M:%S}")

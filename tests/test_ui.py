@@ -224,3 +224,58 @@ def test_report_import_summary_uses_chinese_status_labels(ctx, qtbot):
         assert status in summary
     for internal in ("valid", "duplicate", "conflict", "invalid", "unrecognized"):
         assert internal not in summary
+
+
+
+def test_records_filters_reset_and_selection_feedback(ctx, payload, qtbot):
+    from app.ui.main_window import MainWindow
+
+    ctx.inspections.save(payload)
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.navigate(2)
+    page = window.pages[2]
+
+    assert not page.start.isEnabled()
+    assert not page.end.isEnabled()
+    page.range_enabled.setChecked(True)
+    assert page.start.isEnabled()
+    assert page.end.isEnabled()
+
+    page.search.setText("MO-001")
+    page.judgment.setCurrentIndex(1)
+    page.source.setCurrentIndex(2)
+    page.table.selectRow(0)
+    assert page.selection_count.text() == "已选择 1 条"
+    assert page.action_buttons["edit"].isEnabled()
+    assert page.action_buttons["delete"].isEnabled()
+    assert not page.action_buttons["restore"].isEnabled()
+
+    page.reset_filters()
+    assert not page.range_enabled.isChecked()
+    assert not page.start.isEnabled()
+    assert page.search.text() == ""
+    assert page.judgment.currentIndex() == 0
+    assert page.source.currentIndex() == 0
+    assert page.selection_count.text() == "未选择记录"
+
+
+def test_analysis_reports_and_dashboard_show_scope_feedback(ctx, qtbot):
+    from app.ui.main_window import MainWindow
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    dashboard = window.pages[0]
+    dashboard.refresh()
+    assert dashboard.refreshed.text().startswith("更新于 ")
+
+    window.navigate(3)
+    analytics = window.pages[3]
+    assert analytics.scope.text().startswith("当前范围：")
+    assert analytics.source.currentText() in analytics.scope.text()
+
+    window.navigate(5)
+    reports = window.pages[5]
+    assert reports.export_scope.text().startswith("将导出：")
+    assert reports.source.currentText() in reports.export_scope.text()
