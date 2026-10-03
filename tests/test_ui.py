@@ -94,3 +94,45 @@ def test_keyboard_save_and_new(ctx, qtbot):
     qtbot.waitUntil(lambda: entry.record_id is not None)
     qtbot.keyClick(entry.work_order, Qt.Key.Key_N, Qt.KeyboardModifier.ControlModifier)
     assert entry.record_id is None
+
+
+def test_confirmed_discard_restores_saved_record(ctx, payload, qtbot, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+
+    from app.ui.main_window import MainWindow
+
+    saved = ctx.inspections.save(payload)
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.open_record(saved["id"])
+    entry = window.pages[1]
+    entry.work_order.setText("ABANDONED")
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **kw: QMessageBox.StandardButton.Yes)
+    window.navigate(2)
+    window.navigate(1)
+    assert entry.work_order.text() == "MO-001"
+    entry.save_record()
+    assert ctx.inspections.get(saved["id"])["work_order"] == "MO-001"
+
+
+def test_editor_preserves_per_defect_remarks(ctx, payload, qtbot):
+    from app.core.schemas import InspectionInput
+    from app.ui.main_window import MainWindow
+
+    saved = ctx.inspections.save(
+        InspectionInput(
+            **(
+                payload.model_dump()
+                | {
+                    "defect_quantity": 1,
+                    "defects": [{"defect_id": 5, "quantity": 1, "remark": "已返修确认"}],
+                }
+            )
+        )
+    )
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.open_record(saved["id"])
+    window.pages[1].defects.reload()
+    window.pages[1].save_record()
+    assert ctx.inspections.get(saved["id"])["defects"][0]["remark"] == "已返修确认"

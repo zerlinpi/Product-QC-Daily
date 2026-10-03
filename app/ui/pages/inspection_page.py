@@ -200,7 +200,7 @@ class InspectionPage(Page):
             getattr(self, key).setCompleter(completer)
         self.dirty = was_dirty
 
-    def reset(self):
+    def reset(self, preserve=True):
         self.record_id, self.signature_path, self.source = None, None, "manual"
         self.inspection_date.setDate(QDate.currentDate())
         self.inspection_time.setTime(QTime.currentTime())
@@ -209,7 +209,7 @@ class InspectionPage(Page):
         self.judgment.setCurrentText("合格")
         self.remark.clear()
         for key, check in self.keep.items():
-            if not check.isChecked():
+            if not preserve or not check.isChecked():
                 widget = getattr(self, key)
                 if isinstance(widget, QSpinBox):
                     widget.setValue(0)
@@ -228,6 +228,12 @@ class InspectionPage(Page):
     def new_record(self):
         if self.can_discard():
             self.reset()
+
+    def discard_changes(self):
+        if self.record_id:
+            self.load_record(self.ctx.inspections.get(self.record_id))
+        else:
+            self.reset(preserve=False)
 
     def load_record(self, record, copy_record=False):
         self.refresh()

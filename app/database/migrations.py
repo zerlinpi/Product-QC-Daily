@@ -1,5 +1,6 @@
 import logging
 import sqlite3
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
@@ -54,7 +55,7 @@ def migrate(engine, path: Path) -> None:
         return
     if tables:
         backup = path.with_name(f"migration_{datetime.now():%Y%m%d_%H%M%S}.db")
-        with sqlite3.connect(path) as source, sqlite3.connect(backup) as target:
+        with closing(sqlite3.connect(path)) as source, closing(sqlite3.connect(backup)) as target:
             source.backup(target)
     # Future migrations are explicit, ordered transactions. Never drop existing tables.
     if current == 0:

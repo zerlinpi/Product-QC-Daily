@@ -4,6 +4,7 @@ import logging
 import os
 import shutil
 import sqlite3
+from contextlib import closing
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -18,7 +19,7 @@ log = logging.getLogger("qc.backup")
 
 def verify_database(path: Path) -> list[str]:
     try:
-        with sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True) as connection:
+        with closing(sqlite3.connect(f"{path.as_uri()}?mode=ro", uri=True)) as connection:
             if connection.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
                 raise ValueError("备份数据库损坏")
             if connection.execute("PRAGMA foreign_key_check").fetchone():
@@ -70,7 +71,10 @@ class BackupService:
         try:
             with TemporaryDirectory(dir=self.ctx.paths.root) as directory:
                 db = Path(directory) / "product_qc.db"
-                with sqlite3.connect(self.ctx.db.path) as source, sqlite3.connect(db) as output:
+                with (
+                    closing(sqlite3.connect(self.ctx.db.path)) as source,
+                    closing(sqlite3.connect(db)) as output,
+                ):
                     source.backup(output)
                 names = verify_database(db)
                 manifest = {
@@ -162,7 +166,7 @@ class BackupService:
             self.ctx.db.dispose()
             current = self.ctx.db.path
             rollback = stage / "previous.db"
-            with sqlite3.connect(current) as connection:
+            with closing(sqlite3.connect(current)) as connection:
                 connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
             try:
                 for name in names:

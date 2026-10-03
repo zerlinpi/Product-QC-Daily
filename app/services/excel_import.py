@@ -35,17 +35,17 @@ ALIASES = {
 }
 
 
-def parse_codes(value, known: set[str]) -> list[str]:
+def parse_codes(value, known: set[str], legacy=True) -> list[str]:
     raw = str(value or "").strip().lower()
     if not raw:
         return []
     tokens = [v for v in re.split(r"[\s.,，;；/、]+", raw) if v]
     result = []
     for token in tokens:
-        if token in known:
-            result.append(token)
-        elif token.isascii() and token.isalpha() and all(c in known for c in token):
+        if legacy and token.isascii() and token.isalpha() and all(c in known for c in token):
             result.extend(token)
+        elif not legacy and token in known:
+            result.append(token)
         else:
             raise ValueError(f"无法识别不良项目：{token}；请核对原表或先维护字典")
     return list(dict.fromkeys(result))
@@ -182,7 +182,9 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
                 raise ValueError("填写ID为空或过长")
             timestamp = parse_datetime(fields["datetime"], wb.epoch)
             try:
-                codes = parse_codes(fields.get("codes"), set(dictionaries))
+                codes = parse_codes(
+                    fields.get("codes"), set(dictionaries), legacy=title != "检验记录"
+                )
             except ValueError as exc:
                 item.status, item.message = "unrecognized", str(exc)
                 continue

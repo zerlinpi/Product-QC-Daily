@@ -140,6 +140,8 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         if not {"成品日检表", "成品日检表报表", "数据分析表", "工具"} <= set(wb.sheetnames):
             raise ValueError("模板缺少必要工作表")
         ws = wb["成品日检表"]
+        write_text(ws["N1"], "数据来源")
+        ws.column_dimensions["N"].hidden = True
         row_style = [copy(c._style) for c in ws[2]]
         for name in ("成品日检表", "成品日检表报表"):
             sheet = wb[name]
@@ -196,6 +198,8 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             if legacy and col <= len(row_style):
                 cell._style = copy(row_style[col - 1])
         ws.cell(index, 2).number_format = "yyyy-mm-dd hh:mm:ss"
+        if legacy:
+            write_text(ws.cell(index, 14), row["source"])
         if row["signature_path"]:
             add_signature(ws, index, ctx.paths.signatures / row["signature_path"])
         if not legacy:

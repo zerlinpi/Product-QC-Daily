@@ -19,6 +19,7 @@ class DefectSelector(QWidget):
     def __init__(self, ctx):
         super().__init__()
         self.ctx = ctx
+        self._remarks = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         filters = QHBoxLayout()
@@ -80,12 +81,17 @@ class DefectSelector(QWidget):
 
     def values(self):
         return [
-            {"defect_id": item["id"], "quantity": qty.value() or None}
+            {
+                "defect_id": item["id"],
+                "quantity": qty.value() or None,
+                "remark": self._remarks.get(item["id"], ""),
+            }
             for item, check, qty in self.entries
             if check.isChecked()
         ]
 
     def set_values(self, values):
+        self._remarks = {d["defect_id"]: d.get("remark", "") for d in values}
         selected = {d["defect_id"]: d.get("quantity") for d in values}
         for item, check, qty in self.entries:
             check.setEnabled(item["enabled"] or item["id"] in selected)

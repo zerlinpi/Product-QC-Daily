@@ -141,7 +141,8 @@ class MainWindow(QMainWindow):
         ):
             return
         if current == 1 and index != 1:
-            self.pages[1].dirty = False
+            if self.pages[1].dirty:
+                self.pages[1].discard_changes()
         self.stack.setCurrentIndex(index)
         for i, item in enumerate(self.nav_buttons):
             item.setChecked(i == index)

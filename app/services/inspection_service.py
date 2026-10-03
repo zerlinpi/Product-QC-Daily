@@ -121,12 +121,13 @@ class InspectionService:
             with self.db.session() as session:
                 record = self.save_in_session(session, data, record_id)
                 identifier = record.id
-            log.info("%s record=%s", "更新" if record_id else "保存", identifier)
-            return self.get(identifier)
+                result = record_dict(record)
         except Exception:
             if copied:
                 (self.paths.signatures / copied).unlink(missing_ok=True)
             raise
+        log.info("%s record=%s", "更新" if record_id else "保存", identifier)
+        return result
 
     def get(self, record_id: int) -> dict:
         with self.db.session() as session:

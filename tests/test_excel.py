@@ -144,3 +144,28 @@ def test_import_preview_changed_file_is_not_silently_used(ctx, tmp_path):
     workbook(path, [row("new")])
     with pytest.raises(ValueError, match="改变"):
         ctx.excel.import_preview(preview)
+
+
+def test_legacy_codes_remain_concatenated_after_adding_ambiguous_code(ctx, tmp_path):
+    ctx.defects.save({"code": "eg", "name": "扩展项目"})
+    path = workbook(tmp_path / "legacy-input.xlsx", [row()])
+    preview = ctx.excel.preview(path)
+    assert preview.counts["valid"] == 1
+    assert [d.defect_id for d in preview.rows[0].data.defects] == [5, 7]
+
+
+def test_legacy_demo_export_cannot_turn_into_production(ctx, payload, tmp_path):
+    from app.core.context import AppContext
+    from app.core.schemas import InspectionInput, RecordFilter
+
+    ctx.inspections.save(InspectionInput(**(payload.model_dump() | {"source": "demo"})))
+    path = ctx.excel.export(
+        tmp_path / "demo-legacy.xlsx", RecordFilter(source="demo"), legacy=True, prefer_com=False
+    )
+    other = AppContext(tmp_path / "isolated")
+    try:
+        other.excel.import_preview(other.excel.preview(path))
+        assert other.inspections.query(RecordFilter())[1] == 0
+        assert other.inspections.query(RecordFilter(source="demo"))[1] == 1
+    finally:
+        other.db.dispose()

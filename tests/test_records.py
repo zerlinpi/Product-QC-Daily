@@ -116,3 +116,24 @@ def test_signature_is_copied_and_source_not_required_after_save(ctx, payload, tm
     )
     path.unlink()
     assert (ctx.paths.signatures / saved["signature_path"]).is_file()
+
+
+def test_save_does_not_read_after_commit_or_delete_committed_signature(
+    ctx, payload, tmp_path, monkeypatch
+):
+    from PIL import Image
+
+    from app.core.schemas import InspectionInput, RecordFilter
+
+    image = tmp_path / "new-signature.png"
+    Image.new("RGB", (20, 20), "white").save(image)
+
+    def read_failure(_):
+        raise OSError("simulated post-commit read failure")
+
+    monkeypatch.setattr(ctx.inspections, "get", read_failure)
+    result = ctx.inspections.save(
+        InspectionInput(**(payload.model_dump() | {"signature_path": str(image)}))
+    )
+    assert (ctx.paths.signatures / result["signature_path"]).exists()
+    assert ctx.inspections.query(RecordFilter())[1] == 1

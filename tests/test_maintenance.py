@@ -87,3 +87,36 @@ def test_future_schema_database_rejected_without_mutation(ctx, tmp_path):
         Database(target)
     with sqlite3.connect(target) as c:
         assert c.execute("SELECT version FROM schema_version").fetchone()[0] == 999
+
+
+def test_backup_restore_closes_owned_sqlite_handles(ctx, payload, monkeypatch):
+    import sqlite3
+
+    import app.services.backup_service as module
+
+    ctx.inspections.save(payload)
+    original = sqlite3.connect
+    opened = []
+
+    class TrackedConnection(sqlite3.Connection):
+        closed = False
+
+        def close(self):
+            super().close()
+            self.closed = True
+
+    def connect(*args, **kwargs):
+        kwargs["factory"] = TrackedConnection
+        connection = original(*args, **kwargs)
+        opened.append(connection)
+        return connection
+
+    monkeypatch.setattr(module.sqlite3, "connect", connect)
+    try:
+        path = ctx.backup.backup()
+        assert all(connection.closed for connection in opened)
+        ctx.backup.restore(path)
+        assert all(connection.closed for connection in opened)
+    finally:
+        for connection in opened:
+            connection.close()
