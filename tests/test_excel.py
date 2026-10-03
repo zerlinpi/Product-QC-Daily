@@ -75,7 +75,13 @@ def test_import_preview_duplicates_conflicts_invalid_and_unknown(ctx, tmp_path):
     changed = workbook(tmp_path / "changed.xlsx", [row(defect=3)])
     assert ctx.excel.preview(changed).counts["conflict"] == 1
     report = ctx.excel.export_issues(preview, tmp_path / "issues.xlsx")
-    assert load_workbook(report).active.max_row == 4
+    issue_wb = load_workbook(report)
+    issue_ws = issue_wb.active
+    assert issue_ws.max_row == 4
+    statuses = {issue_ws.cell(row, 4).value for row in range(2, issue_ws.max_row + 1)}
+    assert statuses == {"重复", "异常", "无法识别"}
+    assert not statuses & {"duplicate", "invalid", "unrecognized"}
+    issue_wb.close()
 
 
 def test_header_detection_prefers_visible_main(ctx, tmp_path):
