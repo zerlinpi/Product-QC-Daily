@@ -1,0 +1,105 @@
+name: Desktop CI
+
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install Qt system libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 libxkbcommon0
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m ruff check .
+      - run: python -m pytest -q --junitxml=test-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tests-${{ matrix.os }}
+          path: test-results.xml
+
+  windows-package:
+    needs: validate
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Build onedir Windows EXE
+        run: python -m PyInstaller --noconfirm --clean Product-QC-Daily.spec
+      - name: Test the actual packaged executable
+        shell: pwsh
+        run: |
+          $env:QC_DATA_DIR = Join-Path $env:RUNNER_TEMP 'qc-packaged-test'
+          $env:QT_QPA_PLATFORM = 'offscreen'
+          $report = Join-Path $env:RUNNER_TEMP 'qc-packaged-report.json'
+          $exe = Resolve-Path 'dist/Product-QC-Daily/Product-QC-Daily.exe'
+          $process = Start-Process -FilePath $exe -ArgumentList @('--self-test', '--report', $report) -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Packaged executable failed: $($process.ExitCode)" }
+          if (!(Test-Path $report)) { throw 'Packaged executable produced no report' }
+          $result = Get-Content $report -Raw | ConvertFrom-Json
+          if (!$result.ok -or !$result.frozen) { throw 'Packaged executable smoke test did not pass' }
+          Copy-Item $report 'dist/Product-QC-Daily/verification.json'
+          Compress-Archive -Path 'dist/Product-QC-Daily' -DestinationPath 'Product-QC-Daily-windows-x64.zip'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Product-QC-Daily-windows-x64
+          path: Product-QC-Daily-windows-x64.zip
+          retention-days: 30
+      - name: Upload executable diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-diagnostics
+          path: |
+            ${{ runner.temp }}/qc-packaged-report.json
+            ${{ runner.temp }}/qc-packaged-test/logs
+
+  release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: windows-package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Product-QC-Daily-windows-x64
+      - name: Publish versioned Windows release after tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python -c 'from app import __version__; print(__version__)')
+          if gh release view "v$version" >/dev/null 2>&1; then
+            echo "Release v$version already exists; keeping its original artifact."
+          else
+            gh release create "v$version" Product-QC-Daily-windows-x64.zip --target "$GITHUB_SHA" --title "v$version · 成品日检管理系统" --notes-file docs/release-notes.md
+          fi
