@@ -67,6 +67,8 @@ Windows 安装 Excel 时会尝试 COM 重算并保存；否则正常生成可由
 
 Linux/macOS 开发默认 `~/.local/share/Product-QC-Daily/`；`QC_DATA_DIR` 可指定独立目录。用户设置在 SQLite `settings` 表中，备份恢复一并保留。数据库启用外键、WAL、10 秒 busy_timeout，启动执行完整性检查。单实例锁避免同时操作相同数据目录。
 
+[示例配置](config/settings.example.json) 列出初始设置字段与默认值，空路径表示使用应用默认目录或内置模板。实际配置请在“系统设置”页面修改；该示例用于开发参考，程序不会自动读取它。
+
 完整 ZIP 备份包含在线 SQLite 快照、被引用的签名图片和 SHA-256 校验清单。默认每天第一次启动备份，保留 30 天自动备份；手动备份及恢复前备份不自动删除。恢复先验证清单、数据库完整性、外键和 schema 版本，再备份当前数据后替换；失败回滚。仅无签名引用的独立 `.db` 可直接恢复，含签名请用完整 ZIP。升级时只替换程序文件夹，**不要删除 LocalAppData 数据目录**。建议另将备份复制到公司受控的其他磁盘。
 
 ## 开发环境
@@ -110,6 +112,7 @@ app/database/      ORM、事务、迁移、初始字典
 app/services/      检验、统计、Excel、备份、配置、模拟数据
 app/ui/            页面、对话框、图表、主题、后台任务
 assets/icons/      应用图标
+config/            示例配置说明
 templates/         脱敏空白模板
 tests/             服务与桌面集成测试
 scripts/           模板准备、Windows 版本信息
