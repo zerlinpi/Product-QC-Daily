@@ -167,6 +167,7 @@ class RecordsPage(Page):
         self.work_order.clear()
         self.inspector.clear()
         self.trash.setChecked(False)
+        self.table.clearSelection()
         self.page = 1
         self.load_rows()
 
