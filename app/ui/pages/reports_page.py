@@ -13,18 +13,18 @@ from app.ui.dialogs.import_dialog import ImportDialog
 class ReportsPage(Page):
     def __init__(self, ctx, window):
         super().__init__(
-            ctx, window, "报表中心", "连接原有 Excel 工作方式 · 导入有预览，导出有明确的统计口径"
+            ctx, window, "报表中心", "导入前先检查内容；导出时选择日期范围和报表格式"
         )
         panel, layout = card()
         layout.addWidget(label("导入历史日检表", "section"))
         layout.addWidget(
             label(
-                "支持原始成品日检表与本软件标准报表。自动识别记录工作表，拆分不良编码，并导出异常清单。源文件不会被修改。",
+                "支持原始成品日检表与本软件导出的明细报表。自动识别记录工作表，拆分不良编码，并导出异常清单。源文件不会被修改。",
                 "muted",
                 True,
             )
         )
-        layout.addWidget(button("选择 Excel 并预览", self.import_file, primary=True))
+        layout.addWidget(button("选择表格并预览", self.import_file, primary=True))
         self.import_status = label("尚未选择文件", "muted", True)
         layout.addWidget(self.import_status)
         self.layout.addWidget(panel)
@@ -51,10 +51,12 @@ class ReportsPage(Page):
             filters.addWidget(label(title, "fieldLabel"), 0, col)
             filters.addWidget(widget, 1, col)
         layout.addLayout(filters)
-        self.export_scope = label("", "muted")
+        self.export_scope = label("", "muted", True)
         layout.addWidget(self.export_scope)
         self.preset.currentTextChanged.connect(self.set_range)
         self.source.currentIndexChanged.connect(self.update_scope_text)
+        self.start.dateChanged.connect(self.update_scope_text)
+        self.end.dateChanged.connect(self.update_scope_text)
         self.set_range("本月")
         layout.addWidget(
             label(
@@ -69,11 +71,11 @@ class ReportsPage(Page):
             )
         )
         layout.addWidget(
-            button("导出标准报表 · 记录 + 不良明细 + 统计", lambda: self.export(False))
+            button("导出明细报表 · 保留检验员与逐项件数", lambda: self.export(False))
         )
         layout.addWidget(
             label(
-                "标准报表完整保留逐项已知数量和检验员。兼容报表沿用旧表列布局；WPS 签名转换为普通图片。公式由 Excel / WPS 打开时重算，Windows 安装 Excel 时自动尝试 COM 重算。",
+                "需要原有表格样式，请选“按原表导出”；需要完整检验员、备注和逐项件数，请选“导出明细报表”。用电子表格软件打开文件后，统计公式会自动重新计算。",
                 "muted",
                 True,
             )
@@ -96,11 +98,11 @@ class ReportsPage(Page):
         )
 
     def import_file(self):
-        path, _ = QFileDialog.getOpenFileName(self, "选择成品日检表", "", "Excel (*.xlsx)")
+        path, _ = QFileDialog.getOpenFileName(self, "选择成品日检表", "", "电子表格 (*.xlsx)")
         if path:
             self.import_status.setText(path)
             self.window.run_job(
-                "分析 Excel 文件", lambda: self.ctx.excel.preview(Path(path)), self.show_preview
+                "读取表格并检查内容", lambda: self.ctx.excel.preview(Path(path)), self.show_preview
             )
 
     def show_preview(self, preview):
@@ -128,16 +130,16 @@ class ReportsPage(Page):
             source="demo" if self.source.currentIndex() else "production",
         )
         directory = Path(self.ctx.settings.get("export_directory") or self.ctx.paths.exports)
-        kind = "兼容日检表" if legacy else "质量报表"
+        kind = "原表日检表" if legacy else "检验明细报表"
         path, _ = QFileDialog.getSaveFileName(
             self,
             "导出报表",
             str(directory / f"{kind}_{filters.start}_{filters.end}.xlsx"),
-            "Excel (*.xlsx)",
+            "电子表格 (*.xlsx)",
         )
         if path:
             self.window.run_job(
-                "生成 Excel 报表",
+                "生成报表",
                 lambda: self.ctx.excel.export(Path(path), filters, legacy=legacy),
                 lambda result: self.window.notify(f"导出成功：{result}"),
             )

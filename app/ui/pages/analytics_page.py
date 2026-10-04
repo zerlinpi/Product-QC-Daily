@@ -15,7 +15,7 @@ class AnalyticsPage(Page):
             ctx,
             window,
             "质量分析",
-            "按完整日期范围统计 · 不良率以抽检件数为分母 · 支持上一周期对比",
+            "选择日期后点击“开始分析”，查看不良趋势、重点项目和与上一周期的变化",
         )
         filter_card, filter_box = card()
         filter_box.addWidget(label("分析范围", "section"))
@@ -26,7 +26,10 @@ class AnalyticsPage(Page):
         self.preset.addItems(PRESETS)
         self.preset.setCurrentText("本月")
         self.source.addItems(["正式数据", "演示数据"])
-        self.metric_choice.addItems(["不良项目出现批次", "已知不良件数"])
+        self.metric_choice.addItems(["按出现批次", "按已填件数"])
+        self.metric_choice.setToolTip(
+            "出现批次：该项目出现过的检验次数。已填件数：只累计实际填写的件数。"
+        )
         self.start, self.end = QDateEdit(), QDateEdit()
         for widget in (self.start, self.end):
             widget.setCalendarPopup(True)
@@ -81,7 +84,7 @@ class AnalyticsPage(Page):
         layout.addWidget(self.team_chart)
         grid.addWidget(frame, 2, 5, 1, 5)
         self.ranking = table(
-            ["编码", "不良项目", "出现批次", "已知件数", "数量未知批次", "累计占比"]
+            ["编码", "不良项目", "出现批次", "已填件数", "未填件数批次", "累计占比"]
         )
         self.ranking.setMinimumHeight(300)
         self.ranking.setColumnWidth(1, 240)

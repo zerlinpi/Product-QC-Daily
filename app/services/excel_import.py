@@ -147,7 +147,7 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
                 candidates.append((score, ws.title, row_number, mapping))
                 break
     if not candidates:
-        raise ValueError("未找到包含填写ID、时间、组别、工单和检验数量的记录表")
+        raise ValueError("未找到包含记录编号、时间、组别、工单和检验数量的记录表")
     _, title, header, mapping = max(candidates, key=lambda x: x[0])
     ws = wb[title]
     if ws.max_row > 100_010 or ws.max_column > 200:
@@ -182,7 +182,7 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
         preview.rows.append(item)
         try:
             if not no or len(no) > 200:
-                raise ValueError("填写ID为空或过长")
+                raise ValueError("记录编号为空或过长")
             timestamp = parse_datetime(fields["datetime"], wb.epoch)
             try:
                 codes = parse_codes(
@@ -237,9 +237,9 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
             if no in seen:
                 item.status = "duplicate" if seen[no] == item.fingerprint else "conflict"
                 item.message = (
-                    "工作簿中填写ID重复"
+                    "工作簿中记录编号重复"
                     if item.status == "duplicate"
-                    else "同一填写ID内容不同，请核对后再导入"
+                    else "同一记录编号的内容不同，请核对后再导入"
                 )
             else:
                 seen[no] = item.fingerprint
@@ -261,7 +261,7 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
     conflicted = {r.inspection_no for r in preview.rows if r.status == "conflict"}
     for item in preview.rows:
         if item.status == "valid" and item.inspection_no in conflicted:
-            item.status, item.message = "conflict", "工作簿内同一填写ID有不同内容"
+            item.status, item.message = "conflict", "工作簿内同一记录编号有不同内容"
         if item.status == "valid" and item.inspection_no in existing:
             item.status = (
                 "duplicate" if existing[item.inspection_no] == item.fingerprint else "conflict"
@@ -269,7 +269,7 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
             item.message = (
                 "数据库已存在此记录（含回收站）"
                 if item.status == "duplicate"
-                else "数据库已有同ID不同内容，不会覆盖"
+                else "已有相同记录编号但内容不同的记录，不会覆盖"
             )
     wb.close()
     return preview

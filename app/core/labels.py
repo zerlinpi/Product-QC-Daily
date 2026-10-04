@@ -11,7 +11,7 @@ SOURCE_LABELS = {
 IMPORT_STATUS_LABELS = {
     "valid": "正常",
     "duplicate": "重复",
-    "conflict": "ID冲突",
+    "conflict": "编号冲突",
     "invalid": "异常",
     "unrecognized": "无法识别",
 }

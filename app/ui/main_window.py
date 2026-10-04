@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt, QThread, Slot
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
+    QApplication,
     QFrame,
     QHBoxLayout,
     QMainWindow,
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from app import __version__
 from app.ui.common import button, friendly_error, guarded, label
+from app.ui.localization import configure_chinese_ui
 from app.ui.pages.analytics_page import AnalyticsPage
 from app.ui.pages.dashboard_page import DashboardPage
 from app.ui.pages.defects_page import DefectsPage
@@ -25,9 +27,10 @@ from app.ui.worker import Worker
 
 class MainWindow(QMainWindow):
     def __init__(self, ctx):
+        configure_chinese_ui(QApplication.instance())
         super().__init__()
         self.ctx, self._job = ctx, None
-        self.setWindowTitle("成品日检管理系统 · Product-QC-Daily")
+        self.setWindowTitle("成品日检管理系统")
         self.resize(1440, 920)
         self.setMinimumSize(1080, 720)
         apply_theme(ctx.settings.get("theme"))
@@ -41,13 +44,13 @@ class MainWindow(QMainWindow):
         nav = QVBoxLayout(sidebar)
         nav.setContentsMargins(18, 30, 18, 22)
         nav.setSpacing(8)
-        nav.addWidget(label("QC  DAILY", "brand"))
-        nav.addWidget(label("成品日检管理系统", "muted"))
+        nav.addWidget(label("成品日检", "brand"))
+        nav.addWidget(label("每日质检管理", "muted"))
         nav.addSpacing(34)
         self.nav_buttons = []
         for i, title in enumerate(
             [
-                "◈  仪表盘",
+                "◈  质量总览",
                 "＋  日检录入",
                 "▤  检验记录",
                 "↗  质量分析",
@@ -63,8 +66,8 @@ class MainWindow(QMainWindow):
             nav.addWidget(item)
             self.nav_buttons.append(item)
         nav.addStretch()
-        nav.addWidget(label("●  本地数据库已连接", "muted"))
-        nav.addWidget(label(f"v{__version__}  ·  完全离线运行", "muted"))
+        nav.addWidget(label("●  数据保存在本机", "muted"))
+        nav.addWidget(label(f"版本 {__version__}  ·  离线使用", "muted"))
         root.addWidget(sidebar)
         right = QVBoxLayout()
         right.setContentsMargins(0, 0, 0, 0)
@@ -76,7 +79,7 @@ class MainWindow(QMainWindow):
         self.company = label("成品质量管理", "section")
         toolbar.addWidget(self.company)
         toolbar.addStretch()
-        toolbar.addWidget(label("本地工作空间  /  数据保存在此电脑", "muted"))
+        toolbar.addWidget(label("本机使用 · 无需联网", "muted"))
         right.addWidget(top)
         self.stack = QStackedWidget()
         right.addWidget(self.stack, 1)
@@ -178,6 +181,13 @@ class MainWindow(QMainWindow):
         self.pages[index].refresh()
         if index == 1:
             self.pages[1].defects.reload()
+
+    @guarded
+    def new_inspection(self):
+        entry = self.pages[1]
+        if entry.can_discard():
+            entry.reset()
+            self.navigate(1)
 
     @guarded
     def open_record(self, identifier, copy_record=False):

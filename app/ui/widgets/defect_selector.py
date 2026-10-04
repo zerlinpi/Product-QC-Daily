@@ -39,7 +39,7 @@ class DefectSelector(QWidget):
         layout.addWidget(self.total)
         layout.addWidget(
             label(
-                "0 表示逐项数量未知。同一件可包含多种不良，项目合计可能高于不良总件数。",
+                "件数不清楚时选择“未知”。同一件可有多个不良项目，逐项合计可能高于不良总件数。",
                 "muted",
                 True,
             )

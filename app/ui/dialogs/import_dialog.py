@@ -11,7 +11,7 @@ class ImportDialog(QDialog):
         super().__init__(window)
         self.ctx, self.window, self.preview = ctx, window, preview
         self.page = 1
-        self.setWindowTitle("Excel 导入预览")
+        self.setWindowTitle("表格导入预览")
         self.resize(1040, 680)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 24, 24, 24)
@@ -19,12 +19,18 @@ class ImportDialog(QDialog):
         layout.addWidget(label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "muted"))
         layout.addWidget(
             label(
-                "   ".join(f"{import_status_label(key)} {value}" for key, value in preview.counts.items()),
+                "   ".join(
+                    f"{import_status_label(key)} {value}" for key, value in preview.counts.items()
+                ),
                 "section",
             )
         )
         layout.addWidget(
-            label("只导入正常记录；重复和异常不会覆盖数据库。旧表逐项件数保持未知。", "muted", True)
+            label(
+                "检查完成后再点击导入。只保存正常记录，重复与异常记录会跳过；原表未提供的逐项件数保持未知。",
+                "muted",
+                True,
+            )
         )
         self.filter = QComboBox()
         self.filter.addItem("全部状态", "")
@@ -32,7 +38,7 @@ class ImportDialog(QDialog):
             self.filter.addItem(value, key)
         self.filter.currentIndexChanged.connect(self.reset_page)
         layout.addWidget(self.filter)
-        self.table = table(["Excel行", "填写ID", "状态", "说明 / 异常原因"])
+        self.table = table(["表格行号", "记录编号", "状态", "说明 / 异常原因"])
         self.table.setColumnWidth(0, 80)
         self.table.setColumnWidth(1, 245)
         self.table.setColumnWidth(2, 100)
@@ -40,11 +46,18 @@ class ImportDialog(QDialog):
         pagination = QHBoxLayout()
         self.count = label("", "muted")
         pagination.addWidget(self.count, 1)
-        pagination.addWidget(button("上一页", lambda: self.turn(-1)))
-        pagination.addWidget(button("下一页", lambda: self.turn(1)))
+        self.previous_button = button("上一页", lambda: self.turn(-1))
+        self.next_button = button("下一页", lambda: self.turn(1))
+        pagination.addWidget(self.previous_button)
+        pagination.addWidget(self.next_button)
         layout.addLayout(pagination)
         actions = QHBoxLayout()
-        actions.addWidget(button("导出异常报告", self.report))
+        report_button = button("导出异常报告", self.report)
+        report_button.setEnabled(
+            any(key != "valid" and count for key, count in preview.counts.items())
+        )
+        report_button.setToolTip("将重复、冲突和异常记录另存为表格，便于核对")
+        actions.addWidget(report_button)
         actions.addStretch()
         actions.addWidget(button("取消", self.reject))
         accept = button(f"导入 {preview.counts['valid']} 条正常记录", self.accept, primary=True)
@@ -79,14 +92,17 @@ class ImportDialog(QDialog):
                 for r in rows[(self.page - 1) * 200 : self.page * 200]
             ],
         )
-        self.count.setText(f"共 {len(rows)} 条 · 第 {self.page} 页 · 每页 200 条")
+        pages = max(1, (len(rows) + 199) // 200)
+        self.count.setText(f"共 {len(rows)} 条 · 第 {self.page} / {pages} 页 · 每页 200 条")
+        self.previous_button.setEnabled(self.page > 1)
+        self.next_button.setEnabled(self.page < pages)
 
     def report(self):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "导出异常报告",
             str(self.ctx.paths.exports / "导入异常报告.xlsx"),
-            "Excel (*.xlsx)",
+            "电子表格 (*.xlsx)",
         )
         if path:
             self.setEnabled(False)

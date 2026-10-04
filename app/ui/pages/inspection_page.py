@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QHBoxLayout,
     QLineEdit,
-    QMessageBox,
     QScrollArea,
     QSpinBox,
     QTextEdit,
@@ -18,7 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.schemas import InspectionInput, RecordFilter
-from app.ui.common import Page, button, card, guarded, label
+from app.ui.common import Page, button, card, confirm, guarded, label
 from app.ui.widgets.defect_selector import DefectSelector
 
 
@@ -33,8 +32,12 @@ class InspectionPage(Page):
         self.mode = label("新建检验记录", "section")
         toolbar.addWidget(self.mode)
         toolbar.addStretch()
-        toolbar.addWidget(button("复制上一条  Ctrl+D", self.copy_last))
-        toolbar.addWidget(button("新建  Ctrl+N", self.new_record))
+        copy_button = button("复制上一条", self.copy_last)
+        copy_button.setToolTip("复制最近一条正式记录作为新记录（Ctrl+D）")
+        toolbar.addWidget(copy_button)
+        new_button = button("新建记录", self.new_record)
+        new_button.setToolTip("开始填写下一条记录（Ctrl+N）")
+        toolbar.addWidget(new_button)
         self.layout.addLayout(toolbar)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -63,6 +66,9 @@ class InspectionPage(Page):
             widget = QSpinBox()
             widget.setRange(0, 100_000_000)
             widget.setGroupSeparatorShown(True)
+            if name != "defect_quantity":
+                widget.setSpecialValueText("请填写")
+            widget.setToolTip("单位：件")
             setattr(self, name, widget)
         names = [
             ("检验日期", self.inspection_date),
@@ -104,11 +110,11 @@ class InspectionPage(Page):
         self.signature_label.setMinimumHeight(44)
         signature_row.addWidget(self.signature_label, 1)
         signature_row.addWidget(button("选择签名图片", self.choose_signature))
-        signature_row.addWidget(button("清除", self.clear_signature))
+        signature_row.addWidget(button("清除签名", self.clear_signature))
         left_layout.addLayout(signature_row)
         right, right_layout = card()
         right_layout.addWidget(label("不良项目", "section"))
-        right_layout.addWidget(label("直接选择名称，并填写逐项件数", "muted"))
+        right_layout.addWidget(label("勾选发现的不良项目，再填写各项件数", "muted", True))
         self.defects = DefectSelector(ctx)
         right_layout.addWidget(self.defects, 1)
         grid.addWidget(left, 0, 0)
@@ -118,7 +124,7 @@ class InspectionPage(Page):
         scroll.setWidget(content)
         self.layout.addWidget(scroll, 1)
         keep_row = QHBoxLayout()
-        keep_row.addWidget(label("保存后保留", "muted"))
+        keep_row.addWidget(label("下一条沿用", "muted"))
         self.keep = {}
         settings = ctx.settings.all()
         for key, title in [
@@ -135,9 +141,11 @@ class InspectionPage(Page):
         keep_row.addStretch()
         self.layout.addLayout(keep_row)
         footer = QHBoxLayout()
-        self.saved_note = label("* 为必填项 · Enter 跳转下一项", "muted")
+        self.saved_note = label("* 为必填项 · 回车跳到下一项", "muted")
         footer.addWidget(self.saved_note, 1)
-        footer.addWidget(button("保存  Ctrl+S", lambda: self.save_record()))
+        save_button = button("保存本条", lambda: self.save_record())
+        save_button.setToolTip("保存当前记录并留在本页（Ctrl+S）")
+        footer.addWidget(save_button)
         footer.addWidget(button("保存并新建", lambda: self.save_record(new=True), primary=True))
         self.layout.addLayout(footer)
         self.refresh()
@@ -172,22 +180,23 @@ class InspectionPage(Page):
 
     def mark_dirty(self, *_):
         self.dirty = True
+        self.saved_note.setText("修改尚未保存" if self.record_id else "本条尚未保存 · * 为必填项")
 
     def can_discard(self):
         return (
             not self.dirty
-            or QMessageBox.question(
+            or confirm(
                 self,
                 "未保存的录入",
-                "当前内容尚未保存，确定放弃这些改动？",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
+                "当前内容尚未保存。放弃修改后，这次填写的内容不会保留。",
+                action="放弃修改",
+                cancel="继续填写",
             )
-            == QMessageBox.StandardButton.Yes
         )
 
     def refresh(self):
         was_dirty = self.dirty
+        previous_note = self.saved_note.text()
         previous = self.team.currentText()
         self.team.clear()
         self.team.addItems([t["name"] for t in self.ctx.settings.teams(True)])
@@ -199,6 +208,7 @@ class InspectionPage(Page):
             completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
             getattr(self, key).setCompleter(completer)
         self.dirty = was_dirty
+        self.saved_note.setText(previous_note)
 
     def reset(self, preserve=True):
         self.record_id, self.signature_path, self.source = None, None, "manual"
@@ -222,6 +232,7 @@ class InspectionPage(Page):
         self.signature_label.clear()
         self.signature_label.setText("尚未选择签名")
         self.mode.setText("新建检验记录")
+        self.saved_note.setText("本条尚未保存 · * 为必填项")
         self.dirty = False
         self.work_order.setFocus()
 
@@ -267,6 +278,9 @@ class InspectionPage(Page):
             + ("  [演示数据]" if self.source == "demo" else "")
         )
         self.dirty = copy_record
+        self.saved_note.setText(
+            "复制的新记录尚未保存" if copy_record else "已保存记录 · 修改后请保存本条"
+        )
 
     @guarded
     def save_record(self, new=False):
@@ -336,12 +350,12 @@ class InspectionPage(Page):
         if path:
             self.signature_path = path
             self.show_signature()
-            self.dirty = True
+            self.mark_dirty()
 
     def clear_signature(self):
         self.signature_path = None
         self.show_signature()
-        self.dirty = True
+        self.mark_dirty()
 
     def show_signature(self):
         from pathlib import Path

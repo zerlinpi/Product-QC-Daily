@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from app.ui.common import friendly_error
+from app.ui.common import friendly_error, label
 
 
 class DefectDialog(QDialog):
@@ -18,11 +18,12 @@ class DefectDialog(QDialog):
         self.setWindowTitle("编辑不良项目" if item else "新增不良项目")
         self.setMinimumWidth(460)
         layout = QVBoxLayout(self)
+        layout.addWidget(label("编码和名称为必填项；排序数值越小，显示越靠前。", "muted", True))
         form = QFormLayout()
         self.fields = {}
         for key, title in [
-            ("code", "编码"),
-            ("name", "名称"),
+            ("code", "编码 *"),
+            ("name", "名称 *"),
             ("category", "分类"),
             ("description", "说明"),
         ]:
