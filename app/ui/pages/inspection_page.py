@@ -180,6 +180,7 @@ class InspectionPage(Page):
 
     def mark_dirty(self, *_):
         self.dirty = True
+        self.saved_note.setText("修改尚未保存" if self.record_id else "本条尚未保存 · * 为必填项")
 
     def can_discard(self):
         return (
@@ -195,6 +196,7 @@ class InspectionPage(Page):
 
     def refresh(self):
         was_dirty = self.dirty
+        previous_note = self.saved_note.text()
         previous = self.team.currentText()
         self.team.clear()
         self.team.addItems([t["name"] for t in self.ctx.settings.teams(True)])
@@ -206,6 +208,7 @@ class InspectionPage(Page):
             completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
             getattr(self, key).setCompleter(completer)
         self.dirty = was_dirty
+        self.saved_note.setText(previous_note)
 
     def reset(self, preserve=True):
         self.record_id, self.signature_path, self.source = None, None, "manual"
@@ -275,6 +278,9 @@ class InspectionPage(Page):
             + ("  [演示数据]" if self.source == "demo" else "")
         )
         self.dirty = copy_record
+        self.saved_note.setText(
+            "复制的新记录尚未保存" if copy_record else "已保存记录 · 修改后请保存本条"
+        )
 
     @guarded
     def save_record(self, new=False):
@@ -344,12 +350,12 @@ class InspectionPage(Page):
         if path:
             self.signature_path = path
             self.show_signature()
-            self.dirty = True
+            self.mark_dirty()
 
     def clear_signature(self):
         self.signature_path = None
         self.show_signature()
-        self.dirty = True
+        self.mark_dirty()
 
     def show_signature(self):
         from pathlib import Path

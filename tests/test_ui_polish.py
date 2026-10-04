@@ -151,3 +151,26 @@ def test_import_preview_pagination_matches_available_rows(ctx, qtbot, tmp_path):
     assert dialog.table.rowCount() == 0
     assert not dialog.previous_button.isEnabled()
     assert not dialog.next_button.isEnabled()
+
+
+def test_entry_footer_tracks_saved_modified_copied_and_new_records(ctx, payload, qtbot):
+    saved = ctx.inspections.save(payload)
+    window = MainWindow(ctx)
+    qtbot.addWidget(window, before_close_func=lambda w: setattr(w.pages[1], "dirty", False))
+    page = window.pages[1]
+    page.load_record(saved)
+    assert "已保存" in page.saved_note.text()
+    page.remark.setPlainText("修改后的备注")
+    assert "修改尚未保存" in page.saved_note.text()
+    page.refresh()
+    assert "修改尚未保存" in page.saved_note.text()
+    page.discard_changes()
+    assert "已保存" in page.saved_note.text()
+    page.load_record(saved, copy_record=True)
+    assert "尚未保存" in page.saved_note.text()
+    page.save_record()
+    assert "保存成功" in page.saved_note.text()
+    page.refresh()
+    assert "保存成功" in page.saved_note.text()
+    page.reset()
+    assert "本条尚未保存" in page.saved_note.text()
