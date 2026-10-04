@@ -322,6 +322,16 @@ def repair_chart_ranges(chart):
                     ref.f = ref.f.replace("$H$3:$K$3", "$H$33:$K$33").replace(
                         "$H$4:$K$4", "$H$34:$K$34"
                     )
+    # The source's weekly chart accidentally included the ranking column as
+    # quantities. A zero-defect week must not show a bar of 1 for every defect.
+    rank_ranges = {"数据分析表!$C$4:$C$27", "数据分析表!$C$34:$C$57"}
+    chart.series = [
+        series
+        for series in chart.series
+        if not (
+            series.val and series.val.numRef and series.val.numRef.f.replace("'", "") in rank_ranges
+        )
+    ]
 
 
 def create_empty_template(source: Path, target: Path) -> None:

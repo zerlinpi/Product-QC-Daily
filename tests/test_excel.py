@@ -252,6 +252,8 @@ def test_legacy_layout_keeps_original_chart_positions_and_signature_cell(ctx, pa
     ]
     assert analysis._charts[2].series[0].val.numRef.f.endswith("$B$4:$B$27")
     assert analysis._charts[3].series[0].val.numRef.f.endswith("$H$34:$K$34")
+    assert len(analysis._charts[4].series) == 1
+    assert analysis._charts[4].series[0].val.numRef.f.endswith("$B$34:$B$57")
     assert ws.column_dimensions["A"].hidden
     assert ws.row_dimensions[2].height == pytest.approx(34.45)
     assert ws["C2"].font.name == "微软雅黑"
@@ -320,3 +322,36 @@ def test_template_keeps_chart_design_and_removes_production_caches(ctx, payload,
     )
     with ZipFile(output) as archive:
         assert b"123456789" not in archive.read("xl/charts/chart1.xml")
+
+
+@pytest.mark.parametrize("operation", ["prepare_template", "export"])
+def test_external_template_quantity_chart_excludes_rank(ctx, payload, tmp_path, operation):
+    from copy import deepcopy
+
+    from app.core.schemas import RecordFilter
+    from app.services.excel_export import create_empty_template
+
+    source, target = tmp_path / "external-template.xlsx", tmp_path / "result.xlsx"
+    wb = load_workbook(ctx.paths.template)
+    chart = wb["数据分析表"]._charts[4]
+    chart.series = chart.series[:1]
+    rank_series = deepcopy(chart.series[0])
+    rank_series.val.numRef.f = "'数据分析表'!$C$34:$C$57"
+    chart.series.append(rank_series)
+    anchor = deepcopy(chart.anchor)
+    wb.save(source)
+    wb.close()
+    source_bytes = source.read_bytes()
+    if operation == "prepare_template":
+        create_empty_template(source, target)
+    else:
+        ctx.inspections.save(payload)
+        ctx.settings.update({"template_path": str(source)})
+        ctx.excel.export(target, RecordFilter(), legacy=True, prefer_com=False)
+    result = load_workbook(target)
+    chart = result["数据分析表"]._charts[4]
+    assert len(chart.series) == 1
+    assert chart.series[0].val.numRef.f.endswith("$B$34:$B$57")
+    assert (chart.anchor._from, chart.anchor.to) == (anchor._from, anchor.to)
+    assert source.read_bytes() == source_bytes
+    result.close()
