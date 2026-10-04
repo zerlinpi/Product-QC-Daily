@@ -11,7 +11,7 @@ from app.ui.widgets.stat_card import stat_card
 
 class DashboardPage(Page):
     def __init__(self, ctx, window):
-        super().__init__(ctx, window, "质量工作台", "从每天的检验中，及时发现质量变化")
+        super().__init__(ctx, window, "质量总览", "查看今日与本月检验情况，及时发现质量变化")
         toolbar = QHBoxLayout()
         toolbar.addWidget(label(date.today().strftime("%Y 年 %m 月 %d 日"), "muted"))
         toolbar.addStretch()
@@ -24,7 +24,7 @@ class DashboardPage(Page):
         self.refreshed = label("", "muted")
         toolbar.addWidget(self.refreshed)
         toolbar.addWidget(button("刷新", self.refresh))
-        toolbar.addWidget(button("+ 新建检验", lambda: self.window.navigate(1), primary=True))
+        toolbar.addWidget(button("新建检验", self.window.new_inspection, primary=True))
         self.layout.addLayout(toolbar)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -55,7 +55,7 @@ class DashboardPage(Page):
                 "近 7 天 · 不良率",
                 "近 30 天 · 不良率",
                 "组别质量对比 · 本月不良率",
-                "Top 10 不良项目 · 本月出现批次",
+                "前十项不良 · 本月出现批次",
                 "合格 / 返工 · 本月批次",
                 "每日检验量 · 近 30 天",
             ]

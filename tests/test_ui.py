@@ -97,8 +97,6 @@ def test_keyboard_save_and_new(ctx, qtbot):
 
 
 def test_confirmed_discard_restores_saved_record(ctx, payload, qtbot, monkeypatch):
-    from PySide6.QtWidgets import QMessageBox
-
     from app.ui.main_window import MainWindow
 
     saved = ctx.inspections.save(payload)
@@ -107,7 +105,7 @@ def test_confirmed_discard_restores_saved_record(ctx, payload, qtbot, monkeypatc
     window.open_record(saved["id"])
     entry = window.pages[1]
     entry.work_order.setText("ABANDONED")
-    monkeypatch.setattr(QMessageBox, "question", lambda *a, **kw: QMessageBox.StandardButton.Yes)
+    monkeypatch.setattr("app.ui.pages.inspection_page.confirm", lambda *a, **kw: True)
     window.navigate(2)
     window.navigate(1)
     assert entry.work_order.text() == "MO-001"
@@ -220,7 +218,7 @@ def test_report_import_summary_uses_chinese_status_labels(ctx, qtbot):
     )
     page.import_done(2, preview)
     summary = page.import_status.text()
-    for status in ("正常", "重复", "ID冲突", "异常", "无法识别"):
+    for status in ("正常", "重复", "编号冲突", "异常", "无法识别"):
         assert status in summary
     for internal in ("valid", "duplicate", "conflict", "invalid", "unrecognized"):
         assert internal not in summary

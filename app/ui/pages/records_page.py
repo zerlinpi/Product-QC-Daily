@@ -13,12 +13,12 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QLineEdit,
     QMenu,
-    QMessageBox,
+    QWidget,
 )
 
 from app.core.labels import source_label
 from app.core.schemas import RecordFilter
-from app.ui.common import Page, button, card, guarded, label, populate, table
+from app.ui.common import Page, button, card, confirm, guarded, label, populate, table
 
 
 class RecordsPage(Page):
@@ -37,15 +37,18 @@ class RecordsPage(Page):
 
     def __init__(self, ctx, window):
         super().__init__(
-            ctx, window, "检验记录", "查找、编辑与导出历史检验记录 · 删除的记录可在回收站恢复"
+            ctx,
+            window,
+            "检验记录",
+            "设置条件后点击“查询”；可编辑记录、导出列表，或在回收站恢复记录",
         )
         self.page, self.sort, self.descending, self.rows = 1, "inspection_date", True, []
+        self.applied_filters = RecordFilter()
         filters, box = card()
-        box.addWidget(label("筛选条件", "section"))
         grid = QGridLayout()
-        grid.setHorizontalSpacing(12)
-        grid.setVerticalSpacing(6)
-        self.range_enabled = QCheckBox("启用日期范围")
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(10)
+        self.range_enabled = QCheckBox("按日期筛选")
         self.start, self.end = (
             QDateEdit(QDate.currentDate().addMonths(-1)),
             QDateEdit(QDate.currentDate()),
@@ -70,49 +73,53 @@ class RecordsPage(Page):
             widget.setPlaceholderText(placeholder)
             widget.returnPressed.connect(self.search_records)
         self.trash = QCheckBox("查看回收站")
-        first_row = [
-            ("日期筛选", self.range_enabled),
-            ("开始日期", self.start),
-            ("结束日期", self.end),
-            ("组别", self.team),
-            ("判定", self.judgment),
-        ]
-        second_row = [
-            ("综合搜索", self.search),
-            ("加工单号", self.work_order),
-            ("检验员", self.inspector),
-            ("数据范围", self.source),
-            ("不良情况", self.has_defects),
-        ]
-        for col, (title, widget) in enumerate(first_row):
-            grid.addWidget(label(title, "fieldLabel"), 0, col)
-            grid.addWidget(widget, 1, col)
-        for col, (title, widget) in enumerate(second_row):
-            grid.addWidget(label(title, "fieldLabel"), 2, col)
-            grid.addWidget(widget, 3, col)
-        grid.addWidget(label("不良项目", "fieldLabel"), 4, 0)
-        grid.addWidget(self.defect, 5, 0, 1, 2)
-        grid.addWidget(label("记录状态", "fieldLabel"), 4, 2)
-        grid.addWidget(self.trash, 5, 2)
-        box.addLayout(grid)
+
+        def field(title, widget, accessible_name=None):
+            container = QWidget()
+            row = QHBoxLayout(container)
+            row.setContentsMargins(0, 0, 0, 0)
+            row.setSpacing(6)
+            caption = label(title, "fieldLabel")
+            caption.setBuddy(widget)
+            row.addWidget(caption)
+            row.addWidget(widget, 1)
+            widget.setAccessibleName(accessible_name or title)
+            return container
+
+        grid.addWidget(self.range_enabled, 0, 0)
+        for col, title, widget, name in [
+            (1, "从", self.start, "开始日期"),
+            (2, "至", self.end, "结束日期"),
+            (3, "组别", self.team, "组别"),
+            (4, "数据", self.source, "数据范围"),
+        ]:
+            grid.addWidget(field(title, widget, name), 0, col)
+        grid.addWidget(field("搜索", self.search), 1, 0, 1, 2)
+        grid.addWidget(field("工单", self.work_order, "加工单号"), 1, 2)
+        grid.addWidget(field("检验员", self.inspector), 1, 3)
+        grid.addWidget(field("判定", self.judgment), 1, 4)
+        grid.addWidget(field("不良项目", self.defect), 2, 0, 1, 2)
+        grid.addWidget(self.has_defects, 2, 2)
+        self.has_defects.setAccessibleName("不良情况")
+        grid.addWidget(self.trash, 2, 3)
         filter_actions = QHBoxLayout()
-        filter_actions.addStretch()
         filter_actions.addWidget(button("重置筛选", self.reset_filters))
         filter_actions.addWidget(button("查询", self.search_records, primary=True))
-        box.addLayout(filter_actions)
+        grid.addLayout(filter_actions, 2, 4)
+        box.addLayout(grid)
         self.layout.addWidget(filters)
         actions = QHBoxLayout()
         self.action_buttons = {}
         for key, text, callback in [
-            ("edit", "查看 / 编辑", self.edit),
-            ("copy", "复制选中", self.copy),
-            ("team", "批量改组别", self.change_team),
-            ("inspector", "批量改检验员", self.change_inspector),
-            ("delete", "删除", self.delete),
-            ("restore", "恢复", self.restore),
-            ("export", "导出", self.export),
+            ("edit", "编辑记录", self.edit),
+            ("copy", "复制记录", self.copy),
+            ("team", "修改组别", self.change_team),
+            ("inspector", "修改检验员", self.change_inspector),
+            ("delete", "移入回收站", self.delete),
+            ("restore", "恢复记录", self.restore),
+            ("export", "导出列表", self.export),
         ]:
-            control = button(text, callback, danger=key == "delete")
+            control = button(text, callback, primary=key == "export", danger=key == "delete")
             self.action_buttons[key] = control
             actions.addWidget(control)
         actions.addStretch()
@@ -121,7 +128,7 @@ class RecordsPage(Page):
         self.layout.addLayout(actions)
         self.table = table(
             [
-                "填写 ID",
+                "记录编号",
                 "日期 / 时间",
                 "组别",
                 "加工单号",
@@ -141,6 +148,7 @@ class RecordsPage(Page):
         self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.context_menu)
         self.table.itemSelectionChanged.connect(self.update_selection_state)
+        self.trash.toggled.connect(self.search_records)
         self.layout.addWidget(self.table, 1)
         footer = QHBoxLayout()
         self.count = label("暂无记录", "muted")
@@ -174,7 +182,7 @@ class RecordsPage(Page):
     def update_selection_state(self):
         ids = self.selected_ids() if hasattr(self, "table") else []
         count = len(ids)
-        trash = self.trash.isChecked()
+        trash = self.applied_filters.deleted
         self.selection_count.setText(f"已选择 {count} 条" if count else "未选择记录")
         self.action_buttons["edit"].setEnabled(count == 1 and not trash)
         self.action_buttons["copy"].setEnabled(count == 1 and not trash)
@@ -182,7 +190,18 @@ class RecordsPage(Page):
         self.action_buttons["inspector"].setEnabled(count > 0 and not trash)
         self.action_buttons["delete"].setEnabled(count > 0 and not trash)
         self.action_buttons["restore"].setEnabled(count > 0 and trash)
-        self.action_buttons["export"].setEnabled(True)
+        self.action_buttons["restore"].setVisible(trash)
+        for key in ("edit", "copy", "team", "inspector", "delete"):
+            self.action_buttons[key].setVisible(not trash)
+        self.action_buttons["export"].setEnabled(bool(self.rows))
+        self.action_buttons["export"].setText(f"导出已选 {count} 条" if count else "导出列表")
+        self.action_buttons["export"].setToolTip(
+            f"仅导出已选择的 {count} 条记录"
+            if count
+            else "导出当前查询结果的全部记录，包含其他分页"
+        )
+        for key in ("team", "inspector"):
+            self.action_buttons[key].setToolTip("可选中多条记录后一起修改")
 
     def filters(self):
         return RecordFilter(
@@ -219,10 +238,14 @@ class RecordsPage(Page):
 
     @guarded
     def load_rows(self):
-        self.rows, total = self.ctx.inspections.query(self.filters())
-        if not self.rows and total and self.page > 1:
+        filters = self.filters()
+        rows, total = self.ctx.inspections.query(filters)
+        if not rows and total and self.page > 1:
             self.page = max(1, (total + 49) // 50)
-            self.rows, total = self.ctx.inspections.query(self.filters())
+            filters = self.filters()
+            rows, total = self.ctx.inspections.query(filters)
+        self.table.clearSelection()
+        self.rows, self.applied_filters = rows, filters
         populate(
             self.table,
             [
@@ -241,6 +264,7 @@ class RecordsPage(Page):
         self.count.setText(
             f"共 {total:,} 条 · 第 {self.page} / {pages} 页 · 每页 50 条"
             + (" · 回收站" if self.trash.isChecked() else "")
+            + (" · 可调整条件或重置筛选" if not total else "")
         )
         self.total = total
         self.previous_button.setEnabled(self.page > 1)
@@ -252,7 +276,7 @@ class RecordsPage(Page):
             self.rows[index.row()]["id"] for index in self.table.selectionModel().selectedRows()
         ]
 
-    def search_records(self):
+    def search_records(self, *_):
         self.page = 1
         self.load_rows()
 
@@ -271,15 +295,15 @@ class RecordsPage(Page):
     @guarded
     def edit(self):
         ids = self.selected_ids()
-        if len(ids) == 1 and not self.trash.isChecked():
+        if len(ids) == 1 and not self.applied_filters.deleted:
             self.window.open_record(ids[0])
         else:
-            self.window.notify("请选择一条正式列表记录；回收站记录请先恢复")
+            self.window.notify("请选择一条记录再编辑；回收站中的记录请先恢复")
 
     @guarded
     def copy(self):
         ids = self.selected_ids()
-        if len(ids) == 1:
+        if len(ids) == 1 and not self.applied_filters.deleted:
             self.window.open_record(ids[0], copy_record=True)
 
     @guarded
@@ -287,14 +311,14 @@ class RecordsPage(Page):
         ids = self.selected_ids()
         if (
             ids
-            and QMessageBox.question(
+            and not self.applied_filters.deleted
+            and confirm(
                 self,
-                "删除记录",
+                "移入回收站",
                 f"将 {len(ids)} 条记录移至回收站？可随时恢复。",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
+                action="移入回收站",
+                danger=True,
             )
-            == QMessageBox.StandardButton.Yes
         ):
             self.ctx.inspections.delete(ids)
             self.load_rows()
@@ -302,7 +326,7 @@ class RecordsPage(Page):
     @guarded
     def restore(self):
         ids = self.selected_ids()
-        if ids and self.trash.isChecked():
+        if ids and self.applied_filters.deleted:
             self.ctx.inspections.restore(ids)
             self.load_rows()
 
@@ -334,15 +358,15 @@ class RecordsPage(Page):
 
     @guarded
     def export(self):
-        filters = self.filters()
+        filters = self.applied_filters.model_copy()
         ids = self.selected_ids()
         if ids:
             filters = filters.model_copy(update={"ids": ids})
         path, selected_format = QFileDialog.getSaveFileName(
             self,
-            "导出选中或全部筛选记录",
+            f"导出已选 {len(ids)} 条记录" if ids else f"导出列表中的全部 {self.total} 条记录",
             str(self.ctx.paths.exports / f"检验记录_{date.today()}.xlsx"),
-            "原表格式 (*.xlsx);;标准报表 (*.xlsx)",
+            "原表格式 (*.xlsx);;明细报表 (*.xlsx)",
         )
         if path:
             self.window.run_job(
@@ -351,19 +375,22 @@ class RecordsPage(Page):
                     self.ctx.excel.export,
                     Path(path),
                     filters,
-                    legacy=not selected_format.startswith("标准报表"),
+                    legacy=not selected_format.startswith("明细报表"),
                 ),
                 lambda result: self.window.notify(f"已导出：{result}"),
             )
 
     def context_menu(self, position):
         menu = QMenu(self)
-        for title, callback in [
-            ("查看 / 编辑", self.edit),
-            ("复制", self.copy),
-            ("删除", self.delete),
-            ("恢复", self.restore),
-            ("导出选中", self.export),
+        for key, callback in [
+            ("edit", self.edit),
+            ("copy", self.copy),
+            ("delete", self.delete),
+            ("restore", self.restore),
+            ("export", self.export),
         ]:
-            menu.addAction(title, callback)
+            control = self.action_buttons[key]
+            if not control.isHidden():
+                action = menu.addAction(control.text(), callback)
+                action.setEnabled(control.isEnabled())
         menu.exec(self.table.viewport().mapToGlobal(position))

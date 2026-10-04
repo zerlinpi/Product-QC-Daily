@@ -22,7 +22,7 @@ class DemoDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(
             label(
-                "模拟数据始终标记为 demo，与正式统计分开。比率是生成目标，实际样本有随机波动。",
+                "生成的记录仅用于演示，与正式数据分开。下方比例为参考目标，实际生成结果会略有差异。",
                 "muted",
                 True,
             )
@@ -59,6 +59,7 @@ class DemoDialog(QDialog):
         form.addRow("判定", self.pass_rate)
         layout.addLayout(form)
         group_grid = QGridLayout()
+        layout.addWidget(label("参与生成的组别（可多选）", "section"))
         self.teams = []
         for i, team in enumerate(ctx.settings.teams(True)):
             checkbox = QCheckBox(team["name"])
@@ -66,8 +67,8 @@ class DemoDialog(QDialog):
             self.teams.append(checkbox)
             group_grid.addWidget(checkbox, i // 8, i % 8)
         layout.addLayout(group_grid)
-        layout.addWidget(label("不良项目相对权重（0 表示不生成该项）", "section"))
-        self.table = table(["不良项目", "权重"])
+        layout.addWidget(label("出现频率：数值越大越常出现，0 表示不生成", "muted", True))
+        self.table = table(["不良项目", "相对频率"])
         self.table.setColumnWidth(0, 400)
         self.items = []
         defects = ctx.defects.list(enabled_only=True)
@@ -83,6 +84,7 @@ class DemoDialog(QDialog):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("生成演示数据")
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)

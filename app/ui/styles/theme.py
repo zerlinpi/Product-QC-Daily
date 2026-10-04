@@ -35,7 +35,7 @@ def apply_theme(mode="light"):
         QLabel#title {{ font-size: 25px; font-weight: 700; letter-spacing: 1px; }}
         QLabel#subtitle, QLabel#muted {{ color: {muted}; }}
         QLabel#section {{ font-size: 15px; font-weight: 600; }}
-        QLabel#fieldLabel {{ color: {muted}; font-size: 11px; font-weight: 600; }}
+        QLabel#fieldLabel {{ color: {muted}; font-size: 12px; font-weight: 600; }}
         QLabel#metric {{ font-size: 28px; font-weight: 700; }}
         QFrame#card, QGroupBox {{ background: {card}; border: 1px solid {border}; border-radius: 12px; }}
         QGroupBox {{ margin-top: 16px; padding: 18px 12px 12px; font-weight: 600; }}
@@ -57,13 +57,16 @@ def apply_theme(mode="light"):
         QPushButton#danger {{ color: #d3544c; }}
         QPushButton#danger:hover {{ background: {danger_bg}; border-color: {danger_border}; }}
         QPushButton:disabled {{ color: {muted}; border-color: {border}; }}
+        QPushButton#primary:disabled {{ background: {selected}; color: {muted}; border-color: {border}; }}
         QLineEdit, QSpinBox, QDoubleSpinBox, QDateEdit, QTimeEdit, QComboBox, QTextEdit {{ background: {field}; border: 1px solid {border}; border-radius: 6px; padding: 7px 9px; selection-background-color: #365cdd; min-height: 20px; }}
         QLineEdit:focus, QSpinBox:focus, QDateEdit:focus, QTimeEdit:focus, QComboBox:focus, QTextEdit:focus {{ border-color: #5e7dea; }}
         QLineEdit:disabled, QSpinBox:disabled, QDateEdit:disabled, QTimeEdit:disabled, QComboBox:disabled, QTextEdit:disabled {{ background: {bg}; color: {muted}; }}
-        QComboBox QAbstractItemView {{ background: {card}; selection-background-color: {selected}; }}
+        QComboBox QAbstractItemView {{ background: {card}; selection-background-color: {selected}; selection-color: {text}; }}
         QTableWidget {{ background: {card}; alternate-background-color: {bg}; gridline-color: {border}; border: 1px solid {border}; border-radius: 8px; selection-background-color: #365cdd; selection-color: #ffffff; }}
         QTableWidget::item {{ padding: 7px; border: none; }}
         QTableWidget::item:hover {{ background: {selected}; }}
+        QTableWidget::item:selected {{ background: #365cdd; color: #ffffff; }}
+        QTableWidget::item:selected:hover {{ background: #284bbd; color: #ffffff; }}
         QHeaderView::section {{ background: {bg}; color: {muted}; border: none; border-bottom: 1px solid {border}; padding: 9px; font-weight: 600; }}
         QScrollArea {{ border: none; background: transparent; }}
         QScrollBar:vertical {{ background: {bg}; width: 9px; margin: 0; }}

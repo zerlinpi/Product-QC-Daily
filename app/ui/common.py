@@ -1,4 +1,5 @@
 import logging
+import re
 from functools import wraps
 
 from pydantic import ValidationError
@@ -29,14 +30,32 @@ def friendly_error(parent, error):
         if isinstance(widget, QWidget):
             widget.setFocus()
     elif isinstance(error, ValueError):
-        message = str(error)
+        message = (
+            str(error)
+            if re.search(r"[\u4e00-\u9fff]", str(error))
+            else "输入内容或文件格式不符合要求，请检查后重试。详细原因已写入日志。"
+        )
     elif isinstance(error, PermissionError):
-        message = "文件可能已被 Excel 打开，或目录没有写入权限。请关闭文件后重试。"
+        message = "文件可能被其他程序占用，或目录没有写入权限。请关闭文件后重试。"
     elif isinstance(error, OSError):
         message = "无法读写文件。请检查路径、磁盘剩余空间和文件权限。"
     else:
         message = "操作未完成。请检查文件和数据库是否被占用；详细原因已写入日志。"
     QMessageBox.warning(parent, "操作未完成", message[:1500])
+
+
+def confirm(parent, title, message, action="确认", cancel="取消", danger=False):
+    dialog = QMessageBox(parent)
+    dialog.setWindowTitle(title)
+    dialog.setText(message)
+    dialog.setIcon(QMessageBox.Icon.Warning if danger else QMessageBox.Icon.Question)
+    accept = dialog.addButton(action, QMessageBox.ButtonRole.AcceptRole)
+    accept.setObjectName("danger" if danger else "primary")
+    reject = dialog.addButton(cancel, QMessageBox.ButtonRole.RejectRole)
+    dialog.setDefaultButton(reject)
+    dialog.setEscapeButton(reject)
+    dialog.exec()
+    return dialog.clickedButton() == accept
 
 
 def guarded(function):
@@ -99,6 +118,7 @@ def populate(widget, rows):
     for row, values in enumerate(rows):
         for col, value in enumerate(values):
             item = QTableWidgetItem(str(value if value is not None else "—"))
+            item.setToolTip(item.text())
             if value in ("合格", "返工", "演示数据"):
                 item.setForeground(QColor("#12805c" if value == "合格" else "#c96c16"))
                 item.setBackground(QColor("#e7f6ee" if value == "合格" else "#fff0dd"))

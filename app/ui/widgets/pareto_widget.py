@@ -5,11 +5,13 @@ from app.ui.widgets.chart_widget import ChartWidget
 
 class ParetoWidget(ChartWidget):
     def __init__(self):
-        super().__init__("Pareto 柏拉图 · 柱形为数量，橙线为累计占比")
+        super().__init__("不良分布与累计占比 · 柱形看数量，橙线看占比")
         item = self.plot.getPlotItem()
         item.showAxis("right")
         item.setLabel("right", "累计占比 %")
         self.percentage_view = pg.ViewBox()
+        self.percentage_view.setMenuEnabled(False)
+        self.percentage_view.setMouseEnabled(x=False, y=False)
         item.scene().addItem(self.percentage_view)
         item.getAxis("right").linkToView(self.percentage_view)
         self.percentage_view.setXLink(item.vb)

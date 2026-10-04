@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QLockFile, QTimer
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QDialogButtonBox, QFileDialog, QMessageBox
 
 from app import __version__
 from app.core.context import AppContext
@@ -17,6 +17,7 @@ from app.core.logger import setup_logging
 from app.core.paths import AppPaths, resource_path
 from app.core.schemas import InspectionInput, RecordFilter
 from app.ui.common import friendly_error
+from app.ui.localization import configure_chinese_ui
 from app.ui.main_window import MainWindow
 
 
@@ -38,6 +39,15 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     reopened = AppContext(ctx.paths.root)
     assert reopened.inspections.get(record["id"])["work_order"] == "PACKAGED-SMOKE"
     window = MainWindow(reopened)
+    controls = QDialogButtonBox(
+        QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, window
+    )
+    assert "保存" in controls.button(QDialogButtonBox.StandardButton.Save).text()
+    assert "取消" in controls.button(QDialogButtonBox.StandardButton.Cancel).text()
+    picker = QFileDialog(window)
+    assert "位置" in picker.labelText(QFileDialog.DialogLabel.LookIn)
+    controls.deleteLater()
+    picker.deleteLater()
     window.show()
     for index in range(7):
         window.navigate(index)
@@ -58,6 +68,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "database_persistence": True,
         "template_export": True,
         "backup_restore": True,
+        "chinese_controls": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -73,6 +84,7 @@ def main() -> int:
     if args.self_test:
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     app = QApplication(sys.argv[:1])
+    configure_chinese_ui(app)
     app.setApplicationName("Product-QC-Daily")
     app.setApplicationVersion(__version__)
     app.setOrganizationName("Product-QC-Daily")
