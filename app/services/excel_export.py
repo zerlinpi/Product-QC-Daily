@@ -118,11 +118,13 @@ def recalculate_com(path: Path) -> bool:
     if os.name != "nt":
         return False
     excel = workbook = None
+    initialized = False
     try:
         import pythoncom
         import win32com.client
 
         pythoncom.CoInitialize()
+        initialized = True
         excel = win32com.client.DispatchEx("Excel.Application")
         excel.Visible = False
         excel.DisplayAlerts = False
@@ -135,16 +137,23 @@ def recalculate_com(path: Path) -> bool:
         logging.getLogger("qc.excel").info("Excel COM 不可用，保留 openpyxl 导出", exc_info=True)
         return False
     finally:
+        # A crashed Excel process can also fail during cleanup. Keep the
+        # already-generated workbook and still release the remaining resources.
         if workbook is not None:
-            workbook.Close(False)
+            try:
+                workbook.Close(False)
+            except Exception:
+                logging.getLogger("qc.excel").warning("关闭 Excel 工作簿失败", exc_info=True)
         if excel is not None:
-            excel.Quit()
-        try:
-            import pythoncom
-
-            pythoncom.CoUninitialize()
-        except ImportError:
-            pass
+            try:
+                excel.Quit()
+            except Exception:
+                logging.getLogger("qc.excel").warning("退出 Excel 失败", exc_info=True)
+        if initialized:
+            try:
+                pythoncom.CoUninitialize()
+            except Exception:
+                logging.getLogger("qc.excel").warning("释放 Excel 组件失败", exc_info=True)
 
 
 def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> Path:

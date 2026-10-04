@@ -178,9 +178,21 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentIndex(index)
         for i, item in enumerate(self.nav_buttons):
             item.setChecked(i == index)
-        self.pages[index].refresh()
         if index == 1:
-            self.pages[1].defects.reload()
+            entry = self.pages[1]
+            if entry.record_id and not entry.dirty:
+                try:
+                    record = self.ctx.inspections.get(entry.record_id)
+                except ValueError:
+                    record = None
+                if record is None or record["deleted_at"]:
+                    entry.reset(preserve=False)
+                else:
+                    entry.load_record(record)
+            entry.refresh()
+            entry.defects.reload()
+        else:
+            self.pages[index].refresh()
 
     @guarded
     def new_inspection(self):

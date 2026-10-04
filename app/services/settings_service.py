@@ -62,5 +62,12 @@ class SettingsService:
             row = session.get(Team, team_id) if team_id else Team()
             if row is None:
                 raise ValueError("组别不存在")
+            if team_id and row.name != name:
+                setting = session.get(Setting, "default_team")
+                default_team = json.loads(setting.value) if setting else DEFAULTS["default_team"]
+                if default_team == row.name:
+                    session.merge(
+                        Setting(key="default_team", value=json.dumps(name, ensure_ascii=False))
+                    )
             row.name, row.enabled, row.sort_order = name, enabled, sort_order
             session.add(row)

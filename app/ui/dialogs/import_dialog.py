@@ -53,10 +53,8 @@ class ImportDialog(QDialog):
         layout.addLayout(pagination)
         actions = QHBoxLayout()
         report_button = button("导出异常报告", self.report)
-        report_button.setEnabled(
-            any(key != "valid" and count for key, count in preview.counts.items())
-        )
-        report_button.setToolTip("将重复、冲突和异常记录另存为表格，便于核对")
+        report_button.setEnabled(any(row.status != "valid" or row.message for row in preview.rows))
+        report_button.setToolTip("将重复、冲突、异常和签名警告另存为表格，便于核对")
         actions.addWidget(report_button)
         actions.addStretch()
         actions.addWidget(button("取消", self.reject))
@@ -98,10 +96,13 @@ class ImportDialog(QDialog):
         self.next_button.setEnabled(self.page < pages)
 
     def report(self):
+        directory = Path(
+            self.ctx.settings.get("export_directory") or self.ctx.paths.exports
+        ).expanduser()
         path, _ = QFileDialog.getSaveFileName(
             self,
             "导出异常报告",
-            str(self.ctx.paths.exports / "导入异常报告.xlsx"),
+            str(directory / "导入异常报告.xlsx"),
             "电子表格 (*.xlsx)",
         )
         if path:

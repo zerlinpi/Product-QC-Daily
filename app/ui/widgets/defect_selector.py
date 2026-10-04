@@ -53,9 +53,11 @@ class DefectSelector(QWidget):
         previous_signal_state = self.blockSignals(True)
         values = self.values() if self.entries else []
         items = self.ctx.defects.list()
+        category = self.category.currentText()
         self.category.blockSignals(True)
         self.category.clear()
         self.category.addItems(["全部分类"] + sorted({d["category"] for d in items}))
+        self.category.setCurrentIndex(max(0, self.category.findText(category)))
         self.category.blockSignals(False)
         self.entries = []
         self.table.setRowCount(len(items))
@@ -77,6 +79,7 @@ class DefectSelector(QWidget):
             check.toggled.connect(self.update_total)
             qty.valueChanged.connect(self.update_total)
         self.set_values(values)
+        self.filter_rows()
         self.blockSignals(previous_signal_state)
 
     def values(self):

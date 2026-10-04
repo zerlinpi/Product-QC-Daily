@@ -198,8 +198,11 @@ class InspectionPage(Page):
         was_dirty = self.dirty
         previous_note = self.saved_note.text()
         previous = self.team.currentText()
+        teams = self.ctx.settings.teams()
         self.team.clear()
-        self.team.addItems([t["name"] for t in self.ctx.settings.teams(True)])
+        self.team.addItems([t["name"] for t in teams if t["enabled"]])
+        if previous not in {t["name"] for t in teams}:
+            previous = ""
         if previous and self.team.findText(previous) < 0:
             self.team.addItem(previous)
         self.team.setCurrentText(previous or self.ctx.settings.get("default_team"))
