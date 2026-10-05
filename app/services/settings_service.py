@@ -59,6 +59,9 @@ class SettingsService:
         if not name or len(name) > 80:
             raise ValueError("请输入有效组别名称")
         with self.db.session() as session:
+            duplicate_id = session.scalar(select(Team.id).where(Team.name == name))
+            if duplicate_id is not None and duplicate_id != team_id:
+                raise ValueError("组别名称已存在，请使用其他名称")
             row = session.get(Team, team_id) if team_id else Team()
             if row is None:
                 raise ValueError("组别不存在")
