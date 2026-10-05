@@ -150,15 +150,17 @@ class InspectionService:
             "defect_quantity",
             "created_at",
             "inspection_no",
+            "source",
         }
         column = getattr(R, filters.sort if filters.sort in allowed else "inspection_date")
-        order = column.desc() if filters.descending else column.asc()
+        columns = [column, R.inspection_time] if column is R.inspection_date else [column]
+        order = [c.desc() if filters.descending else c.asc() for c in columns]
         with self.db.session() as session:
             total = session.scalar(select(func.count()).select_from(R).where(*conditions(filters)))
             rows = session.scalars(
                 select(R)
                 .where(*conditions(filters))
-                .order_by(order, R.id.desc())
+                .order_by(*order, R.id.desc())
                 .offset((filters.page - 1) * filters.page_size)
                 .limit(filters.page_size)
             )

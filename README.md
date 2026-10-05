@@ -141,4 +141,4 @@ docs/              架构、原表分析、截图、发布说明
 - **模拟不良率不等于输入值**：参数是近似生成目标，随机样本尤其小样本不会严格匹配。模拟数据不用于正式检验标准。
 - **P2 范围**：首版未提供多用户权限、自动更新服务器、正式抽样标准、触摸手写、反馈图片附件和 PDF/打印。这些可选扩展不影响本地录入与 Excel 工作流。
 
-版本历史见 [CHANGELOG.md](CHANGELOG.md)，测试与审查证据见 [验收记录](docs/verification.md)。
+版本历史见 [CHANGELOG.md](CHANGELOG.md)，测试与审查证据见 [验收记录](docs/verification.md)，最新逐项检查见 [功能检查记录](docs/function-audit.md)。

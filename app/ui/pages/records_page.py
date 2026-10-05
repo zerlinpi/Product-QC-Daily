@@ -362,10 +362,13 @@ class RecordsPage(Page):
         ids = self.selected_ids()
         if ids:
             filters = filters.model_copy(update={"ids": ids})
+        directory = Path(
+            self.ctx.settings.get("export_directory") or self.ctx.paths.exports
+        ).expanduser()
         path, selected_format = QFileDialog.getSaveFileName(
             self,
             f"导出已选 {len(ids)} 条记录" if ids else f"导出列表中的全部 {self.total} 条记录",
-            str(self.ctx.paths.exports / f"检验记录_{date.today()}.xlsx"),
+            str(directory / f"检验记录_{date.today()}.xlsx"),
             "原表格式 (*.xlsx);;明细报表 (*.xlsx)",
         )
         if path:
