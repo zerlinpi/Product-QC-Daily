@@ -24,8 +24,8 @@ class DemoDialog(QDialog):
         self.setMinimumSize(620, 560)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 16, 18, 16)
-        layout.setSpacing(12)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(8)
         layout.addWidget(
             label(
                 "演示记录与正式数据完全分开。默认生成当前完整年度；年度或跨月范围生成后会打开对应日期的质量分析，并可在报表中心选择“演示数据”导出。",
@@ -36,7 +36,7 @@ class DemoDialog(QDialog):
 
         range_group = QGroupBox("生成范围")
         range_form = QFormLayout(range_group)
-        range_form.setHorizontalSpacing(18)
+        range_form.setHorizontalSpacing(12)
         range_form.setVerticalSpacing(8)
         self.count = QSpinBox()
         self.count.setRange(1, 100_000)
@@ -74,7 +74,7 @@ class DemoDialog(QDialog):
 
         team_group = QGroupBox("参与组别")
         team_grid = QGridLayout(team_group)
-        team_grid.setHorizontalSpacing(18)
+        team_grid.setHorizontalSpacing(12)
         team_grid.setVerticalSpacing(6)
         self.teams = []
         for i, team in enumerate(ctx.settings.teams(True)):
