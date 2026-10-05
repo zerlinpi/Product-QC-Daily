@@ -363,8 +363,6 @@ def test_report_import_preview_and_record_export_use_real_background_jobs(
     from datetime import datetime
 
     from openpyxl import Workbook, load_workbook
-    from PySide6.QtCore import QTimer
-    from PySide6.QtWidgets import QApplication
 
     from app.ui.dialogs.import_dialog import ImportDialog
 
@@ -390,46 +388,33 @@ def test_report_import_preview_and_record_export_use_real_background_jobs(
     monkeypatch.setattr(
         "app.ui.main_window.friendly_error", lambda parent, error: errors.append(str(error))
     )
-    timer = QTimer(window)
 
-    def accept_preview():
-        dialog = QApplication.activeModalWidget()
-        if isinstance(dialog, ImportDialog):
-            preview_counts.append(dialog.preview.counts)
-            next(
-                b for b in dialog.findChildren(QPushButton) if b.text().startswith("导入 1 条")
-            ).click()
+    def accept_preview(dialog):
+        preview_counts.append(dialog.preview.counts)
+        return 1
 
-    timer.timeout.connect(accept_preview)
-    timer.start(20)
-    try:
-        report.import_file()
-        qtbot.waitUntil(
-            lambda: report.import_status.text().startswith("已导入") or bool(errors), timeout=10000
-        )
-        assert not errors
-        assert preview_counts[0]["valid"] == 1 and preview_counts[0]["invalid"] == 1
-        assert ctx.inspections.query()[1] == 1
-        window.navigate(2)
-        records = window.pages[2]
-        records.table.selectRow(0)
-        exported = tmp_path / "workflow-out.xlsx"
-        monkeypatch.setattr(
-            file_dialogs, "save_excel", lambda *args: (str(exported), "明细报表 (*.xlsx)")
-        )
-        records.export()
-        qtbot.waitUntil(lambda: window._job is None, timeout=10000)
-        assert not errors and exported.is_file()
-        result = load_workbook(exported)
-        assert result["检验记录"]["D2"].value == "FLOW-ORDER"
-        assert result["不良明细"].max_row == 3
-        result.close()
-    finally:
-        timer.stop()
-        dialog = QApplication.activeModalWidget()
-        if isinstance(dialog, ImportDialog):
-            dialog.reject()
-        qtbot.waitUntil(lambda: window._job is None, timeout=10000)
+    monkeypatch.setattr(ImportDialog, "exec", accept_preview)
+    report.import_file()
+    qtbot.waitUntil(
+        lambda: report.import_status.text().startswith("已导入") or bool(errors), timeout=10000
+    )
+    assert not errors
+    assert preview_counts[0]["valid"] == 1 and preview_counts[0]["invalid"] == 1
+    assert ctx.inspections.query()[1] == 1
+    window.navigate(2)
+    records = window.pages[2]
+    records.table.selectRow(0)
+    exported = tmp_path / "workflow-out.xlsx"
+    monkeypatch.setattr(
+        file_dialogs, "save_excel", lambda *args: (str(exported), "明细报表 (*.xlsx)")
+    )
+    records.export()
+    qtbot.waitUntil(lambda: window._job is None, timeout=10000)
+    assert not errors and exported.is_file()
+    result = load_workbook(exported)
+    assert result["检验记录"]["D2"].value == "FLOW-ORDER"
+    assert result["不良明细"].max_row == 3
+    result.close()
 
 
 def test_record_filters_combine_correctly_and_treat_wildcards_literally(ctx, payload):
