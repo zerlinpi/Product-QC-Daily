@@ -80,12 +80,12 @@ class ReportsPage(Page):
             )
         )
         export_actions = QHBoxLayout()
-        original = button("按原表导出", lambda: self.export(True), primary=True)
-        original.setToolTip("保留原始表格、公式和 6 张图表布局")
-        detailed = button("导出明细报表", lambda: self.export(False))
-        detailed.setToolTip("适合年度分析：月份筛选、统计摘要、月度统计和趋势图")
-        export_actions.addWidget(original)
-        export_actions.addWidget(detailed)
+        self.original_export = button("按原表导出", lambda: self.export(True), primary=True)
+        self.original_export.setToolTip("保留原始表格、公式和 6 张图表布局")
+        self.detailed_export = button("导出明细报表", lambda: self.export(False))
+        self.detailed_export.setToolTip("适合年度分析：月份筛选、统计摘要、月度统计和趋势图")
+        export_actions.addWidget(self.original_export)
+        export_actions.addWidget(self.detailed_export)
         export_actions.addStretch()
         layout.addLayout(export_actions)
         layout.addWidget(
@@ -96,6 +96,7 @@ class ReportsPage(Page):
             )
         )
         self.layout.addWidget(panel)
+        self.update_scope_text()
         self.layout.addStretch()
 
     def sync_preset_range(self):
@@ -120,9 +121,17 @@ class ReportsPage(Page):
         self.update_scope_text()
 
     def update_scope_text(self, *_):
-        self.export_scope.setText(
-            f"将导出：{self.start.date().toPython()} 至 {self.end.date().toPython()} · {self.source.currentText()}"
-        )
+        start = self.start.date().toPython()
+        end = self.end.date().toPython()
+        valid = start <= end
+        for name in ("original_export", "detailed_export"):
+            control = getattr(self, name, None)
+            if control is not None:
+                control.setEnabled(valid)
+        if valid:
+            self.export_scope.setText(f"将导出：{start} 至 {end} · {self.source.currentText()}")
+        else:
+            self.export_scope.setText("日期范围无效：开始日期不能晚于结束日期")
 
     def import_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "选择成品日检表", "", "电子表格 (*.xlsx)")
@@ -152,6 +161,9 @@ class ReportsPage(Page):
     @guarded
     def export(self, legacy):
         self.sync_preset_range()
+        if self.start.date() > self.end.date():
+            self.update_scope_text()
+            return
         filters = RecordFilter(
             start=self.start.date().toPython(),
             end=self.end.date().toPython(),

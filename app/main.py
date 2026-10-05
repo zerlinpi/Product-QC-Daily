@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 
 from openpyxl import load_workbook
-from PySide6.QtCore import QLockFile, QTimer
+from PySide6.QtCore import QDate, QLockFile, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -24,6 +24,7 @@ from app.core.context import AppContext
 from app.core.logger import setup_logging
 from app.core.paths import AppPaths, resource_path
 from app.core.schemas import InspectionInput, RecordFilter
+from app.services.excel_export import header_footer_text
 from app.ui.common import friendly_error
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
 from app.ui.localization import configure_chinese_ui
@@ -89,6 +90,19 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         window.navigate(index)
         app.processEvents()
         assert window.navigation.currentRow() == index
+
+    reports = window.pages[5]
+    reports.preset.setCurrentText("自定义")
+    reports.start.setDate(QDate(2026, 10, 2))
+    reports.end.setDate(QDate(2026, 10, 1))
+    assert not reports.original_export.isEnabled()
+    assert not reports.detailed_export.isEnabled()
+    assert reports.export_scope.text() == "日期范围无效：开始日期不能晚于结束日期"
+    reports.end.setDate(QDate(2026, 10, 2))
+    assert reports.original_export.isEnabled()
+    assert reports.detailed_export.isEnabled()
+    assert header_footer_text("A" * 63 + "&TRAILING", 64).endswith("&&")
+
     output = reopened.excel.export(
         ctx.paths.exports / "smoke.xlsx", RecordFilter(source="demo"), legacy=True, prefer_com=False
     )

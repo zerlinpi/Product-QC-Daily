@@ -57,8 +57,8 @@ def display_width(value) -> int:
 
 def header_footer_text(value, limit=72) -> str:
     """Keep user text safe inside Excel header/footer control syntax."""
-    text = " ".join(str(value or "").split()).replace("&", "&&")
-    return text[:limit]
+    text = " ".join(str(value or "").split())[:limit]
+    return text.replace("&", "&&")
 
 
 def apply_standard_report_identity(wb, settings: dict, filters, start, end) -> None:

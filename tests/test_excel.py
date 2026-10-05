@@ -528,3 +528,13 @@ def test_standard_export_print_identity_and_summary_hierarchy(ctx, payload, tmp_
         assert summary.cell(row, 2).fill.fgColor.rgb.endswith("F2F2F2")
         assert not summary.cell(row, 2).font.bold
     wb.close()
+
+
+
+def test_header_footer_truncation_never_splits_ampersand_escape():
+    from app.services.excel_export import header_footer_text
+
+    value = "A" * 63 + "&" + "TRAILING"
+    rendered = header_footer_text(value, 64)
+    assert rendered == "A" * 63 + "&&"
+    assert rendered.replace("&&", "&") == value[:64]
