@@ -101,21 +101,45 @@ class AnalyticsPage(Page):
         scroll.setWidget(content)
         self.layout.addWidget(scroll, 1)
 
+    def sync_preset_range(self):
+        preset = self.preset.currentText()
+        if preset == "自定义":
+            return
+        start, end = date_range(preset)
+        for widget, value in ((self.start, start), (self.end, end)):
+            previous = widget.blockSignals(True)
+            widget.setDate(QDate(value))
+            widget.blockSignals(previous)
+
     def set_range(self, preset):
         custom = preset == "自定义"
         self.start.setEnabled(custom)
         self.end.setEnabled(custom)
         if not custom:
-            start, end = date_range(preset)
-            self.start.setDate(QDate(start))
-            self.end.setDate(QDate(end))
+            self.sync_preset_range()
         self.mark_stale()
+
+    def show_demo_range(self, start, end):
+        previous = self.preset.blockSignals(True)
+        self.preset.setCurrentText("自定义")
+        self.preset.blockSignals(previous)
+        self.start.setEnabled(True)
+        self.end.setEnabled(True)
+        for widget, value in ((self.start, start), (self.end, end)):
+            blocked = widget.blockSignals(True)
+            widget.setDate(QDate(value))
+            widget.blockSignals(blocked)
+        blocked = self.source.blockSignals(True)
+        self.source.setCurrentIndex(1)
+        self.source.blockSignals(blocked)
+        self.refresh()
 
     def mark_stale(self, *_):
         self.scope.setText("筛选条件已更改 · 点击“开始分析”更新结果")
 
     @guarded
     def refresh(self, *_):
+        self.sync_preset_range()
         filters = RecordFilter(
             start=self.start.date().toPython(),
             end=self.end.date().toPython(),

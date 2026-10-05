@@ -298,7 +298,9 @@ class SettingsPage(Page):
             self.window.run_job(
                 "生成演示数据",
                 lambda: self.ctx.demo.generate(**options),
-                self.window.show_demo_data,
+                lambda count, start=options["start"], end=options["end"]: self.window.show_demo_data(
+                    count, start, end
+                ),
             )
 
     def clear_demo(self):

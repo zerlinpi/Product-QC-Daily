@@ -69,3 +69,31 @@ def test_demo_dialog_uses_desktop_sections_and_clear_primary_action(ctx, qtbot):
     assert buttons.button(QDialogButtonBox.StandardButton.Ok).text() == "生成并查看"
     assert not bool(dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint)
     assert set(dialog.options()["teams"]) == {item["name"] for item in ctx.settings.teams(True)}
+
+
+
+def test_historical_demo_completion_opens_matching_analysis_range(ctx, qtbot):
+    start, end = date(2024, 5, 1), date(2024, 5, 7)
+    count = ctx.demo.generate(
+        12,
+        start,
+        end,
+        ["U1"],
+        rework_rate=0.1,
+        defect_rate=0.02,
+        seed=11,
+    )
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    window.show_demo_data(count, start, end)
+
+    analytics = window.pages[3]
+    assert window.stack.currentIndex() == 3
+    assert analytics.preset.currentText() == "自定义"
+    assert analytics.source.currentText() == "演示数据"
+    assert analytics.start.date().toPython() == start
+    assert analytics.end.date().toPython() == end
+    assert f"{start} 至 {end}" in analytics.scope.text()
+    assert analytics.teams_table.rowCount() > 0
+    assert "已生成 12 条演示记录" in window.statusBar().currentMessage()

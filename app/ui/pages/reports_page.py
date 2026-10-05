@@ -84,13 +84,25 @@ class ReportsPage(Page):
         self.layout.addWidget(panel)
         self.layout.addStretch()
 
+    def sync_preset_range(self):
+        name = self.preset.currentText()
+        if name == "自定义":
+            return
+        start, end = date_range(name)
+        for widget, value in ((self.start, start), (self.end, end)):
+            previous = widget.blockSignals(True)
+            widget.setDate(QDate(value))
+            widget.blockSignals(previous)
+
     def set_range(self, name):
         self.start.setEnabled(name == "自定义")
         self.end.setEnabled(name == "自定义")
         if name != "自定义":
-            start, end = date_range(name)
-            self.start.setDate(QDate(start))
-            self.end.setDate(QDate(end))
+            self.sync_preset_range()
+        self.update_scope_text()
+
+    def refresh(self):
+        self.sync_preset_range()
         self.update_scope_text()
 
     def update_scope_text(self, *_):
@@ -125,6 +137,7 @@ class ReportsPage(Page):
 
     @guarded
     def export(self, legacy):
+        self.sync_preset_range()
         filters = RecordFilter(
             start=self.start.date().toPython(),
             end=self.end.date().toPython(),
