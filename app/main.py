@@ -11,7 +11,13 @@ from pathlib import Path
 from openpyxl import load_workbook
 from PySide6.QtCore import QLockFile, QTimer
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QDialogButtonBox, QFileDialog, QMessageBox, QStyleFactory
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialogButtonBox,
+    QFileDialog,
+    QMessageBox,
+    QStyleFactory,
+)
 
 from app import __version__
 from app.core.context import AppContext
