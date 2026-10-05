@@ -19,7 +19,9 @@ from openpyxl.drawing.text import (
 )
 from openpyxl.drawing.text import Font as DrawingFont
 from openpyxl.drawing.xdr import XDRPositiveSize2D
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.formatting.rule import DataBarRule
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from openpyxl.utils.units import pixels_to_EMU
 from openpyxl.workbook.properties import CalcProperties
 from openpyxl.workbook.views import BookView
@@ -48,16 +50,175 @@ HEADERS = [
 ]
 
 
+def display_width(value) -> int:
+    text = str(value if value is not None else "")
+    return sum(2 if ord(char) > 127 else 1 for char in text)
+
+
 def style_table(ws):
-    ws.auto_filter.ref = ws.dimensions
+    """Format the standard workbook as a print-ready QC report.
+
+    The legacy/template export deliberately bypasses this function so its
+    original layout remains byte-for-byte independent from standard styling.
+    """
+    last_row, last_col = max(ws.max_row, 1), max(ws.max_column, 1)
+    last_letter = get_column_letter(last_col)
+    border = Border(
+        left=Side(style="thin", color="D9E2F3"),
+        right=Side(style="thin", color="D9E2F3"),
+        top=Side(style="thin", color="D9E2F3"),
+        bottom=Side(style="thin", color="D9E2F3"),
+    )
+    header_fill = PatternFill("solid", fgColor="1F4E78")
+    band_fill = PatternFill("solid", fgColor="F5F9FC")
+
+    ws.sheet_view.showGridLines = False
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_margins.left = 0.25
+    ws.page_margins.right = 0.25
+    ws.page_margins.top = 0.5
+    ws.page_margins.bottom = 0.5
+    ws.print_title_rows = "1:1"
+
+    filter_sheets = {"检验记录", "不良明细", "不良项目", "月度统计"}
+    if ws.title in filter_sheets:
+        ws.auto_filter.ref = f"A1:{last_letter}{last_row}"
+    else:
+        ws.auto_filter.ref = None
+
     for cell in ws[1]:
-        cell.font = Font(name="Microsoft YaHei", bold=True, color="FFFFFF")
-        cell.fill = PatternFill("solid", fgColor="253D75")
-        cell.alignment = Alignment(vertical="center")
-    ws.row_dimensions[1].height = 30
-    for col in ws.columns:
-        letter = col[0].column_letter
-        ws.column_dimensions[letter].width = min(42, max(15, len(str(col[0].value or "")) * 2 + 4))
+        cell.font = Font(name="Microsoft YaHei", size=10, bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        cell.border = border
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[1].height = 28
+
+    for row in range(2, last_row + 1):
+        ws.row_dimensions[row].height = max(ws.row_dimensions[row].height or 18, 22)
+        for cell in ws[row]:
+            cell.font = Font(name="Microsoft YaHei", size=9)
+            cell.border = border
+            cell.alignment = Alignment(vertical="center")
+            if row % 2 == 0 and ws.title not in {"统计摘要"}:
+                cell.fill = band_fill
+
+    width_overrides = {
+        "检验记录": {
+            "A": 22,
+            "B": 24,
+            "C": 12,
+            "D": 22,
+            "E": 13,
+            "F": 12,
+            "G": 12,
+            "H": 20,
+            "I": 11,
+            "J": 16,
+            "K": 14,
+            "L": 34,
+            "M": 12,
+            "N": 11,
+        },
+        "不良明细": {"A": 22, "B": 10, "C": 20, "D": 18, "E": 36},
+        "不良项目": {"A": 10, "B": 22, "C": 16, "D": 10, "E": 10, "F": 38},
+        "统计摘要": {"A": 24, "B": 48},
+        "月度统计": {"A": 12, "B": 12, "C": 14, "D": 14, "E": 12, "F": 12, "G": 12, "H": 12},
+    }
+    for column in range(1, last_col + 1):
+        letter = get_column_letter(column)
+        if letter in width_overrides.get(ws.title, {}):
+            ws.column_dimensions[letter].width = width_overrides[ws.title][letter]
+            continue
+        measured = max(
+            (display_width(ws.cell(row, column).value) for row in range(1, min(last_row, 300) + 1)),
+            default=10,
+        )
+        ws.column_dimensions[letter].width = min(36, max(10, measured + 2))
+
+    if ws.title == "检验记录":
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        for row in range(2, last_row + 1):
+            ws.cell(row, 2).alignment = Alignment(horizontal="center", vertical="center")
+            for column in (3, 5, 6, 7, 9, 13, 14):
+                ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
+            ws.cell(row, 8).alignment = Alignment(vertical="center", wrap_text=True)
+            ws.cell(row, 12).alignment = Alignment(vertical="top", wrap_text=True)
+            judgment = ws.cell(row, 9)
+            if judgment.value == "合格":
+                judgment.fill = PatternFill("solid", fgColor="E2F0D9")
+                judgment.font = Font(name="Microsoft YaHei", size=9, bold=True, color="375623")
+            elif judgment.value == "返工":
+                judgment.fill = PatternFill("solid", fgColor="FCE4D6")
+                judgment.font = Font(name="Microsoft YaHei", size=9, bold=True, color="C65911")
+        ws.print_area = f"A1:{last_letter}{last_row}"
+        ws.sheet_properties.tabColor = "5B9BD5"
+    elif ws.title == "不良明细":
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        for row in range(2, last_row + 1):
+            ws.cell(row, 5).alignment = Alignment(vertical="top", wrap_text=True)
+        ws.sheet_properties.tabColor = "ED7D31"
+    elif ws.title == "不良项目":
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        for row in range(2, last_row + 1):
+            ws.cell(row, 6).alignment = Alignment(vertical="top", wrap_text=True)
+        ws.sheet_properties.tabColor = "A5A5A5"
+    elif ws.title == "统计摘要":
+        ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT
+        for row in range(2, last_row + 1):
+            ws.cell(row, 1).font = Font(name="Microsoft YaHei", size=9, bold=True, color="44546A")
+            ws.cell(row, 2).font = Font(name="Microsoft YaHei", size=10, bold=True)
+            ws.cell(row, 2).alignment = Alignment(vertical="center", wrap_text=True)
+        ws.sheet_properties.tabColor = "70AD47"
+    elif ws.title == "月度统计":
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        total_row = last_row if ws.cell(last_row, 1).value == "合计" else None
+        data_last_row = last_row - 1 if total_row else last_row
+        for row in range(2, last_row + 1):
+            for column in range(1, 9):
+                ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
+        if total_row:
+            for column in range(1, 9):
+                cell = ws.cell(total_row, column)
+                cell.fill = PatternFill("solid", fgColor="D9EAF7")
+                cell.font = Font(name="Microsoft YaHei", size=9, bold=True, color="1F1F1F")
+        if data_last_row >= 2:
+            ws.conditional_formatting.add(
+                f"B2:E{data_last_row}",
+                DataBarRule(
+                    start_type="num",
+                    start_value=0,
+                    end_type="max",
+                    color="5B9BD5",
+                    showValue=True,
+                ),
+            )
+            ws.conditional_formatting.add(
+                f"F2:F{data_last_row}",
+                DataBarRule(
+                    start_type="num",
+                    start_value=0,
+                    end_type="num",
+                    end_value=1,
+                    color="ED7D31",
+                    showValue=True,
+                ),
+            )
+            ws.conditional_formatting.add(
+                f"H2:H{data_last_row}",
+                DataBarRule(
+                    start_type="num",
+                    start_value=0,
+                    end_type="num",
+                    end_value=1,
+                    color="A5A5A5",
+                    showValue=True,
+                ),
+            )
+        ws.print_area = f"A1:W{max(last_row, 32)}"
+        ws.sheet_properties.tabColor = "4472C4"
 
 
 def month_keys(start: date | None, end: date | None) -> list[str]:
@@ -82,17 +243,15 @@ def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: 
         ["月份", "检验批次", "检验数量", "抽检数量", "不良件数", "不良率", "返工批次", "返工率"]
     )
     months = month_keys(start, end) or sorted(monthly)
+    totals = {
+        "batches": 0,
+        "inspection_quantity": 0,
+        "sampling_quantity": 0,
+        "defect_quantity": 0,
+        "rework_batches": 0,
+    }
     for month in months:
-        values = monthly.get(
-            month,
-            {
-                "batches": 0,
-                "inspection_quantity": 0,
-                "sampling_quantity": 0,
-                "defect_quantity": 0,
-                "rework_batches": 0,
-            },
-        )
+        values = monthly.get(month, {key: 0 for key in totals})
         defect_rate = (
             values["defect_quantity"] / values["sampling_quantity"]
             if values["sampling_quantity"]
@@ -111,32 +270,65 @@ def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: 
                 rework_rate,
             ]
         )
+        for key in totals:
+            totals[key] += values[key]
         ws.cell(ws.max_row, 6).number_format = "0.00%"
         ws.cell(ws.max_row, 8).number_format = "0.00%"
 
+    month_last_row = 1 + len(months)
+    total_defect_rate = (
+        totals["defect_quantity"] / totals["sampling_quantity"] if totals["sampling_quantity"] else 0
+    )
+    total_rework_rate = totals["rework_batches"] / totals["batches"] if totals["batches"] else 0
+    ws.append(
+        [
+            "合计",
+            totals["batches"],
+            totals["inspection_quantity"],
+            totals["sampling_quantity"],
+            totals["defect_quantity"],
+            total_defect_rate,
+            totals["rework_batches"],
+            total_rework_rate,
+        ]
+    )
+    total_row = ws.max_row
+    for column in range(1, 9):
+        cell = ws.cell(total_row, column)
+        cell.fill = PatternFill("solid", fgColor="D9EAF7")
+        cell.font = Font(name="Microsoft YaHei", size=9, bold=True, color="1F1F1F")
+    ws.cell(total_row, 6).number_format = "0.00%"
+    ws.cell(total_row, 8).number_format = "0.00%"
+
     if months:
-        categories = Reference(ws, min_col=1, min_row=2, max_row=ws.max_row)
+        categories = Reference(ws, min_col=1, min_row=2, max_row=month_last_row)
         volume = BarChart()
-        volume.title = "月度检验批次"
+        volume.style = 10
+        volume.title = "月度检验批次趋势"
         volume.y_axis.title = "批次"
         volume.x_axis.title = "月份"
         volume.height = 7
         volume.width = 14
+        volume.legend = None
         volume.add_data(
-            Reference(ws, min_col=2, max_col=2, min_row=1, max_row=ws.max_row),
+            Reference(ws, min_col=2, max_col=2, min_row=1, max_row=month_last_row),
             titles_from_data=True,
         )
         volume.set_categories(categories)
         ws.add_chart(volume, "J2")
 
         rates = LineChart()
+        rates.style = 13
         rates.title = "月度质量率趋势"
         rates.y_axis.title = "比例"
+        rates.y_axis.numFmt = "0.0%"
+        rates.y_axis.scaling.min = 0
         rates.x_axis.title = "月份"
         rates.height = 7
         rates.width = 14
+        rates.legend.position = "b"
         rates.add_data(
-            Reference(ws, min_col=6, max_col=8, min_row=1, max_row=ws.max_row),
+            Reference(ws, min_col=6, max_col=8, min_row=1, max_row=month_last_row),
             titles_from_data=True,
             from_rows=False,
         )

@@ -426,3 +426,52 @@ def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_p
     assert len(monthly._charts) == 2
     assert dict(wb["统计摘要"].values)["数据范围"] == "演示数据"
     wb.close()
+
+
+
+def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_path):
+    from app.core.schemas import InspectionInput, RecordFilter
+
+    ctx.inspections.save(
+        InspectionInput(
+            **(
+                payload.model_dump()
+                | {
+                    "work_order": "WO-LONG-QUALITY-REPORT-001",
+                    "remark": "返工原因：尺寸偏差，已复检并记录处理结果。",
+                    "judgment": "返工",
+                }
+            )
+        )
+    )
+    path = ctx.excel.export(
+        tmp_path / "styled-standard.xlsx",
+        RecordFilter(start=payload.inspection_date, end=payload.inspection_date, source="production"),
+        legacy=False,
+        prefer_com=False,
+    )
+    wb = load_workbook(path)
+    records = wb["检验记录"]
+    assert records.page_setup.orientation == "landscape"
+    assert not records.sheet_view.showGridLines
+    assert records.auto_filter.ref.endswith(f"N{records.max_row}")
+    assert records.column_dimensions["D"].width >= 22
+    assert records.column_dimensions["L"].width >= 34
+    assert records["L2"].alignment.wrap_text
+    assert records["I2"].fill.fgColor.rgb.endswith("FCE4D6")
+    assert records["I2"].font.bold
+
+    summary = wb["统计摘要"]
+    assert summary.page_setup.orientation == "portrait"
+    assert not summary.sheet_view.showGridLines
+    assert summary.column_dimensions["B"].width >= 48
+
+    monthly = wb["月度统计"]
+    assert monthly["A2"].value
+    assert monthly.cell(monthly.max_row, 1).value == "合计"
+    assert monthly.cell(monthly.max_row, 6).number_format == "0.00%"
+    assert monthly.cell(monthly.max_row, 8).number_format == "0.00%"
+    assert len(monthly._charts) == 2
+    assert len(monthly.conditional_formatting) == 3
+    assert monthly.print_area
+    wb.close()

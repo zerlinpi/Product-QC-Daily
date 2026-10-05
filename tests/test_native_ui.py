@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QFrame, QGroupBox, QListWidget
+from PySide6.QtWidgets import QApplication, QFrame, QGroupBox, QListWidget, QPushButton
 
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.main_window import MainWindow
@@ -104,3 +104,18 @@ def test_native_navigation_reverts_when_unsaved_entry_refuses_page_change(
     assert window.navigation.currentRow() == 1
     assert entry.work_order.text() == "UNSAVED"
     assert entry.dirty
+
+
+
+def test_reports_page_uses_native_group_boxes_and_compact_export_actions(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[5]
+
+    groups = {group.title(): group for group in page.findChildren(QGroupBox)}
+    assert "导入历史日检表" in groups
+    assert "导出质量报表" in groups
+    buttons = {button.text(): button for button in page.findChildren(QPushButton)}
+    assert "按原表导出" in buttons
+    assert "导出明细报表" in buttons
+    assert "月份筛选" in buttons["导出明细报表"].toolTip()
