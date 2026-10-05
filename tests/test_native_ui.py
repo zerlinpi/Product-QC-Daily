@@ -82,3 +82,25 @@ def test_sections_and_metrics_use_native_desktop_frames(ctx, qtbot):
     qtbot.addWidget(metric)
     assert isinstance(metric, QGroupBox)
     assert metric.title() == "今日检验批次"
+
+
+
+def test_native_navigation_reverts_when_unsaved_entry_refuses_page_change(
+    ctx, qtbot, monkeypatch
+):
+    import app.ui.pages.inspection_page as inspection_module
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.navigate(1)
+    entry = window.pages[1]
+    entry.work_order.setText("UNSAVED")
+    entry.dirty = True
+    monkeypatch.setattr(inspection_module, "confirm", lambda *args, **kwargs: False)
+
+    window.navigation.setCurrentRow(2)
+
+    assert window.stack.currentIndex() == 1
+    assert window.navigation.currentRow() == 1
+    assert entry.work_order.text() == "UNSAVED"
+    assert entry.dirty
