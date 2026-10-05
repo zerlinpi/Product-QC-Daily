@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from app import __version__
-from app.ui.common import button, friendly_error, guarded, label
+from app.ui.common import friendly_error, guarded, label
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.pages.analytics_page import AnalyticsPage
