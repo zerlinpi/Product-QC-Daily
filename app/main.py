@@ -58,6 +58,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     stylesheet = app.styleSheet()
     for selector in (
         "QPushButton {",
+        "QListWidget {",
         "QLineEdit",
         "QComboBox",
         "QDateEdit",
@@ -83,9 +84,11 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     controls.deleteLater()
     picker.deleteLater()
     window.show()
+    assert window.navigation.count() == 7
     for index in range(7):
         window.navigate(index)
         app.processEvents()
+        assert window.navigation.currentRow() == index
     output = reopened.excel.export(
         ctx.paths.exports / "smoke.xlsx", RecordFilter(source="demo"), legacy=True, prefer_com=False
     )
