@@ -430,8 +430,6 @@ def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_p
 
 
 def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_path):
-    from datetime import date
-
     from app.core.schemas import InspectionInput, RecordFilter
 
     ctx.inspections.save(
