@@ -160,3 +160,67 @@ def test_relative_date_pages_resync_non_custom_range_on_refresh(
 
     assert page.start.date().toPython() == date(2031, 2, 1)
     assert page.end.date().toPython() == date(2031, 2, 28)
+
+
+
+def test_analytics_invalid_custom_range_blocks_refresh_until_fixed(ctx, qtbot, monkeypatch):
+    from PySide6.QtCore import QDate
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.navigate(3)
+    page = window.pages[3]
+    page.preset.setCurrentText("自定义")
+    page.start.setDate(QDate(2026, 10, 2))
+    page.end.setDate(QDate(2026, 10, 1))
+
+    assert page.scope.text() == "日期范围无效：开始日期不能晚于结束日期"
+    assert not page.analyze_button.isEnabled()
+
+    called = []
+    monkeypatch.setattr(
+        ctx.statistics,
+        "comparison",
+        lambda *_: called.append(True) or pytest.fail("无效日期不应执行统计查询"),
+    )
+    page.refresh()
+    assert not called
+    assert page.scope.text() == "日期范围无效：开始日期不能晚于结束日期"
+
+    page.end.setDate(QDate(2026, 10, 2))
+    assert page.analyze_button.isEnabled()
+    assert "筛选条件已更改" in page.scope.text()
+
+
+def test_records_invalid_date_range_preserves_last_results_without_query(
+    ctx, payload, qtbot, monkeypatch
+):
+    from PySide6.QtCore import QDate
+
+    ctx.inspections.save(payload)
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.navigate(2)
+    page = window.pages[2]
+    assert page.table.rowCount() == 1
+
+    page.range_enabled.setChecked(True)
+    page.start.setDate(QDate(2026, 10, 2))
+    page.end.setDate(QDate(2026, 10, 1))
+    assert not page.query_button.isEnabled()
+    assert "日期范围无效" in page.count.text()
+    assert "上一次查询结果" in page.count.text()
+
+    called = []
+    monkeypatch.setattr(
+        ctx.inspections,
+        "query",
+        lambda *_: called.append(True) or pytest.fail("无效日期不应执行记录查询"),
+    )
+    page.refresh()
+    assert not called
+    assert page.table.rowCount() == 1
+
+    page.end.setDate(QDate(2026, 10, 2))
+    assert page.query_button.isEnabled()
+    assert "点击“查询”应用" in page.count.text()
