@@ -47,13 +47,13 @@ class MainWindow(QMainWindow):
         root.setSpacing(0)
         sidebar = QFrame()
         sidebar.setObjectName("qcSidebar")
-        sidebar.setFixedWidth(184)
+        sidebar.setFixedWidth(176)
         nav = QVBoxLayout(sidebar)
-        nav.setContentsMargins(10, 16, 10, 14)
-        nav.setSpacing(4)
+        nav.setContentsMargins(7, 12, 7, 10)
+        nav.setSpacing(1)
         nav.addWidget(label("成品日检", "brand"))
         nav.addWidget(label("质量管理", "muted"))
-        nav.addSpacing(14)
+        nav.addSpacing(8)
         self.nav_buttons = []
         nav_items = [
             ("质量总览", QStyle.StandardPixmap.SP_ComputerIcon),
@@ -68,6 +68,8 @@ class MainWindow(QMainWindow):
             item = button(title, lambda _, index=i: self.navigate(index))
             item.setCheckable(True)
             item.setObjectName("nav")
+            item.setFlat(True)
+            item.setMinimumHeight(30)
             item.setIcon(self.style().standardIcon(icon))
             item.setIconSize(QSize(16, 16))
             item.setToolTip(f"{title} · Ctrl+{i + 1}")
@@ -83,8 +85,8 @@ class MainWindow(QMainWindow):
         top = QFrame()
         top.setObjectName("topbar")
         toolbar = QHBoxLayout(top)
-        toolbar.setContentsMargins(20, 8, 20, 8)
-        top.setMinimumHeight(44)
+        toolbar.setContentsMargins(12, 4, 12, 4)
+        top.setMinimumHeight(36)
         self.company = label("成品质量管理", "section")
         toolbar.addWidget(self.company)
         toolbar.addStretch()
@@ -112,6 +114,7 @@ class MainWindow(QMainWindow):
         self.progress.setRange(0, 0)
         self.progress.setMaximumWidth(150)
         self.progress.hide()
+        self.statusBar().setSizeGripEnabled(True)
         self.statusBar().addPermanentWidget(self.progress)
         self.shortcuts = []
         for key, action in [
