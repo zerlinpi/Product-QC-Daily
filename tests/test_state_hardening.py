@@ -5,7 +5,6 @@ from openpyxl import Workbook
 
 from app.ui.main_window import MainWindow
 
-
 HEADERS = [
     "填写ID",
     "时间",
