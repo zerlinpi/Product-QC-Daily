@@ -97,3 +97,64 @@ def test_historical_demo_completion_opens_matching_analysis_range(ctx, qtbot):
     assert f"{start} 至 {end}" in analytics.scope.text()
     assert analytics.teams_table.rowCount() > 0
     assert "已生成 12 条演示记录" in window.statusBar().currentMessage()
+
+
+
+def test_demo_range_spanning_current_month_opens_full_analytics_range(ctx, qtbot):
+    from datetime import timedelta
+
+    today = date.today()
+    start = today.replace(day=1) - timedelta(days=1)
+    start = start.replace(day=1)
+    end = today
+    count = ctx.demo.generate(
+        10,
+        start,
+        end,
+        ["U1"],
+        rework_rate=0.1,
+        defect_rate=0.02,
+        seed=17,
+    )
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    window.show_demo_data(count, start, end)
+
+    analytics = window.pages[3]
+    assert window.stack.currentIndex() == 3
+    assert analytics.source.currentText() == "演示数据"
+    assert analytics.start.date().toPython() == start
+    assert analytics.end.date().toPython() == end
+
+
+def test_demo_dialog_rejects_invalid_options_before_background_job(
+    ctx, qtbot, monkeypatch
+):
+    from PySide6.QtCore import QDate
+
+    import app.ui.dialogs.demo_dialog as module
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    dialog = DemoDialog(ctx, window)
+    qtbot.addWidget(dialog)
+    errors = []
+    monkeypatch.setattr(module, "friendly_error", lambda parent, error: errors.append(str(error)))
+
+    dialog.start.setDate(QDate(2026, 2, 2))
+    dialog.end.setDate(QDate(2026, 2, 1))
+    dialog.accept()
+    assert errors[-1] == "开始日期不能晚于结束日期"
+
+    dialog.start.setDate(QDate(2026, 2, 1))
+    for checkbox in dialog.teams:
+        checkbox.setChecked(False)
+    dialog.accept()
+    assert errors[-1] == "请至少选择一个参与组别"
+
+    dialog.teams[0].setChecked(True)
+    for _, weight in dialog.items:
+        weight.setValue(0)
+    dialog.accept()
+    assert errors[-1] == "请至少为一个不良项目设置大于 0 的相对频率"
