@@ -5,7 +5,7 @@ from openpyxl import load_workbook
 from openpyxl.worksheet.views import Pane, Selection
 
 from app.core.schemas import RecordFilter
-from app.services.excel_export import create_empty_template
+from app.services.excel_export import LEGACY_FORM_ROWS, create_empty_template
 
 
 def assert_clean_views(wb, active_title, legacy):
@@ -51,7 +51,8 @@ def test_exports_start_at_top_with_consistent_frozen_panes(ctx, payload, tmp_pat
     )
     wb = load_workbook(output)
     title = "成品日检表" if legacy else "检验记录"
-    assert wb[title].max_row == count + 1
+    expected_rows = max(count + 1, LEGACY_FORM_ROWS + 1) if legacy else count + 1
+    assert wb[title].max_row == expected_rows
     assert_clean_views(wb, title, legacy)
     wb.close()
 

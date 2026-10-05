@@ -61,7 +61,20 @@ def apply_theme(mode="light"):
         QLineEdit, QSpinBox, QDoubleSpinBox, QDateEdit, QTimeEdit, QComboBox, QTextEdit {{ background: {field}; border: 1px solid {border}; border-radius: 6px; padding: 7px 9px; selection-background-color: #365cdd; min-height: 20px; }}
         QLineEdit:focus, QSpinBox:focus, QDateEdit:focus, QTimeEdit:focus, QComboBox:focus, QTextEdit:focus {{ border-color: #5e7dea; }}
         QLineEdit:disabled, QSpinBox:disabled, QDateEdit:disabled, QTimeEdit:disabled, QComboBox:disabled, QTextEdit:disabled {{ background: {bg}; color: {muted}; }}
-        QComboBox QAbstractItemView {{ background: {card}; selection-background-color: {selected}; selection-color: {text}; }}
+        QComboBox {{ padding: 7px 36px 7px 10px; }}
+        QComboBox:hover {{ border-color: #9ab0ef; }}
+        QComboBox::drop-down {{ subcontrol-origin: padding; subcontrol-position: top right; width: 32px; border: none; border-left: 1px solid {border}; background: {selected}; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }}
+        QComboBox::down-arrow {{ width: 9px; height: 9px; }}
+        QComboBox:disabled::drop-down {{ background: {bg}; }}
+        QComboBox QAbstractItemView {{ background: {card}; color: {text}; border: 1px solid {border}; border-radius: 8px; padding: 6px; outline: 0; selection-background-color: #365cdd; selection-color: #ffffff; }}
+        QComboBox QAbstractItemView::item {{ min-height: 28px; padding: 5px 10px; border-radius: 5px; }}
+        QComboBox QAbstractItemView::item:hover {{ background: {selected}; }}
+        QComboBox QAbstractItemView::item:selected {{ background: #365cdd; color: #ffffff; }}
+        QDateEdit::drop-down {{ subcontrol-origin: padding; subcontrol-position: top right; width: 30px; border: none; border-left: 1px solid {border}; background: {selected}; border-top-right-radius: 6px; border-bottom-right-radius: 6px; }}
+        QDateEdit::down-arrow {{ width: 9px; height: 9px; }}
+        QMenu {{ background: {card}; color: {text}; border: 1px solid {border}; border-radius: 8px; padding: 6px; }}
+        QMenu::item {{ padding: 8px 22px; border-radius: 5px; }}
+        QMenu::item:selected {{ background: {selected}; }}
         QTableWidget {{ background: {card}; alternate-background-color: {bg}; gridline-color: {border}; border: 1px solid {border}; border-radius: 8px; selection-background-color: #365cdd; selection-color: #ffffff; }}
         QTableWidget::item {{ padding: 7px; border: none; }}
         QTableWidget::item:hover {{ background: {selected}; }}
@@ -80,6 +93,10 @@ def apply_theme(mode="light"):
         QProgressBar {{ background: {bg}; border: 1px solid {border}; border-radius: 4px; min-height: 7px; max-height: 7px; text-align: center; }}
         QProgressBar::chunk {{ background: #365cdd; border-radius: 3px; }}
         QDialog {{ background: {bg}; }}
+        QDialog#taskProgressDialog {{ background: {card}; border: 1px solid {border}; border-radius: 12px; }}
+        QProgressBar#taskProgress {{ min-height: 10px; max-height: 10px; border-radius: 5px; }}
+        QProgressBar#taskProgress::chunk {{ border-radius: 4px; }}
+        QMessageBox {{ background: {card}; }}
         QToolTip {{ background: {card}; color: {text}; border: 1px solid {border}; padding: 5px; }}
     """)
     return dark
