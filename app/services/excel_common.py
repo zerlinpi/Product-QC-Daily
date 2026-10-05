@@ -1,3 +1,4 @@
+import hashlib
 import posixpath
 import re
 from io import BytesIO
@@ -8,6 +9,14 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from openpyxl import load_workbook
 
 REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+
+
+def file_sha256(path: Path, chunk_size=1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def load_compatible(path: Path):
