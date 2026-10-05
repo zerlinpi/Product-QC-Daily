@@ -1,12 +1,12 @@
 from pathlib import Path
 
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QGridLayout
+from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout
 
 from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
-from app.ui.common import Page, button, card, guarded, label
+from app.ui.common import Page, button, guarded, label
 from app.ui.dialogs import file_dialogs
 from app.ui.dialogs.import_dialog import ImportDialog
 
@@ -16,8 +16,9 @@ class ReportsPage(Page):
         super().__init__(
             ctx, window, "报表中心", "导入前先检查内容；导出时选择日期范围和报表格式"
         )
-        panel, layout = card()
-        layout.addWidget(label("导入历史日检表", "section"))
+        panel = QGroupBox("导入历史日检表")
+        layout = QVBoxLayout(panel)
+        layout.setSpacing(7)
         layout.addWidget(
             label(
                 "支持原始成品日检表与本软件导出的明细报表。自动识别记录工作表，拆分不良编码，并导出异常清单。源文件不会被修改。",
@@ -25,12 +26,16 @@ class ReportsPage(Page):
                 True,
             )
         )
-        layout.addWidget(button("选择表格并预览", self.import_file, primary=True))
+        import_actions = QHBoxLayout()
+        import_actions.addWidget(button("选择表格并预览", self.import_file, primary=True))
+        import_actions.addStretch()
+        layout.addLayout(import_actions)
         self.import_status = label("尚未选择文件", "muted", True)
         layout.addWidget(self.import_status)
         self.layout.addWidget(panel)
-        panel, layout = card()
-        layout.addWidget(label("导出质量报表", "section"))
+        panel = QGroupBox("导出质量报表")
+        layout = QVBoxLayout(panel)
+        layout.setSpacing(7)
         filters = QGridLayout()
         filters.setHorizontalSpacing(12)
         filters.setVerticalSpacing(6)
@@ -66,14 +71,15 @@ class ReportsPage(Page):
                 True,
             )
         )
-        layout.addWidget(
-            button(
-                "按原表导出 · 保留表格与图表布局", lambda: self.export(True), primary=True
-            )
-        )
-        layout.addWidget(
-            button("导出明细报表 · 月份筛选 + 月度统计图", lambda: self.export(False))
-        )
+        export_actions = QHBoxLayout()
+        original = button("按原表导出", lambda: self.export(True), primary=True)
+        original.setToolTip("保留原始表格、公式和 6 张图表布局")
+        detailed = button("导出明细报表", lambda: self.export(False))
+        detailed.setToolTip("适合年度分析：月份筛选、统计摘要、月度统计和趋势图")
+        export_actions.addWidget(original)
+        export_actions.addWidget(detailed)
+        export_actions.addStretch()
+        layout.addLayout(export_actions)
         layout.addWidget(
             label(
                 "需要原有表格样式，请选“按原表导出”；年度分析建议使用“导出明细报表”，其中记录表可按月份筛选，并附月度统计与趋势图。原表模板布局保持不变。",
