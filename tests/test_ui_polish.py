@@ -264,3 +264,57 @@ def test_import_preview_uses_native_dialog_button_box(ctx, qtbot, tmp_path):
     )
     assert accept.isDefault()
     assert buttons.button(QDialogButtonBox.StandardButton.Cancel) is not None
+
+
+
+def test_records_pending_filters_are_explicit_and_do_not_mix_pagination(
+    ctx, payload, qtbot
+):
+    from app.core.schemas import InspectionInput
+    from app.ui.main_window import MainWindow
+
+    with ctx.db.session() as session:
+        for index in range(51):
+            ctx.inspections.save_in_session(
+                session,
+                InspectionInput(
+                    **(
+                        payload.model_dump()
+                        | {
+                            "work_order": f"PENDING-{index:02d}",
+                            "source": "manual",
+                        }
+                    )
+                ),
+            )
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.navigate(2)
+    page = window.pages[2]
+    assert page.total == 51
+    assert page.next_button.isEnabled()
+    original_summary = page.count.text()
+    assert not page.filters_dirty
+
+    page.source.setCurrentText("演示数据")
+    assert page.filters_dirty
+    assert "筛选条件已更改" in page.count.text()
+    assert "上一次查询结果" in page.count.text()
+    assert not page.previous_button.isEnabled()
+    assert not page.next_button.isEnabled()
+    assert "筛选条件尚未应用" in page.action_buttons["export"].toolTip()
+    assert page.applied_filters.source == "production"
+
+    page.source.setCurrentText("正式数据")
+    assert not page.filters_dirty
+    assert page.count.text() == original_summary
+    assert page.next_button.isEnabled()
+
+    page.search.setText("不存在的工单")
+    assert page.filters_dirty
+    page.refresh()
+    assert not page.filters_dirty
+    assert page.total == 0
+    assert page.applied_filters.search == "不存在的工单"
+    assert page.count.text().startswith("共 0 条")
