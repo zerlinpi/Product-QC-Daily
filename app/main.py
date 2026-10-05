@@ -101,6 +101,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert sheet.sheet_view.selection[-1].activeCell == "C2"
     workbook.close()
     year = date.today().year
+    reopened.settings.update({"company": "自检公司", "factory": "一厂"})
     standard = reopened.excel.export(
         ctx.paths.exports / "smoke-standard.xlsx",
         RecordFilter(
@@ -121,6 +122,9 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert monthly["A14"].value == "合计"
     assert len(monthly._charts) == 2
     assert workbook["检验记录"].page_setup.orientation == "landscape"
+    assert workbook.properties.creator == "自检公司 · 一厂"
+    assert "自检公司" in workbook["检验记录"].oddHeader.left.text
+    assert "&P" in workbook["检验记录"].oddFooter.center.text
     assert workbook["检验记录"].freeze_panes == "C2"
     assert workbook["检验记录"].sheet_view.zoomScale == 85
     assert monthly.auto_filter.ref == f"A1:H{monthly.max_row - 1}"
