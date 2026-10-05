@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDateEdit,
-    QFileDialog,
     QGridLayout,
     QHBoxLayout,
     QInputDialog,
@@ -19,6 +18,7 @@ from PySide6.QtWidgets import (
 from app.core.labels import source_label
 from app.core.schemas import RecordFilter
 from app.ui.common import Page, button, card, confirm, guarded, label, populate, table
+from app.ui.dialogs import file_dialogs
 
 
 class RecordsPage(Page):
@@ -365,7 +365,7 @@ class RecordsPage(Page):
         directory = Path(
             self.ctx.settings.get("export_directory") or self.ctx.paths.exports
         ).expanduser()
-        path, selected_format = QFileDialog.getSaveFileName(
+        path, selected_format = file_dialogs.save_excel(
             self,
             f"导出已选 {len(ids)} 条记录" if ids else f"导出列表中的全部 {self.total} 条记录",
             str(directory / f"检验记录_{date.today()}.xlsx"),

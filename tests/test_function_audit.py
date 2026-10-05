@@ -6,6 +6,7 @@ import pytest
 from PySide6.QtWidgets import QFileDialog, QPushButton
 
 from app.core.schemas import InspectionInput, RecordFilter
+from app.ui.dialogs import file_dialogs
 from app.ui.main_window import MainWindow
 
 
@@ -55,7 +56,7 @@ def test_saved_export_directory_is_used_by_export_pages(
     page.refresh()
     chosen = []
     monkeypatch.setattr(
-        QFileDialog, "getSaveFileName", lambda *args: (chosen.append(Path(args[2])) or "", "")
+        file_dialogs, "save_excel", lambda *args: (chosen.append(Path(args[2])) or "", "")
     )
     if page_index == 2:
         page.export()
@@ -131,7 +132,7 @@ def test_signature_warning_can_be_exported_and_uses_export_directory(
     ctx.settings.update({"export_directory": str(directory)})
     chosen = []
     monkeypatch.setattr(
-        QFileDialog, "getSaveFileName", lambda *args: (chosen.append(Path(args[2])) or "", "")
+        file_dialogs, "save_excel", lambda *args: (chosen.append(Path(args[2])) or "", "")
     )
     dialog.report()
     assert chosen[0].parent == directory
@@ -414,7 +415,7 @@ def test_report_import_preview_and_record_export_use_real_background_jobs(
         records.table.selectRow(0)
         exported = tmp_path / "workflow-out.xlsx"
         monkeypatch.setattr(
-            QFileDialog, "getSaveFileName", lambda *args: (str(exported), "明细报表 (*.xlsx)")
+            file_dialogs, "save_excel", lambda *args: (str(exported), "明细报表 (*.xlsx)")
         )
         records.export()
         qtbot.waitUntil(lambda: window._job is None, timeout=10000)

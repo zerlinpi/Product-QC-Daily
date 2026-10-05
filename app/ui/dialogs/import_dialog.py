@@ -1,9 +1,10 @@
 from pathlib import Path
 
-from PySide6.QtWidgets import QComboBox, QDialog, QFileDialog, QHBoxLayout, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QDialog, QHBoxLayout, QVBoxLayout
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
-from app.ui.common import button, label, populate, table
+from app.ui.common import button, guarded, label, populate, table
+from app.ui.dialogs import file_dialogs
 
 
 class ImportDialog(QDialog):
@@ -95,11 +96,12 @@ class ImportDialog(QDialog):
         self.previous_button.setEnabled(self.page > 1)
         self.next_button.setEnabled(self.page < pages)
 
+    @guarded
     def report(self):
         directory = Path(
             self.ctx.settings.get("export_directory") or self.ctx.paths.exports
         ).expanduser()
-        path, _ = QFileDialog.getSaveFileName(
+        path, _ = file_dialogs.save_excel(
             self,
             "导出异常报告",
             str(directory / "导入异常报告.xlsx"),

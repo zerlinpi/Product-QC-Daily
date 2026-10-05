@@ -7,6 +7,7 @@ import os
 import sys
 from pathlib import Path
 
+from openpyxl import load_workbook
 from PySide6.QtCore import QLockFile, QTimer
 from PySide6.QtGui import QFont, QIcon
 from PySide6.QtWidgets import QApplication, QDialogButtonBox, QFileDialog, QMessageBox
@@ -17,6 +18,7 @@ from app.core.logger import setup_logging
 from app.core.paths import AppPaths, resource_path
 from app.core.schemas import InspectionInput, RecordFilter
 from app.ui.common import friendly_error
+from app.ui.dialogs.file_dialogs import ExcelSaveDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.main_window import MainWindow
 
@@ -44,8 +46,13 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     )
     assert "保存" in controls.button(QDialogButtonBox.StandardButton.Save).text()
     assert "取消" in controls.button(QDialogButtonBox.StandardButton.Cancel).text()
-    picker = QFileDialog(window)
+    picker_directory = ctx.paths.exports / "自检导出目录"
+    picker = ExcelSaveDialog(
+        window, "导出报表", picker_directory / "日检报告.xlsx", "电子表格 (*.xlsx)"
+    )
     assert "位置" in picker.labelText(QFileDialog.DialogLabel.LookIn)
+    assert Path(picker.directory().absolutePath()) == picker_directory
+    assert picker.defaultSuffix() == "xlsx"
     controls.deleteLater()
     picker.deleteLater()
     window.show()
@@ -56,6 +63,13 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         ctx.paths.exports / "smoke.xlsx", RecordFilter(source="demo"), legacy=True, prefer_com=False
     )
     assert output.exists()
+    workbook = load_workbook(output)
+    sheet = workbook["成品日检表"]
+    assert workbook.active == sheet
+    assert sheet.sheet_view.topLeftCell == "A1"
+    assert sheet.freeze_panes == "C2"
+    assert sheet.sheet_view.selection[-1].activeCell == "C2"
+    workbook.close()
     backup = reopened.backup.backup()
     reopened.backup.restore(backup)
     window.close()
@@ -69,6 +83,8 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "template_export": True,
         "backup_restore": True,
         "chinese_controls": True,
+        "export_view_reset": True,
+        "export_path_dialog": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)

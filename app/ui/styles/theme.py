@@ -40,9 +40,9 @@ def apply_theme(mode="light"):
         QFrame#card, QGroupBox {{ background: {card}; border: 1px solid {border}; border-radius: 12px; }}
         QGroupBox {{ margin-top: 16px; padding: 18px 12px 12px; font-weight: 600; }}
         QGroupBox::title {{ subcontrol-origin: margin; left: 16px; padding: 0 5px; }}
-        QFrame#sidebar {{ background: #15243e; border: none; }}
-        QFrame#sidebar QLabel {{ color: #e8eef9; }}
-        QFrame#sidebar QLabel#muted {{ color: #8ea1be; font-size: 11px; }}
+        QFrame#qcSidebar {{ background: #15243e; border: none; }}
+        QFrame#qcSidebar QLabel {{ color: #e8eef9; }}
+        QFrame#qcSidebar QLabel#muted {{ color: #8ea1be; font-size: 11px; }}
         QLabel#brand {{ font-size: 21px; font-weight: 800; color: #ffffff; }}
         QPushButton#nav {{ background: transparent; color: #aebed5; text-align: left; border: none; border-radius: 8px; padding: 14px 16px; font-size: 14px; }}
         QPushButton#nav:hover {{ background: #203654; color: #ffffff; }}

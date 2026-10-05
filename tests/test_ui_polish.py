@@ -2,6 +2,7 @@ import pytest
 from PySide6.QtCore import QDate, QLocale, Qt
 from PySide6.QtWidgets import QDialogButtonBox, QFileDialog, QPushButton
 
+from app.ui.dialogs import file_dialogs
 from app.ui.main_window import MainWindow
 
 
@@ -46,8 +47,8 @@ def test_export_selection_uses_displayed_rows_not_unapplied_filters(
     page.source.setCurrentText("演示数据")
     output = tmp_path / "selected.xlsx"
     monkeypatch.setattr(
-        QFileDialog,
-        "getSaveFileName",
+        file_dialogs,
+        "save_excel",
         lambda *args: (str(output), "明细报表 (*.xlsx)" if detailed else "原表格式 (*.xlsx)"),
     )
     monkeypatch.setattr(window, "run_job", lambda title, work, done: done(work()))
