@@ -47,14 +47,12 @@ def apply_theme(mode="light"):
         mode == "system" and app.styleHints().colorScheme() == Qt.ColorScheme.Dark
     )
     if dark:
-        bg, panel, text, muted, border, hover, selected, sidebar = (
+        bg, panel, text, muted, border, sidebar = (
             "#202020",
             "#2b2b2b",
             "#f5f5f5",
             "#b5b5b5",
             "#444444",
-            "#343434",
-            "#343d48",
             "#252525",
         )
     else:
@@ -64,8 +62,6 @@ def apply_theme(mode="light"):
             "#1f1f1f",
             "#616161",
             "#d6d6d6",
-            "#e9e9e9",
-            "#e5f1fb",
             "#f3f3f3",
         )
     accent = "#0067c0"
@@ -94,7 +90,7 @@ def apply_theme(mode="light"):
     app.setStyleSheet(
         f"""
         QMainWindow, QWidget#page {{ background: {bg}; }}
-        QLabel#title {{ font-size: 15pt; font-weight: 600; }}
+        QLabel#title {{ font-size: 12pt; font-weight: 600; }}
         QLabel#subtitle, QLabel#muted {{ color: {muted}; }}
         QLabel#section {{ font-size: 9.5pt; font-weight: 600; }}
         QLabel#fieldLabel {{ color: {muted}; font-weight: 600; }}
@@ -106,23 +102,7 @@ def apply_theme(mode="light"):
             border-right: 1px solid {border};
         }}
         QFrame#qcSidebar QLabel#muted {{ color: {muted}; }}
-        QLabel#brand {{ font-size: 11pt; font-weight: 600; }}
-        QPushButton#nav {{
-            background: transparent;
-            text-align: left;
-            border: none;
-            border-left: 3px solid transparent;
-            border-radius: 0;
-            padding: 4px 7px;
-            min-height: 22px;
-        }}
-        QPushButton#nav:hover {{ background: {hover}; }}
-        QPushButton#nav:checked {{
-            background: {selected};
-            border-left-color: {accent};
-            font-weight: 600;
-        }}
-
+        QLabel#brand {{ font-size: 10.5pt; font-weight: 600; }}
         QFrame#topbar {{
             background: {panel};
             border: none;
