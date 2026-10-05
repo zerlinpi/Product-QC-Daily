@@ -139,8 +139,8 @@ class Page(QWidget):
         self.ctx, self.window = ctx, window
         self.setObjectName("page")
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(16, 12, 16, 12)
-        self.layout.setSpacing(8)
+        self.layout.setContentsMargins(12, 10, 12, 10)
+        self.layout.setSpacing(6)
         self.layout.addWidget(label(title, "title"))
         self.layout.addWidget(label(subtitle, "subtitle", True))
 
