@@ -1,4 +1,5 @@
 from datetime import date
+import pytest
 from openpyxl import Workbook
 
 from app.ui.main_window import MainWindow
@@ -104,3 +105,24 @@ def test_settings_create_and_normalize_directories_and_reject_file_path(
 
     assert errors == ["导出目录必须是文件夹，当前路径指向文件"]
     assert ctx.settings.get("export_directory") == str(export_dir.resolve())
+
+
+
+def test_default_team_cannot_be_disabled_until_another_default_is_selected(ctx):
+    team = next(item for item in ctx.settings.teams() if item["name"] == "U1")
+
+    with pytest.raises(ValueError, match="默认组别不能停用"):
+        ctx.settings.save_team(
+            team["name"], team["id"], enabled=False, sort_order=team["sort_order"]
+        )
+
+    current = next(item for item in ctx.settings.teams() if item["id"] == team["id"])
+    assert current["enabled"]
+    assert ctx.settings.get("default_team") == "U1"
+
+    ctx.settings.update({"default_team": "U2"})
+    ctx.settings.save_team(
+        team["name"], team["id"], enabled=False, sort_order=team["sort_order"]
+    )
+    current = next(item for item in ctx.settings.teams() if item["id"] == team["id"])
+    assert not current["enabled"]
