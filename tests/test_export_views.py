@@ -34,6 +34,15 @@ def assert_clean_views(wb, active_title, legacy):
             assert [(s.pane, s.activeCell, s.sqref) for s in view.selection] == [
                 (None, "A1", "A1")
             ]
+        elif ws.title == active_title:
+            assert ws.freeze_panes == "C2"
+            assert (view.pane.xSplit, view.pane.ySplit) == (2, 1)
+            assert view.pane.activePane == "bottomRight"
+            assert [(s.pane, s.activeCell, s.sqref) for s in view.selection] == [
+                ("topRight", "C1", "C1"),
+                ("bottomLeft", "A2", "A2"),
+                ("bottomRight", "C2", "C2"),
+            ]
         else:
             assert ws.freeze_panes == "A2"
             assert [(s.pane, s.activeCell, s.sqref) for s in view.selection] == [

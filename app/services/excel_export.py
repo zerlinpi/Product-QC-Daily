@@ -88,6 +88,13 @@ def style_table(ws):
         ws.auto_filter.ref = f"A1:{last_letter}{last_row}"
     else:
         ws.auto_filter.ref = None
+    ws.sheet_view.zoomScale = {
+        "检验记录": 85,
+        "不良明细": 90,
+        "不良项目": 95,
+        "统计摘要": 100,
+        "月度统计": 85,
+    }.get(ws.title, 100)
 
     for cell in ws[1]:
         cell.font = Font(name="Microsoft YaHei", size=10, bold=True, color="FFFFFF")
@@ -144,6 +151,8 @@ def style_table(ws):
             ws.cell(row, 2).alignment = Alignment(horizontal="center", vertical="center")
             for column in (3, 5, 6, 7, 9, 13, 14):
                 ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
+            for column in (5, 6, 7):
+                ws.cell(row, column).number_format = "#,##0"
             ws.cell(row, 8).alignment = Alignment(vertical="center", wrap_text=True)
             ws.cell(row, 12).alignment = Alignment(vertical="top", wrap_text=True)
             judgment = ws.cell(row, 9)
@@ -169,54 +178,57 @@ def style_table(ws):
         ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT
         for row in range(2, last_row + 1):
             ws.cell(row, 1).font = Font(name="Microsoft YaHei", size=9, bold=True, color="44546A")
-            ws.cell(row, 2).font = Font(name="Microsoft YaHei", size=10, bold=True)
-            ws.cell(row, 2).alignment = Alignment(vertical="center", wrap_text=True)
+            value = ws.cell(row, 2)
+            value.font = Font(name="Microsoft YaHei", size=10, bold=True)
+            value.alignment = Alignment(vertical="center", wrap_text=True)
+            if isinstance(value.value, (int, float)) and value.number_format != "0.00%":
+                value.number_format = "#,##0"
         ws.sheet_properties.tabColor = "70AD47"
     elif ws.title == "月度统计":
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         total_row = last_row if ws.cell(last_row, 1).value == "合计" else None
         data_last_row = last_row - 1 if total_row else last_row
+        ws.auto_filter.ref = f"A1:H{max(data_last_row, 1)}"
         for row in range(2, last_row + 1):
             for column in range(1, 9):
                 ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
+            for column in (2, 3, 4, 5, 7):
+                ws.cell(row, column).number_format = "#,##0"
         if total_row:
             for column in range(1, 9):
                 cell = ws.cell(total_row, column)
                 cell.fill = PatternFill("solid", fgColor="D9EAF7")
                 cell.font = Font(name="Microsoft YaHei", size=9, bold=True, color="1F1F1F")
         if data_last_row >= 2:
-            ws.conditional_formatting.add(
-                f"B2:E{data_last_row}",
-                DataBarRule(
-                    start_type="num",
-                    start_value=0,
-                    end_type="max",
-                    color="5B9BD5",
-                    showValue=True,
-                ),
-            )
-            ws.conditional_formatting.add(
-                f"F2:F{data_last_row}",
-                DataBarRule(
-                    start_type="num",
-                    start_value=0,
-                    end_type="num",
-                    end_value=1,
-                    color="ED7D31",
-                    showValue=True,
-                ),
-            )
-            ws.conditional_formatting.add(
-                f"H2:H{data_last_row}",
-                DataBarRule(
-                    start_type="num",
-                    start_value=0,
-                    end_type="num",
-                    end_value=1,
-                    color="A5A5A5",
-                    showValue=True,
-                ),
-            )
+            for column, color in {
+                "B": "5B9BD5",
+                "C": "5B9BD5",
+                "D": "5B9BD5",
+                "E": "ED7D31",
+                "G": "A5A5A5",
+            }.items():
+                ws.conditional_formatting.add(
+                    f"{column}2:{column}{data_last_row}",
+                    DataBarRule(
+                        start_type="num",
+                        start_value=0,
+                        end_type="max",
+                        color=color,
+                        showValue=True,
+                    ),
+                )
+            for column, color in (("F", "ED7D31"), ("H", "A5A5A5")):
+                ws.conditional_formatting.add(
+                    f"{column}2:{column}{data_last_row}",
+                    DataBarRule(
+                        start_type="num",
+                        start_value=0,
+                        end_type="num",
+                        end_value=1,
+                        color=color,
+                        showValue=True,
+                    ),
+                )
         ws.print_area = f"A1:W{max(last_row, 32)}"
         ws.sheet_properties.tabColor = "4472C4"
 
@@ -458,6 +470,15 @@ def reset_workbook_views(wb, active_title, legacy=False):
             view.selection = [
                 Selection(pane="topRight", activeCell="C1", sqref="C1"),
                 Selection(pane="bottomLeft", activeCell="B2", sqref="B2"),
+                Selection(pane="bottomRight", activeCell="C2", sqref="C2"),
+            ]
+        elif not legacy and ws.title == active_title:
+            view.pane = Pane(
+                xSplit=2, ySplit=1, topLeftCell="C2", activePane="bottomRight", state="frozen"
+            )
+            view.selection = [
+                Selection(pane="topRight", activeCell="C1", sqref="C1"),
+                Selection(pane="bottomLeft", activeCell="A2", sqref="A2"),
                 Selection(pane="bottomRight", activeCell="C2", sqref="C2"),
             ]
         elif not legacy:

@@ -121,6 +121,10 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert monthly["A14"].value == "合计"
     assert len(monthly._charts) == 2
     assert workbook["检验记录"].page_setup.orientation == "landscape"
+    assert workbook["检验记录"].freeze_panes == "C2"
+    assert workbook["检验记录"].sheet_view.zoomScale == 85
+    assert monthly.auto_filter.ref == f"A1:H{monthly.max_row - 1}"
+    assert len(monthly.conditional_formatting) == 7
     assert not workbook["检验记录"].sheet_view.showGridLines
     workbook.close()
     backup = reopened.backup.backup()
