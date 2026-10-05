@@ -12,11 +12,11 @@ from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
 from openpyxl.drawing.text import (
     CharacterProperties,
-    Font as DrawingFont,
     Paragraph,
     ParagraphProperties,
     RichTextProperties,
 )
+from openpyxl.drawing.text import Font as DrawingFont
 from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils.units import pixels_to_EMU
