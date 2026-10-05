@@ -174,12 +174,19 @@ def style_table(ws):
         ws.sheet_properties.tabColor = "70AD47"
     elif ws.title == "月度统计":
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        total_row = last_row if ws.cell(last_row, 1).value == "合计" else None
+        data_last_row = last_row - 1 if total_row else last_row
         for row in range(2, last_row + 1):
             for column in range(1, 9):
                 ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
-        if last_row >= 2:
+        if total_row:
+            for column in range(1, 9):
+                cell = ws.cell(total_row, column)
+                cell.fill = PatternFill("solid", fgColor="D9EAF7")
+                cell.font = Font(name="Microsoft YaHei", size=9, bold=True, color="1F1F1F")
+        if data_last_row >= 2:
             ws.conditional_formatting.add(
-                f"B2:E{last_row}",
+                f"B2:E{data_last_row}",
                 DataBarRule(
                     start_type="num",
                     start_value=0,
@@ -189,7 +196,7 @@ def style_table(ws):
                 ),
             )
             ws.conditional_formatting.add(
-                f"F2:F{last_row}",
+                f"F2:F{data_last_row}",
                 DataBarRule(
                     start_type="num",
                     start_value=0,
@@ -200,7 +207,7 @@ def style_table(ws):
                 ),
             )
             ws.conditional_formatting.add(
-                f"H2:H{last_row}",
+                f"H2:H{data_last_row}",
                 DataBarRule(
                     start_type="num",
                     start_value=0,
