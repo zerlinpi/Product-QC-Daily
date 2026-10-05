@@ -1,4 +1,4 @@
-from PySide6.QtCore import QDate
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QDateEdit,
@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFormLayout,
     QGridLayout,
+    QGroupBox,
     QSpinBox,
     QVBoxLayout,
 )
@@ -18,19 +19,29 @@ class DemoDialog(QDialog):
     def __init__(self, ctx, parent):
         super().__init__(parent)
         self.setWindowTitle("生成演示数据")
-        self.resize(650, 720)
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
+        self.resize(680, 700)
+        self.setMinimumSize(620, 560)
+
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(12)
         layout.addWidget(
             label(
-                "生成的记录仅用于演示，与正式数据分开。下方比例为参考目标，实际生成结果会略有差异。",
+                "演示记录与正式数据完全分开。生成完成后将自动打开质量总览并切换到“演示数据”。",
                 "muted",
                 True,
             )
         )
-        form = QFormLayout()
+
+        range_group = QGroupBox("生成范围")
+        range_form = QFormLayout(range_group)
+        range_form.setHorizontalSpacing(18)
+        range_form.setVerticalSpacing(8)
         self.count = QSpinBox()
         self.count.setRange(1, 100_000)
         self.count.setValue(1000)
+        self.count.setSingleStep(100)
         self.start, self.end = (
             QDateEdit(QDate.currentDate().addDays(-29)),
             QDateEdit(QDate.currentDate()),
@@ -42,9 +53,10 @@ class DemoDialog(QDialog):
         for widget in (self.rework, self.defect):
             widget.setRange(0, 100)
             widget.setSuffix(" %")
+            widget.setDecimals(1)
         self.rework.setValue(8)
         self.defect.setValue(2)
-        self.pass_rate = label("合格率目标：92%", "muted")
+        self.pass_rate = label("合格率目标：92.0%", "muted")
         self.rework.valueChanged.connect(
             lambda v: self.pass_rate.setText(f"合格率目标：{100 - v:.1f}%")
         )
@@ -55,36 +67,50 @@ class DemoDialog(QDialog):
             ("返工率目标", self.rework),
             ("不良率目标", self.defect),
         ]:
-            form.addRow(title, widget)
-        form.addRow("判定", self.pass_rate)
-        layout.addLayout(form)
-        group_grid = QGridLayout()
-        layout.addWidget(label("参与生成的组别（可多选）", "section"))
+            range_form.addRow(title, widget)
+        range_form.addRow("判定参考", self.pass_rate)
+        layout.addWidget(range_group)
+
+        team_group = QGroupBox("参与组别")
+        team_grid = QGridLayout(team_group)
+        team_grid.setHorizontalSpacing(18)
+        team_grid.setVerticalSpacing(6)
         self.teams = []
         for i, team in enumerate(ctx.settings.teams(True)):
             checkbox = QCheckBox(team["name"])
             checkbox.setChecked(True)
             self.teams.append(checkbox)
-            group_grid.addWidget(checkbox, i // 8, i % 8)
-        layout.addLayout(group_grid)
-        layout.addWidget(label("出现频率：数值越大越常出现，0 表示不生成", "muted", True))
+            team_grid.addWidget(checkbox, i // 6, i % 6)
+        layout.addWidget(team_group)
+
+        defect_group = QGroupBox("不良项目出现频率")
+        defect_layout = QVBoxLayout(defect_group)
+        defect_layout.setContentsMargins(10, 12, 10, 10)
+        defect_layout.setSpacing(8)
+        defect_layout.addWidget(label("数值越大越常出现；0 表示演示数据中不生成该项目。", "muted", True))
         self.table = table(["不良项目", "相对频率"])
-        self.table.setColumnWidth(0, 400)
+        self.table.setColumnWidth(0, 430)
+        self.table.horizontalHeader().setStretchLastSection(True)
         self.items = []
         defects = ctx.defects.list(enabled_only=True)
         self.table.setRowCount(len(defects))
         for row, item in enumerate(defects):
-            self.table.setCellWidget(row, 0, label(item["name"]))
+            name = label(item["name"])
+            name.setToolTip(f"{item['code']} · {item['category']}")
+            self.table.setCellWidget(row, 0, name)
             value = QSpinBox()
             value.setRange(0, 1000)
             value.setValue(4 if item["code"] in ("d", "e", "g") else 1)
             self.table.setCellWidget(row, 1, value)
             self.items.append((item["id"], value))
-        layout.addWidget(self.table, 1)
+        defect_layout.addWidget(self.table, 1)
+        layout.addWidget(defect_group, 1)
+
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("生成演示数据")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("生成并查看")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setDefault(True)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)

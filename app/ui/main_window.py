@@ -181,6 +181,14 @@ class MainWindow(QMainWindow):
     def notify(self, message):
         self.statusBar().showMessage(message, 15000)
 
+    def show_demo_data(self, count):
+        dashboard = self.pages[0]
+        dashboard.source.blockSignals(True)
+        dashboard.source.setCurrentIndex(1)
+        dashboard.source.blockSignals(False)
+        self.navigate(0)
+        self.notify(f"已生成 {count:,} 条演示记录 · 当前正在查看演示数据")
+
     def export_completed(self, result):
         self.notify("导出完成")
         if self._export_message is not None:
@@ -256,10 +264,24 @@ class MainWindow(QMainWindow):
         self._job = (thread, worker, callback, finished)
         self._job_result = None
         self.centralWidget().setEnabled(False)
-        if name.startswith("导出"):
+        popup_job = name.startswith("导出") or name == "生成演示数据"
+        if popup_job:
             self.progress.hide()
             self.statusBar().clearMessage()
-            self._job_dialog = TaskProgressDialog(self, name)
+            if name == "生成演示数据":
+                self._job_dialog = TaskProgressDialog(
+                    self,
+                    name,
+                    window_title="正在生成演示数据",
+                    message="正在生成模拟质检记录并写入本地数据库，请稍候…",
+                )
+            else:
+                self._job_dialog = TaskProgressDialog(
+                    self,
+                    name,
+                    window_title="正在导出",
+                    message="正在生成文件，请稍候…",
+                )
             self._job_dialog.show()
         else:
             self.progress.show()

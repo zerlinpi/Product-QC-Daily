@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFileDialog,
     QFormLayout,
+    QGridLayout,
     QHBoxLayout,
     QLineEdit,
     QMessageBox,
@@ -100,7 +101,10 @@ class SettingsPage(Page):
                 True,
             )
         )
-        layout.addWidget(button("保存设置", self.save, primary=True))
+        save_row = QHBoxLayout()
+        save_row.addWidget(button("保存设置", self.save, primary=True))
+        save_row.addStretch()
+        layout.addLayout(save_row)
         body.addWidget(frame)
         frame, layout = card()
         toolbar = QHBoxLayout()
@@ -123,23 +127,24 @@ class SettingsPage(Page):
         layout.addWidget(label("数据维护", "section"))
         self.location = label(str(ctx.paths.root), "muted", True)
         layout.addWidget(self.location)
-        for titles in [
-            [
-                ("立即备份全部数据", self.backup),
-                ("恢复备份", self.restore),
-                ("检查数据是否正常", self.health),
-            ],
-            [
-                ("打开数据文件夹", self.open_folder),
-                ("前往报表导入", lambda: self.window.navigate(5)),
-                ("生成演示数据", self.demo),
-                ("删除全部演示数据", self.clear_demo),
-            ],
-        ]:
-            row = QHBoxLayout()
-            for title, action in titles:
-                row.addWidget(button(title, action, danger=title.startswith("删除")))
-            layout.addLayout(row)
+        maintenance = QGridLayout()
+        maintenance.setHorizontalSpacing(8)
+        maintenance.setVerticalSpacing(8)
+        actions = [
+            ("立即备份全部数据", self.backup),
+            ("恢复备份", self.restore),
+            ("检查数据是否正常", self.health),
+            ("打开数据文件夹", self.open_folder),
+            ("前往报表导入", lambda: self.window.navigate(5)),
+            ("生成演示数据", self.demo),
+            ("删除全部演示数据", self.clear_demo),
+        ]
+        for index, (title, action) in enumerate(actions):
+            control = button(title, action, danger=title.startswith("删除"))
+            maintenance.addWidget(control, index // 4, index % 4)
+        for column in range(4):
+            maintenance.setColumnStretch(column, 1)
+        layout.addLayout(maintenance)
         body.addWidget(frame)
         scroll.setWidget(content)
         self.layout.addWidget(scroll, 1)
@@ -293,9 +298,7 @@ class SettingsPage(Page):
             self.window.run_job(
                 "生成演示数据",
                 lambda: self.ctx.demo.generate(**options),
-                lambda count: self.window.notify(
-                    f"已生成 {count} 条演示记录，请在质量总览或检验记录页选择“演示数据”"
-                ),
+                self.window.show_demo_data,
             )
 
     def clear_demo(self):
