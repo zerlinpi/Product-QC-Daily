@@ -4,7 +4,8 @@
 
 - 基于 v1.1.12 的七页结构进行纯 UI/操作层收口，不新增页面、业务模块、数据库字段或 Excel 业务规则。
 - Windows 继续优先 WindowsVista / Windows Qt style；全局主题不再覆盖标准按钮、输入框、下拉框、日期框、菜单、表格表头、GroupBox、MessageBox、复选框和滚动条。
-- 验证内容容器使用 StyledPanel、统计指标使用 QGroupBox、导航按钮为紧凑 flat 桌面按钮、记录表行高 28px 且显示网格。
+- 验证内容容器使用 StyledPanel、统计指标使用 QGroupBox；侧栏导航使用原生 QListWidget，不再依赖自绘按钮，7 个入口保留系统图标和 Ctrl+1–7 快捷键。
+- 验证未保存录入拒绝切页时，页面与导航选择同步回退；页面标题为紧凑桌面尺度，记录表行高 28px 且显示原生网格。
 - 验证导入预览使用 QDialogButtonBox，导入按钮为默认操作，取消按钮保留标准 Windows Dialog 行为。
 - 打包 EXE self-test 增加 Windows 原生 style 和标准控件 QSS 隔离检查。
 - 完整 pytest 为 139 项；Linux/Windows Ruff、pytest、Windows PyInstaller onedir 和实际 EXE self-test 以本版本 GitHub Actions 结果为准。
