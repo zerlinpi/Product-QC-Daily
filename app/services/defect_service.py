@@ -30,6 +30,9 @@ class DefectService:
         if not code or not name or len(code) > 30 or len(name) > 150:
             raise ValueError("请输入有效编码和项目名称")
         with self.db.session() as session:
+            duplicate_id = session.scalar(select(DefectItem.id).where(DefectItem.code == code))
+            if duplicate_id is not None and duplicate_id != defect_id:
+                raise ValueError("不良项目编码已存在，请使用其他编码")
             row = session.get(DefectItem, defect_id) if defect_id else DefectItem()
             if row is None:
                 raise ValueError("不良项目不存在")
