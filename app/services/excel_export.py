@@ -7,8 +7,16 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from openpyxl import Workbook
+from openpyxl.chart.text import RichText
 from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
+from openpyxl.drawing.text import (
+    CharacterProperties,
+    Paragraph,
+    ParagraphProperties,
+    RichTextProperties,
+)
+from openpyxl.drawing.text import Font as DrawingFont
 from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils.units import pixels_to_EMU
@@ -18,6 +26,8 @@ from openpyxl.worksheet.views import Pane, Selection
 
 from app.core.labels import source_label
 from app.services.excel_common import load_compatible, write_text
+
+LEGACY_FORM_ROWS = 500
 
 HEADERS = [
     "填写ID",
@@ -46,6 +56,95 @@ def style_table(ws):
     for col in ws.columns:
         letter = col[0].column_letter
         ws.column_dimensions[letter].width = min(42, max(15, len(str(col[0].value or "")) * 2 + 4))
+
+
+def extend_legacy_form(ws, row_style, row_height, data_rows=0):
+    """Keep the original form visually continuous after the last saved record."""
+    last_row = max(LEGACY_FORM_ROWS + 1, data_rows + 1)
+    for row in range(2, last_row + 1):
+        ws.row_dimensions[row].height = row_height
+        if row <= data_rows + 1:
+            continue
+        for col, style in enumerate(row_style, 1):
+            cell = ws.cell(row, col)
+            cell._style = copy(style)
+            cell.value = None
+
+
+def improve_legacy_sheet_display(ws):
+    widths = {
+        "B": 26,
+        "C": 12,
+        "D": 20,
+        "E": 14,
+        "F": 14,
+        "G": 14,
+        "H": 18,
+        "I": 12,
+        "J": 18,
+        "K": 18,
+    }
+    for column, width in widths.items():
+        ws.column_dimensions[column].width = max(ws.column_dimensions[column].width or 0, width)
+    ws.row_dimensions[1].height = max(ws.row_dimensions[1].height or 18, 30)
+    for cell in ws[1]:
+        alignment = copy(cell.alignment)
+        alignment.wrap_text = True
+        alignment.vertical = "center"
+        cell.alignment = alignment
+
+
+def improve_chart_labels(chart):
+    formulas = []
+    for series in chart.series:
+        category = getattr(series, "cat", None)
+        if category is None:
+            continue
+        for name in ("strRef", "numRef", "multiLvlStrRef"):
+            ref = getattr(category, name, None)
+            if ref is not None and getattr(ref, "f", None):
+                formulas.append(ref.f.replace("'", ""))
+    long_axis = any(
+        token in formula
+        for formula in formulas
+        for token in ("$A$4:$A$27", "$A$34:$A$57")
+    )
+    if long_axis and getattr(chart, "x_axis", None) is not None:
+        chart.x_axis.txPr = RichText(
+            bodyPr=RichTextProperties(rot=-2700000),
+            p=[
+                Paragraph(
+                    pPr=ParagraphProperties(
+                        defRPr=CharacterProperties(sz=800, latin=DrawingFont(typeface="Microsoft YaHei"))
+                    )
+                )
+            ],
+        )
+
+
+def improve_analysis_display(ws):
+    for column, width in {
+        "A": 22,
+        "B": 18,
+        "C": 12,
+        "E": 14,
+        "F": 16,
+        "G": 14,
+        "H": 14,
+        "I": 14,
+        "J": 14,
+        "K": 13,
+    }.items():
+        ws.column_dimensions[column].width = max(ws.column_dimensions[column].width or 0, width)
+    for row in (2, 32):
+        ws.row_dimensions[row].height = max(ws.row_dimensions[row].height or 18, 30)
+    for row in (3, 33):
+        ws.row_dimensions[row].height = max(ws.row_dimensions[row].height or 18, 24)
+    ws.row_dimensions[61].height = max(ws.row_dimensions[61].height or 18, 40)
+    alignment = copy(ws["A61"].alignment)
+    alignment.wrap_text = True
+    alignment.vertical = "top"
+    ws["A61"].alignment = alignment
 
 
 def reset_workbook_views(wb, active_title, legacy=False):
@@ -149,6 +248,7 @@ def repair_analysis(wb, start: date, end: date, record_count: int):
             ws.cell(row, 12 if column == "L" else 13).alignment = Alignment(
                 wrap_text=True, vertical="center"
             )
+    improve_analysis_display(ws)
     ws.data_validations.dataValidation.clear()
     wb.calculation = CalcProperties(calcId=191029, fullCalcOnLoad=True, forceFullCalc=True)
 
@@ -212,15 +312,19 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         ws = wb["成品日检表"]
         write_text(ws["N1"], "数据来源")
         ws.column_dimensions["N"].hidden = True
-        row_style = [copy(c._style) for c in ws[2]]
-        row_height = ws.row_dimensions[2].height or ws.sheet_format.defaultRowHeight
+        legacy_layout = {}
         for name in ("成品日检表", "成品日检表报表"):
             sheet = wb[name]
+            legacy_layout[name] = (
+                [copy(c._style) for c in sheet[2]],
+                sheet.row_dimensions[2].height or sheet.sheet_format.defaultRowHeight,
+            )
             sheet.delete_rows(2, max(sheet.max_row - 1, 1))
             sheet._images.clear()
             for index in list(sheet.row_dimensions):
                 if index > 1:
                     del sheet.row_dimensions[index]
+        row_style, row_height = legacy_layout["成品日检表"]
     else:
         wb = Workbook()
         ws = wb.active
@@ -283,6 +387,12 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
                     [row["inspection_no"], d["code"], d["name"], d["quantity"], d["remark"]]
                 )
     if legacy:
+        extend_legacy_form(ws, row_style, row_height, count)
+        improve_legacy_sheet_display(ws)
+        duplicate = wb["成品日检表报表"]
+        duplicate_style, duplicate_height = legacy_layout["成品日检表报表"]
+        extend_legacy_form(duplicate, duplicate_style, duplicate_height, 0)
+        improve_legacy_sheet_display(duplicate)
         # The hidden duplicate is intentionally empty to avoid two copies being imported.
         repair_analysis(
             wb,
@@ -293,6 +403,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         for chart in wb["数据分析表"]._charts:
             clear_chart_caches(chart)
             repair_chart_ranges(chart)
+            improve_chart_labels(chart)
     else:
         summary = wb.create_sheet("统计摘要")
         summary.append(["指标", "数值"])
@@ -387,20 +498,22 @@ def create_empty_template(source: Path, target: Path) -> None:
     wb = load_compatible(source)
     for name in ("成品日检表", "成品日检表报表"):
         ws = wb[name]
-        for cells in ws.iter_rows(min_row=2):
-            for cell in cells:
-                cell.value = None
-        ws.delete_rows(3, ws.max_row)
+        row_style = [copy(c._style) for c in ws[2]]
+        row_height = ws.row_dimensions[2].height or ws.sheet_format.defaultRowHeight
+        ws.delete_rows(2, max(ws.max_row - 1, 1))
         ws._images.clear()
         for index in list(ws.row_dimensions):
-            if index > 2:
+            if index > 1:
                 del ws.row_dimensions[index]
+        extend_legacy_form(ws, row_style, row_height, 0)
+        improve_legacy_sheet_display(ws)
     analysis = wb["数据分析表"]
     analysis.delete_rows(62, max(analysis.max_row - 61, 1))
     analysis["M17"] = None  # An unused scratch calculation from the source data.
     for chart in analysis._charts:
         clear_chart_caches(chart)
         repair_chart_ranges(chart)
+        improve_chart_labels(chart)
     repair_analysis(wb, date(2026, 1, 1), date(2026, 1, 31), 0)
     reset_workbook_views(wb, "成品日检表", legacy=True)
     wb.properties.creator = "Product-QC-Daily"

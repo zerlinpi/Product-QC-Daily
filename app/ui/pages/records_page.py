@@ -380,7 +380,7 @@ class RecordsPage(Page):
                     filters,
                     legacy=not selected_format.startswith("明细报表"),
                 ),
-                lambda result: self.window.notify(f"已导出：{result}"),
+                self.window.export_completed,
             )
 
     def context_menu(self, position):

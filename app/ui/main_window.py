@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QMainWindow,
+    QMessageBox,
     QProgressBar,
     QStackedWidget,
     QVBoxLayout,
@@ -13,6 +14,7 @@ from PySide6.QtWidgets import (
 
 from app import __version__
 from app.ui.common import button, friendly_error, guarded, label
+from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.pages.analytics_page import AnalyticsPage
 from app.ui.pages.dashboard_page import DashboardPage
@@ -30,6 +32,8 @@ class MainWindow(QMainWindow):
         configure_chinese_ui(QApplication.instance())
         super().__init__()
         self.ctx, self._job = ctx, None
+        self._job_dialog = None
+        self._export_message = None
         self.setWindowTitle("成品日检管理系统")
         self.resize(1440, 920)
         self.setMinimumSize(1080, 720)
@@ -162,6 +166,23 @@ class MainWindow(QMainWindow):
     def notify(self, message):
         self.statusBar().showMessage(message, 15000)
 
+    def export_completed(self, result):
+        self.notify("导出完成")
+        if self._export_message is not None:
+            self._export_message.close()
+        box = QMessageBox(self)
+        box.setObjectName("exportCompleteDialog")
+        box.setIcon(QMessageBox.Icon.Information)
+        box.setWindowTitle("导出完成")
+        box.setText("导出完成")
+        box.setInformativeText(f"文件已成功保存到：\n{result}")
+        box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        box.setWindowModality(Qt.WindowModality.WindowModal)
+        box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        box.finished.connect(lambda *_: setattr(self, "_export_message", None))
+        self._export_message = box
+        box.open()
+
     @guarded
     def navigate(self, index):
         current = self.stack.currentIndex()
@@ -220,8 +241,14 @@ class MainWindow(QMainWindow):
         self._job = (thread, worker, callback, finished)
         self._job_result = None
         self.centralWidget().setEnabled(False)
-        self.progress.show()
-        self.statusBar().showMessage(name + "…")
+        if name.startswith("导出"):
+            self.progress.hide()
+            self.statusBar().clearMessage()
+            self._job_dialog = TaskProgressDialog(self, name)
+            self._job_dialog.show()
+        else:
+            self.progress.show()
+            self.statusBar().showMessage(name + "…")
         thread.started.connect(worker.run)
         worker.completed.connect(self._job_completed)
         worker.completed.connect(thread.quit)
@@ -242,6 +269,10 @@ class MainWindow(QMainWindow):
         self.centralWidget().setEnabled(True)
         self.progress.hide()
         self.statusBar().clearMessage()
+        if self._job_dialog is not None:
+            self._job_dialog.accept()
+            self._job_dialog.deleteLater()
+            self._job_dialog = None
         if finished:
             finished()
         if error:

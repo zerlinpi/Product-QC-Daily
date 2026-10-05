@@ -112,6 +112,6 @@ class ImportDialog(QDialog):
             self.window.run_job(
                 "导出异常报告",
                 lambda: self.ctx.excel.export_issues(self.preview, Path(path)),
-                lambda result: self.window.notify(f"异常报告：{result}"),
+                self.window.export_completed,
                 finished=lambda: self.setEnabled(True),
             )

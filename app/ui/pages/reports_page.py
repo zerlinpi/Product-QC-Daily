@@ -140,7 +140,7 @@ class ReportsPage(Page):
         )
         if path:
             self.window.run_job(
-                "生成报表",
+                "导出质量报表",
                 lambda: self.ctx.excel.export(Path(path), filters, legacy=legacy),
-                lambda result: self.window.notify(f"导出成功：{result}"),
+                self.window.export_completed,
             )
