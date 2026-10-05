@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QDialog, QHBoxLayout, QVBoxLayout
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
@@ -13,9 +14,10 @@ class ImportDialog(QDialog):
         self.ctx, self.window, self.preview = ctx, window, preview
         self.page = 1
         self.setWindowTitle("表格导入预览")
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.resize(1040, 680)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setContentsMargins(18, 16, 18, 16)
         layout.addWidget(label("检查导入内容", "title"))
         layout.addWidget(label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "muted"))
         layout.addWidget(

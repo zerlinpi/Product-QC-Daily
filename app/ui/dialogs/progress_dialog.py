@@ -5,10 +5,10 @@ from app.ui.common import label
 
 
 class TaskProgressDialog(QDialog):
-    def __init__(self, parent, title):
+    def __init__(self, parent, title, window_title="正在处理", message="请稍候…"):
         super().__init__(parent)
         self.setObjectName("taskProgressDialog")
-        self.setWindowTitle("正在导出")
+        self.setWindowTitle(window_title)
         self.setWindowModality(Qt.WindowModality.WindowModal)
         self.setModal(True)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
@@ -18,7 +18,7 @@ class TaskProgressDialog(QDialog):
         layout.setContentsMargins(20, 18, 20, 18)
         layout.setSpacing(10)
         layout.addWidget(label(title, "section"))
-        layout.addWidget(label("正在生成文件，请稍候…", "muted"))
+        layout.addWidget(label(message, "muted"))
         self.progress = QProgressBar()
         self.progress.setObjectName("taskProgress")
         self.progress.setRange(0, 0)
