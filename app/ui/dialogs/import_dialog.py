@@ -1,6 +1,6 @@
-from PySide6.QtCore import Qt
 from pathlib import Path
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QDialog, QHBoxLayout, QVBoxLayout
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
