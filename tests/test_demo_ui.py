@@ -70,6 +70,9 @@ def test_demo_dialog_uses_desktop_sections_and_clear_primary_action(ctx, qtbot):
     assert buttons.button(QDialogButtonBox.StandardButton.Ok).text() == "生成并查看"
     assert not bool(dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint)
     assert set(dialog.options()["teams"]) == {item["name"] for item in ctx.settings.teams(True)}
+    today = date.today()
+    assert dialog.start.date().toPython() == date(today.year, 1, 1)
+    assert dialog.end.date().toPython() == date(today.year, 12, 31)
 
 
 
