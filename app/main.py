@@ -43,6 +43,21 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     reopened = AppContext(ctx.paths.root)
     assert reopened.inspections.get(record["id"])["work_order"] == "PACKAGED-SMOKE"
     window = MainWindow(reopened)
+    if sys.platform == "win32":
+        assert app.style().objectName().lower() in ("windowsvista", "windows")
+    stylesheet = app.styleSheet()
+    for selector in (
+        "QPushButton {",
+        "QLineEdit",
+        "QComboBox",
+        "QDateEdit",
+        "QMenu {",
+        "QTableWidget {",
+        "QHeaderView::section",
+        "QGroupBox {",
+        "QMessageBox {",
+    ):
+        assert selector not in stylesheet
     controls = QDialogButtonBox(
         QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, window
     )
@@ -108,6 +123,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "export_view_reset": True,
         "export_path_dialog": True,
         "annual_standard_export": True,
+        "native_windows_ui": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)
