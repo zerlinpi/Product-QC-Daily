@@ -175,3 +175,58 @@ def test_entry_footer_tracks_saved_modified_copied_and_new_records(ctx, payload,
     assert "保存成功" in page.saved_note.text()
     page.reset()
     assert "本条尚未保存" in page.saved_note.text()
+
+
+
+def test_record_context_menu_targets_clicked_row(ctx, payload, qtbot):
+    from app.core.schemas import InspectionInput
+
+    ctx.inspections.save(InspectionInput(**(payload.model_dump() | {"work_order": "RIGHT-A"})))
+    ctx.inspections.save(InspectionInput(**(payload.model_dump() | {"work_order": "RIGHT-B"})))
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.show()
+    window.navigate(2)
+    page = window.pages[2]
+    page.table.selectRow(0)
+    target_id = page.rows[1]["id"]
+    point = page.table.visualItemRect(page.table.item(1, 0)).center()
+    page.select_context_row(point)
+
+    assert page.selected_ids() == [target_id]
+    assert page.selection_count.text() == "已选择 1 条"
+
+
+def test_defect_dialog_uses_desktop_window_flags_and_default_save(ctx, qtbot):
+    from PySide6.QtWidgets import QDialogButtonBox
+
+    from app.ui.dialogs.defect_dialog import DefectDialog
+
+    dialog = DefectDialog(ctx, None)
+    qtbot.addWidget(dialog)
+    assert not bool(dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint)
+    buttons = dialog.findChild(QDialogButtonBox)
+    assert buttons.button(QDialogButtonBox.StandardButton.Save).isDefault()
+
+
+def test_team_dialog_uses_desktop_window_flags_and_default_save(ctx, qtbot, monkeypatch):
+    from PySide6.QtWidgets import QDialog, QDialogButtonBox
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[6]
+    observed = {}
+
+    def inspect(dialog):
+        observed["help"] = bool(
+            dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint
+        )
+        buttons = dialog.findChild(QDialogButtonBox)
+        observed["default_save"] = buttons.button(QDialogButtonBox.StandardButton.Save).isDefault()
+        observed["minimum_width"] = dialog.minimumWidth()
+        return QDialog.DialogCode.Rejected
+
+    monkeypatch.setattr(QDialog, "exec", inspect)
+    page.edit_team(False)
+
+    assert observed == {"help": False, "default_save": True, "minimum_width": 380}

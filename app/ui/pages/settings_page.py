@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -220,6 +220,8 @@ class SettingsPage(Page):
             return
         dialog = QDialog(self)
         dialog.setWindowTitle("编辑组别" if item else "新增组别")
+        dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
+        dialog.setMinimumWidth(380)
         layout, form = QVBoxLayout(dialog), QFormLayout()
         name = QLineEdit(item["name"] if item else "")
         enabled = QCheckBox("启用")
@@ -233,6 +235,7 @@ class SettingsPage(Page):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
+        buttons.button(QDialogButtonBox.StandardButton.Save).setDefault(True)
         layout.addWidget(buttons)
         buttons.rejected.connect(dialog.reject)
 

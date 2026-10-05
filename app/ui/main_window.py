@@ -185,12 +185,15 @@ class MainWindow(QMainWindow):
 
     def show_demo_data(self, count, start=None, end=None):
         today = date.today()
-        includes_current_month = (
+        current_month_only = (
             start is None
             or end is None
-            or (start.year, start.month) <= (today.year, today.month) <= (end.year, end.month)
+            or (
+                (start.year, start.month) == (today.year, today.month)
+                and (end.year, end.month) == (today.year, today.month)
+            )
         )
-        if not includes_current_month:
+        if not current_month_only:
             self.navigate(3)
             self.pages[3].show_demo_range(start, end)
             self.notify(

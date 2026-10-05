@@ -137,3 +137,11 @@ def test_save_does_not_read_after_commit_or_delete_committed_signature(
     )
     assert (ctx.paths.signatures / result["signature_path"]).exists()
     assert ctx.inspections.query(RecordFilter())[1] == 1
+
+
+
+def test_duplicate_team_and_defect_code_errors_are_actionable(ctx):
+    with pytest.raises(ValueError, match="组别名称已存在"):
+        ctx.settings.save_team("U1")
+    with pytest.raises(ValueError, match="不良项目编码已存在"):
+        ctx.defects.save({"code": "a", "name": "重复编码"})

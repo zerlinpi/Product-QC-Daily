@@ -1,3 +1,4 @@
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -16,6 +17,7 @@ class DefectDialog(QDialog):
         super().__init__(parent)
         self.ctx, self.item = ctx, item
         self.setWindowTitle("编辑不良项目" if item else "新增不良项目")
+        self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.setMinimumWidth(460)
         layout = QVBoxLayout(self)
         layout.addWidget(label("编码和名称为必填项；排序数值越小，显示越靠前。", "muted", True))
@@ -41,6 +43,7 @@ class DefectDialog(QDialog):
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
         )
+        buttons.button(QDialogButtonBox.StandardButton.Save).setDefault(True)
         buttons.accepted.connect(self.save)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
