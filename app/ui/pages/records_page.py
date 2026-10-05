@@ -104,7 +104,8 @@ class RecordsPage(Page):
         grid.addWidget(self.trash, 2, 3)
         filter_actions = QHBoxLayout()
         filter_actions.addWidget(button("重置筛选", self.reset_filters))
-        filter_actions.addWidget(button("查询", self.search_records, primary=True))
+        self.query_button = button("查询", self.search_records, primary=True)
+        filter_actions.addWidget(self.query_button)
         grid.addLayout(filter_actions, 2, 4)
         box.addLayout(grid)
         self.layout.addWidget(filters)
@@ -149,6 +150,8 @@ class RecordsPage(Page):
         self.table.customContextMenuRequested.connect(self.context_menu)
         self.table.itemSelectionChanged.connect(self.update_selection_state)
         self.trash.toggled.connect(self.search_records)
+        self.start.dateChanged.connect(self.update_date_range_state)
+        self.end.dateChanged.connect(self.update_date_range_state)
         self.layout.addWidget(self.table, 1)
         footer = QHBoxLayout()
         self.count = label("暂无记录", "muted")
@@ -160,9 +163,28 @@ class RecordsPage(Page):
         self.layout.addLayout(footer)
         self.update_selection_state()
 
+    def date_range_valid(self):
+        return (
+            not self.range_enabled.isChecked()
+            or self.start.date() <= self.end.date()
+        )
+
+    def update_date_range_state(self, *_):
+        valid = self.date_range_valid()
+        if hasattr(self, "query_button"):
+            self.query_button.setEnabled(valid)
+        if hasattr(self, "count"):
+            self.count.setText(
+                "筛选条件已更改 · 点击“查询”应用"
+                if valid
+                else "日期范围无效：开始日期不能晚于结束日期 · 当前表格仍为上一次查询结果"
+            )
+        return valid
+
     def set_date_range_enabled(self, enabled):
         self.start.setEnabled(enabled)
         self.end.setEnabled(enabled)
+        self.update_date_range_state()
 
     def reset_filters(self):
         self.range_enabled.setChecked(False)
@@ -238,6 +260,9 @@ class RecordsPage(Page):
 
     @guarded
     def load_rows(self):
+        if not self.date_range_valid():
+            self.update_date_range_state()
+            return
         filters = self.filters()
         rows, total = self.ctx.inspections.query(filters)
         if not rows and total and self.page > 1:

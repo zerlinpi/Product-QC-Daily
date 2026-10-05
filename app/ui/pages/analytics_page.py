@@ -44,7 +44,8 @@ class AnalyticsPage(Page):
         for col, (title, widget) in enumerate(controls):
             filters.addWidget(label(title, "fieldLabel"), 0, col)
             filters.addWidget(widget, 1, col)
-        filters.addWidget(button("开始分析", self.refresh, primary=True), 1, len(controls))
+        self.analyze_button = button("开始分析", self.refresh, primary=True)
+        filters.addWidget(self.analyze_button, 1, len(controls))
         filter_box.addLayout(filters)
         self.scope = label("", "muted")
         filter_box.addWidget(self.scope)
@@ -134,12 +135,24 @@ class AnalyticsPage(Page):
         self.source.blockSignals(blocked)
         self.refresh()
 
+    def date_range_valid(self):
+        return self.start.date() <= self.end.date()
+
     def mark_stale(self, *_):
-        self.scope.setText("筛选条件已更改 · 点击“开始分析”更新结果")
+        valid = self.date_range_valid()
+        self.analyze_button.setEnabled(valid)
+        self.scope.setText(
+            "筛选条件已更改 · 点击“开始分析”更新结果"
+            if valid
+            else "日期范围无效：开始日期不能晚于结束日期"
+        )
 
     @guarded
     def refresh(self, *_):
         self.sync_preset_range()
+        if not self.date_range_valid():
+            self.mark_stale()
+            return
         filters = RecordFilter(
             start=self.start.date().toPython(),
             end=self.end.date().toPython(),
