@@ -101,6 +101,22 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     reports.end.setDate(QDate(2026, 10, 2))
     assert reports.original_export.isEnabled()
     assert reports.detailed_export.isEnabled()
+
+    analytics = window.pages[3]
+    analytics.preset.setCurrentText("自定义")
+    analytics.start.setDate(QDate(2026, 10, 2))
+    analytics.end.setDate(QDate(2026, 10, 1))
+    assert not analytics.analyze_button.isEnabled()
+    assert "日期范围无效" in analytics.scope.text()
+
+    records = window.pages[2]
+    records.range_enabled.setChecked(True)
+    records.start.setDate(QDate(2026, 10, 2))
+    records.end.setDate(QDate(2026, 10, 1))
+    assert not records.query_button.isEnabled()
+    records.refresh()
+    assert "上一次查询结果" in records.count.text()
+
     assert header_footer_text("A" * 63 + "&TRAILING", 64).endswith("&&")
 
     output = reopened.excel.export(
