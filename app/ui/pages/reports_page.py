@@ -1,7 +1,15 @@
 from pathlib import Path
 
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QGridLayout, QGroupBox, QHBoxLayout, QVBoxLayout
+from PySide6.QtWidgets import (
+    QComboBox,
+    QDateEdit,
+    QFileDialog,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QVBoxLayout,
+)
 
 from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
