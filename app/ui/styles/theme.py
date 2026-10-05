@@ -56,7 +56,7 @@ def apply_theme(mode="light"):
             "#252525",
         )
     else:
-        bg, panel, text, muted, border, hover, selected, sidebar = (
+        bg, panel, text, muted, border, sidebar = (
             "#f3f3f3",
             "#ffffff",
             "#1f1f1f",
