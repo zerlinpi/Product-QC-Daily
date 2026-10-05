@@ -62,10 +62,12 @@ class SettingsService:
             row = session.get(Team, team_id) if team_id else Team()
             if row is None:
                 raise ValueError("组别不存在")
-            if team_id and row.name != name:
+            if team_id:
                 setting = session.get(Setting, "default_team")
                 default_team = json.loads(setting.value) if setting else DEFAULTS["default_team"]
-                if default_team == row.name:
+                if default_team == row.name and not enabled:
+                    raise ValueError("默认组别不能停用，请先在基础设置中选择其他默认组别")
+                if row.name != name and default_team == row.name:
                     session.merge(
                         Setting(key="default_team", value=json.dumps(name, ensure_ascii=False))
                     )
