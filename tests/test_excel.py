@@ -460,11 +460,16 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert records["L2"].alignment.wrap_text
     assert records["I2"].fill.fgColor.rgb.endswith("FCE4D6")
     assert records["I2"].font.bold
+    assert records.freeze_panes == "C2"
+    assert records.sheet_view.zoomScale == 85
+    assert records["E2"].number_format == "#,##0"
 
     summary = wb["统计摘要"]
     assert summary.page_setup.orientation == "portrait"
     assert not summary.sheet_view.showGridLines
     assert summary.column_dimensions["B"].width >= 48
+    assert summary.sheet_view.zoomScale == 100
+    assert summary["B2"].number_format == "#,##0"
 
     monthly = wb["月度统计"]
     assert monthly["A2"].value
@@ -472,6 +477,10 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert monthly.cell(monthly.max_row, 6).number_format == "0.00%"
     assert monthly.cell(monthly.max_row, 8).number_format == "0.00%"
     assert len(monthly._charts) == 2
-    assert len(monthly.conditional_formatting) == 3
+    assert len(monthly.conditional_formatting) == 7
+    assert monthly.auto_filter.ref == f"A1:H{monthly.max_row - 1}"
+    assert monthly.sheet_view.zoomScale == 85
+    assert monthly["B2"].number_format == "#,##0"
+    assert monthly["G2"].number_format == "#,##0"
     assert monthly.print_area
     wb.close()
