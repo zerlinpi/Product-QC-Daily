@@ -384,6 +384,12 @@ class RecordsPage(Page):
             )
 
     def context_menu(self, position):
+        row = self.table.rowAt(position.y())
+        selected_rows = {index.row() for index in self.table.selectionModel().selectedRows()}
+        if row >= 0 and row not in selected_rows:
+            self.table.clearSelection()
+            self.table.selectRow(row)
+            self.table.setCurrentCell(row, 0)
         menu = QMenu(self)
         for key, callback in [
             ("edit", self.edit),
