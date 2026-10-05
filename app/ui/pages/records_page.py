@@ -44,6 +44,8 @@ class RecordsPage(Page):
         )
         self.page, self.sort, self.descending, self.rows = 1, "inspection_date", True, []
         self.applied_filters = RecordFilter()
+        self.filters_dirty = False
+        self.result_summary = "暂无记录"
         filters, box = card()
         grid = QGridLayout()
         grid.setHorizontalSpacing(10)
@@ -150,8 +152,6 @@ class RecordsPage(Page):
         self.table.customContextMenuRequested.connect(self.context_menu)
         self.table.itemSelectionChanged.connect(self.update_selection_state)
         self.trash.toggled.connect(self.search_records)
-        self.start.dateChanged.connect(self.update_date_range_state)
-        self.end.dateChanged.connect(self.update_date_range_state)
         self.layout.addWidget(self.table, 1)
         footer = QHBoxLayout()
         self.count = label("暂无记录", "muted")
@@ -161,6 +161,12 @@ class RecordsPage(Page):
         footer.addWidget(self.previous_button)
         footer.addWidget(self.next_button)
         self.layout.addLayout(footer)
+        for widget in (self.team, self.judgment, self.source, self.defect, self.has_defects):
+            widget.currentIndexChanged.connect(self.update_filter_state)
+        for widget in (self.search, self.work_order, self.inspector):
+            widget.textChanged.connect(self.update_filter_state)
+        self.start.dateChanged.connect(self.update_filter_state)
+        self.end.dateChanged.connect(self.update_filter_state)
         self.update_selection_state()
 
     def date_range_valid(self):
@@ -169,22 +175,46 @@ class RecordsPage(Page):
             or self.start.date() <= self.end.date()
         )
 
-    def update_date_range_state(self, *_):
+    def filter_values_match_applied(self):
+        if not self.date_range_valid():
+            return False
+        exclude = {"page", "page_size", "sort", "descending"}
+        return self.filters().model_dump(exclude=exclude) == self.applied_filters.model_dump(
+            exclude=exclude
+        )
+
+    def update_filter_state(self, *_):
         valid = self.date_range_valid()
+        dirty = valid and not self.filter_values_match_applied()
+        self.filters_dirty = not valid or dirty
         if hasattr(self, "query_button"):
             self.query_button.setEnabled(valid)
         if hasattr(self, "count"):
-            self.count.setText(
-                "筛选条件已更改 · 点击“查询”应用"
-                if valid
-                else "日期范围无效：开始日期不能晚于结束日期 · 当前表格仍为上一次查询结果"
-            )
+            if not valid:
+                self.count.setText(
+                    "日期范围无效：开始日期不能晚于结束日期 · 当前表格仍为上一次查询结果"
+                )
+            elif dirty:
+                self.count.setText(
+                    "筛选条件已更改 · 当前表格仍为上一次查询结果 · 点击“查询”应用"
+                )
+            else:
+                self.count.setText(self.result_summary)
+        if hasattr(self, "previous_button"):
+            self.previous_button.setEnabled(not self.filters_dirty and self.page > 1)
+            pages = max(1, (getattr(self, "total", 0) + 49) // 50)
+            self.next_button.setEnabled(not self.filters_dirty and self.page < pages)
+        if hasattr(self, "action_buttons"):
+            self.update_selection_state()
         return valid
+
+    def update_date_range_state(self, *_):
+        return self.update_filter_state()
 
     def set_date_range_enabled(self, enabled):
         self.start.setEnabled(enabled)
         self.end.setEnabled(enabled)
-        self.update_date_range_state()
+        self.update_filter_state()
 
     def reset_filters(self):
         self.range_enabled.setChecked(False)
@@ -217,11 +247,19 @@ class RecordsPage(Page):
             self.action_buttons[key].setVisible(not trash)
         self.action_buttons["export"].setEnabled(bool(self.rows))
         self.action_buttons["export"].setText(f"导出已选 {count} 条" if count else "导出列表")
-        self.action_buttons["export"].setToolTip(
-            f"仅导出已选择的 {count} 条记录"
-            if count
-            else "导出当前查询结果的全部记录，包含其他分页"
-        )
+        if self.filters_dirty:
+            export_tip = (
+                f"筛选条件尚未应用；仅导出当前表格已选择的 {count} 条记录"
+                if count
+                else "筛选条件尚未应用；仍按当前表格的上一次查询结果导出全部分页"
+            )
+        else:
+            export_tip = (
+                f"仅导出已选择的 {count} 条记录"
+                if count
+                else "导出当前查询结果的全部记录，包含其他分页"
+            )
+        self.action_buttons["export"].setToolTip(export_tip)
         for key in ("team", "inspector"):
             self.action_buttons[key].setToolTip("可选中多条记录后一起修改")
 
@@ -261,7 +299,7 @@ class RecordsPage(Page):
     @guarded
     def load_rows(self):
         if not self.date_range_valid():
-            self.update_date_range_state()
+            self.update_filter_state()
             return
         filters = self.filters()
         rows, total = self.ctx.inspections.query(filters)
@@ -286,12 +324,14 @@ class RecordsPage(Page):
             ],
         )
         pages = max(1, (total + 49) // 50)
-        self.count.setText(
+        self.result_summary = (
             f"共 {total:,} 条 · 第 {self.page} / {pages} 页 · 每页 50 条"
             + (" · 回收站" if self.trash.isChecked() else "")
             + (" · 可调整条件或重置筛选" if not total else "")
         )
+        self.count.setText(self.result_summary)
         self.total = total
+        self.filters_dirty = False
         self.previous_button.setEnabled(self.page > 1)
         self.next_button.setEnabled(self.page < pages)
         self.update_selection_state()
@@ -306,10 +346,15 @@ class RecordsPage(Page):
         self.load_rows()
 
     def turn(self, delta):
+        if self.filters_dirty:
+            return
         self.page = max(1, min(self.page + delta, max(1, (getattr(self, "total", 0) + 49) // 50)))
         self.load_rows()
 
     def sort_by(self, column):
+        if self.filters_dirty:
+            self.window.notify("筛选条件尚未应用，请先点击“查询”再排序")
+            return
         self.descending = not self.descending if self.sort == self.columns[column] else True
         self.sort = self.columns[column]
         self.table.horizontalHeader().setSortIndicator(
