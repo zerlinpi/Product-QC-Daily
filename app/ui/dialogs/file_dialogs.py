@@ -35,7 +35,7 @@ def save_excel(parent, title, default_path, file_filter):
     dialog = ExcelSaveDialog(parent, title, default_path, file_filter)
     try:
         if dialog.exec() == QDialog.DialogCode.Accepted:
-            return dialog.selectedFiles()[0], dialog.selectedNameFilter()
+            return str(Path(dialog.selectedFiles()[0])), dialog.selectedNameFilter()
         return "", ""
     finally:
         dialog.deleteLater()

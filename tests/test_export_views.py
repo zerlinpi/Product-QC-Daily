@@ -96,3 +96,30 @@ def test_bundled_template_has_no_saved_production_scroll_state(ctx):
     wb = load_workbook(ctx.paths.template)
     assert_clean_views(wb, "成品日检表", True)
     wb.close()
+
+
+
+@pytest.mark.parametrize("operation", ["prepare_template", "export"])
+def test_external_template_hidden_primary_sheet_is_restored_and_source_is_unchanged(
+    ctx, payload, tmp_path, operation
+):
+    source, target = tmp_path / "hidden-primary.xlsx", tmp_path / "result.xlsx"
+    wb = load_workbook(ctx.paths.template)
+    wb["成品日检表"].sheet_state = "hidden"
+    wb.active = wb["数据分析表"]
+    wb.save(source)
+    wb.close()
+    original = source.read_bytes()
+
+    if operation == "prepare_template":
+        create_empty_template(source, target)
+    else:
+        ctx.inspections.save(payload)
+        ctx.settings.update({"template_path": str(source)})
+        ctx.excel.export(target, RecordFilter(), legacy=True, prefer_com=False)
+
+    result = load_workbook(target)
+    assert result["成品日检表"].sheet_state == "visible"
+    assert_clean_views(result, "成品日检表", True)
+    assert source.read_bytes() == original
+    result.close()

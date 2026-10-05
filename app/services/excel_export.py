@@ -55,8 +55,14 @@ def reset_workbook_views(wb, active_title, legacy=False):
     The source template scrolled to B453 and selected I454, which conflicts
     with a newly frozen C2 pane in Excel/WPS. Rebuild one consistent view.
     """
-    wb.active = wb[active_title]
-    wb.views = [BookView(activeTab=wb.index(wb.active))]
+    active_sheet = wb[active_title]
+    # External templates can hide the primary record sheet. openpyxl refuses
+    # to activate a hidden worksheet, so restore the exported primary sheet
+    # to visible in the output without modifying the source template.
+    if active_sheet.sheet_state != "visible":
+        active_sheet.sheet_state = "visible"
+    wb.active = active_sheet
+    wb.views = [BookView(activeTab=wb.index(active_sheet))]
     for ws in wb:
         view = copy(ws.sheet_view)
         view.workbookViewId = 0
