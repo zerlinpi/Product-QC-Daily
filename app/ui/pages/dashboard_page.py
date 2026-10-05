@@ -13,7 +13,8 @@ class DashboardPage(Page):
     def __init__(self, ctx, window):
         super().__init__(ctx, window, "质量总览", "查看今日与本月检验情况，及时发现质量变化")
         toolbar = QHBoxLayout()
-        toolbar.addWidget(label(date.today().strftime("%Y 年 %m 月 %d 日"), "muted"))
+        self.today_label = label(date.today().strftime("%Y 年 %m 月 %d 日"), "muted")
+        toolbar.addWidget(self.today_label)
         toolbar.addStretch()
         toolbar.addWidget(label("数据范围", "fieldLabel"))
         self.source = QComboBox()
@@ -73,6 +74,7 @@ class DashboardPage(Page):
         if not hasattr(self, "cards"):
             return
         today = date.today()
+        self.today_label.setText(today.strftime("%Y 年 %m 月 %d 日"))
         source = "production" if self.source.currentIndex() == 0 else "demo"
         daily_filter = RecordFilter(start=today, end=today, source=source)
         month_start, month_end = date_range("本月", today)
