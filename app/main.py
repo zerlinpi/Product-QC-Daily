@@ -9,7 +9,7 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 from PySide6.QtCore import QLockFile, QTimer
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QDialogButtonBox, QFileDialog, QMessageBox
 
 from app import __version__
@@ -21,6 +21,7 @@ from app.ui.common import friendly_error
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.main_window import MainWindow
+from app.ui.styles.theme import configure_platform_style
 
 
 def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> int:
@@ -104,8 +105,7 @@ def main() -> int:
     app.setApplicationName("Product-QC-Daily")
     app.setApplicationVersion(__version__)
     app.setOrganizationName("Product-QC-Daily")
-    app.setStyle("Fusion")
-    app.setFont(QFont("Microsoft YaHei UI", 10))
+    configure_platform_style(app)
     app.setWindowIcon(QIcon(str(resource_path("assets/icons/app.svg"))))
     ctx = None
     try:
