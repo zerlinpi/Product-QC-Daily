@@ -117,8 +117,11 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         f"N{workbook['检验记录'].max_row}"
     )
     monthly = workbook["月度统计"]
-    assert monthly.max_row == 13
+    assert monthly.max_row == 14
+    assert monthly["A14"].value == "合计"
     assert len(monthly._charts) == 2
+    assert workbook["检验记录"].page_setup.orientation == "landscape"
+    assert not workbook["检验记录"].sheet_view.showGridLines
     workbook.close()
     backup = reopened.backup.backup()
     reopened.backup.restore(backup)
