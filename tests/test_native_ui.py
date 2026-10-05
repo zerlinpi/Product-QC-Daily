@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QFrame
+from PySide6.QtWidgets import QApplication, QFrame, QGroupBox
 
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.main_window import MainWindow
@@ -32,8 +32,11 @@ def test_main_navigation_uses_system_icons_and_compact_desktop_metrics(ctx, qtbo
     ]
     assert all(not button.icon().isNull() for button in window.nav_buttons)
     sidebar = window.findChild(QFrame, "qcSidebar")
-    assert sidebar is not None and sidebar.width() == 184
-    assert window.pages[2].table.verticalHeader().defaultSectionSize() == 34
+    assert sidebar is not None and sidebar.width() == 176
+    assert all(button.isFlat() and button.minimumHeight() == 30 for button in window.nav_buttons)
+    records = window.pages[2].table
+    assert records.verticalHeader().defaultSectionSize() == 28
+    assert records.showGrid()
 
 
 def test_native_primitives_are_not_overpainted_by_global_theme(ctx, qtbot):
@@ -44,6 +47,33 @@ def test_native_primitives_are_not_overpainted_by_global_theme(ctx, qtbot):
     assert "font-family" not in stylesheet
     assert "QScrollBar" not in stylesheet
     assert "QCheckBox::indicator" not in stylesheet
+    for selector in (
+        "QPushButton {",
+        "QLineEdit",
+        "QComboBox",
+        "QDateEdit",
+        "QMenu {",
+        "QTableWidget {",
+        "QHeaderView::section",
+        "QGroupBox {",
+        "QMessageBox {",
+    ):
+        assert selector not in stylesheet
     dialog = TaskProgressDialog(window, "导出报表")
     qtbot.addWidget(dialog)
     assert not bool(dialog.windowFlags() & Qt.WindowType.WindowCloseButtonHint)
+
+
+
+def test_sections_and_metrics_use_native_desktop_frames(ctx, qtbot):
+    from app.ui.common import card
+    from app.ui.widgets.stat_card import stat_card
+
+    panel, _ = card()
+    qtbot.addWidget(panel)
+    assert panel.frameShape() == QFrame.Shape.StyledPanel
+
+    metric = stat_card("今日检验批次")
+    qtbot.addWidget(metric)
+    assert isinstance(metric, QGroupBox)
+    assert metric.title() == "今日检验批次"
