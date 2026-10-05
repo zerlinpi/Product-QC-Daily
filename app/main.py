@@ -1,7 +1,6 @@
 """Desktop entry point; all user data remains outside the installation."""
 
 import argparse
-import hashlib
 import json
 import logging
 import os
@@ -25,6 +24,7 @@ from app.core.context import AppContext
 from app.core.logger import setup_logging
 from app.core.paths import AppPaths, resource_path
 from app.core.schemas import InspectionInput, RecordFilter
+from app.services.excel_common import file_sha256
 from app.services.excel_export import header_footer_text
 from app.ui.common import friendly_error
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
@@ -139,7 +139,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert sheet.sheet_view.selection[-1].activeCell == "C2"
     workbook.close()
     preview = reopened.excel.preview(output)
-    assert preview.file_hash == hashlib.sha256(output.read_bytes()).hexdigest()
+    assert preview.file_hash == file_sha256(output)
     year = date.today().year
     reopened.settings.update({"company": "自检公司", "factory": "一厂"})
     standard = reopened.excel.export(
