@@ -55,6 +55,33 @@ def display_width(value) -> int:
     return sum(2 if ord(char) > 127 else 1 for char in text)
 
 
+def header_footer_text(value, limit=72) -> str:
+    """Keep user text safe inside Excel header/footer control syntax."""
+    text = " ".join(str(value or "").split()).replace("&", "&&")
+    return text[:limit]
+
+
+def apply_standard_report_identity(wb, settings: dict, filters, start, end) -> None:
+    company = str(settings.get("company") or "").strip()
+    factory = str(settings.get("factory") or "").strip()
+    identity = " · ".join(value for value in (company, factory) if value) or "成品日检管理系统"
+    date_range = f"{start or '未限定'} 至 {end or '未限定'}"
+    source = source_label(filters.source)
+
+    wb.properties.creator = identity
+    wb.properties.lastModifiedBy = "Product-QC-Daily"
+    wb.properties.title = f"成品日检质量报表 · {date_range}"
+    wb.properties.subject = f"{source} · {date_range}"
+
+    for ws in wb:
+        ws.oddHeader.left.text = header_footer_text(identity, 64)
+        ws.oddHeader.center.text = header_footer_text(f"质量报表 · {ws.title}", 48)
+        ws.oddHeader.right.text = header_footer_text(date_range, 64)
+        ws.oddFooter.left.text = header_footer_text(source, 32)
+        ws.oddFooter.center.text = "第 &P 页 / 共 &N 页"
+        ws.oddFooter.right.text = "&F"
+
+
 def style_table(ws):
     """Format the standard workbook as a print-ready QC report.
 
@@ -176,11 +203,19 @@ def style_table(ws):
         ws.sheet_properties.tabColor = "A5A5A5"
     elif ws.title == "统计摘要":
         ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT
+        note_labels = {"口径", "数据范围", "日期范围"}
         for row in range(2, last_row + 1):
-            ws.cell(row, 1).font = Font(name="Microsoft YaHei", size=9, bold=True, color="44546A")
+            label_cell = ws.cell(row, 1)
             value = ws.cell(row, 2)
-            value.font = Font(name="Microsoft YaHei", size=10, bold=True)
+            label_cell.font = Font(name="Microsoft YaHei", size=9, bold=True, color="44546A")
             value.alignment = Alignment(vertical="center", wrap_text=True)
+            if label_cell.value in note_labels:
+                label_cell.fill = PatternFill("solid", fgColor="F2F2F2")
+                value.fill = PatternFill("solid", fgColor="F2F2F2")
+                value.font = Font(name="Microsoft YaHei", size=9, color="595959")
+            else:
+                label_cell.fill = PatternFill("solid", fgColor="D9EAF7")
+                value.font = Font(name="Microsoft YaHei", size=10, bold=True)
             if isinstance(value.value, (int, float)) and value.number_format != "0.00%":
                 value.number_format = "#,##0"
         ws.sheet_properties.tabColor = "70AD47"
@@ -779,6 +814,13 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
                     if cell.data_type == "f":
                         cell.data_type = "s"
             style_table(sheet)
+        apply_standard_report_identity(
+            wb,
+            ctx.settings.all(),
+            filters,
+            filters.start or minimum,
+            filters.end or maximum,
+        )
     # A full timestamp needs more room than the short date in the old template.
     # Apply this after standard table styling, which otherwise resets B to 15.
     ws.column_dimensions["B"].width = max(ws.column_dimensions["B"].width, 26)
