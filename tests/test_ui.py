@@ -1,6 +1,5 @@
-from PySide6.QtCore import Qt
-
 import pytest
+from PySide6.QtCore import Qt
 
 
 def test_ui_entry_save_and_reopen_without_duplicate(ctx, qtbot):
