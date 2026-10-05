@@ -449,7 +449,7 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     )
     path = ctx.excel.export(
         tmp_path / "styled-standard.xlsx",
-        RecordFilter(start=date.today().replace(day=1), end=date.today(), source="production"),
+        RecordFilter(start=payload.inspection_date, end=payload.inspection_date, source="production"),
         legacy=False,
         prefer_com=False,
     )
