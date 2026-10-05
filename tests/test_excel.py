@@ -484,3 +484,47 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert monthly["G2"].number_format == "#,##0"
     assert monthly.print_area
     wb.close()
+
+
+
+def test_standard_export_print_identity_and_summary_hierarchy(ctx, payload, tmp_path):
+    from app.core.schemas import RecordFilter
+
+    ctx.settings.update({"company": "A&B Quality", "factory": "东莞一厂"})
+    ctx.inspections.save(payload)
+    path = ctx.excel.export(
+        tmp_path / "identity-report.xlsx",
+        RecordFilter(
+            start=payload.inspection_date,
+            end=payload.inspection_date,
+            source="production",
+        ),
+        legacy=False,
+        prefer_com=False,
+    )
+    wb = load_workbook(path)
+    assert wb.properties.creator == "A&B Quality · 东莞一厂"
+    assert wb.properties.lastModifiedBy == "Product-QC-Daily"
+    assert "正式数据" in wb.properties.subject
+    assert str(payload.inspection_date) in wb.properties.title
+
+    for ws in wb:
+        assert "A&&B Quality" in ws.oddHeader.left.text
+        assert ws.title in ws.oddHeader.center.text
+        assert str(payload.inspection_date) in ws.oddHeader.right.text
+        assert ws.oddFooter.left.text == "正式数据"
+        assert "&P" in ws.oddFooter.center.text
+        assert "&N" in ws.oddFooter.center.text
+        assert ws.oddFooter.right.text == "&F"
+
+    summary = wb["统计摘要"]
+    assert summary["A2"].fill.fgColor.rgb.endswith("D9EAF7")
+    note_rows = {
+        summary.cell(row, 1).value: row for row in range(2, summary.max_row + 1)
+    }
+    for label in ("口径", "数据范围", "日期范围"):
+        row = note_rows[label]
+        assert summary.cell(row, 1).fill.fgColor.rgb.endswith("F2F2F2")
+        assert summary.cell(row, 2).fill.fgColor.rgb.endswith("F2F2F2")
+        assert not summary.cell(row, 2).font.bold
+    wb.close()
