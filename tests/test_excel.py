@@ -578,3 +578,24 @@ def test_import_preview_closes_workbook_on_early_validation_error(ctx, tmp_path,
     with pytest.raises(ValueError, match="未找到包含记录编号"):
         ctx.excel.preview(path)
     assert closed == [True]
+
+
+
+def test_import_hashing_is_streamed_without_path_read_bytes(ctx, tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from app.core.schemas import RecordFilter
+
+    path = workbook(tmp_path / "stream-hash.xlsx", [row("STREAM-1")])
+    real_read_bytes = Path.read_bytes
+
+    def reject_whole_file_read(self):
+        if self == path:
+            raise AssertionError("导入源文件不应使用 Path.read_bytes 整体读入内存")
+        return real_read_bytes(self)
+
+    monkeypatch.setattr(Path, "read_bytes", reject_whole_file_read)
+    preview = ctx.excel.preview(path)
+    assert preview.counts["valid"] == 1
+    assert ctx.excel.import_preview(preview) == 1
+    assert ctx.inspections.query(RecordFilter())[1] == 1
