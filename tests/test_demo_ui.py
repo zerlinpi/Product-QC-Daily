@@ -158,3 +158,35 @@ def test_demo_dialog_rejects_invalid_options_before_background_job(
         weight.setValue(0)
     dialog.accept()
     assert errors[-1] == "请至少为一个不良项目设置大于 0 的相对频率"
+
+
+@pytest.mark.parametrize(
+    ("start", "end"),
+    [
+        (date(2026, 6, 1), date(2026, 6, 10)),
+        (date(2026, 6, 20), date(2026, 6, 25)),
+    ],
+)
+def test_same_month_demo_range_outside_today_opens_exact_analysis_range(
+    ctx, qtbot, monkeypatch, start, end
+):
+    import app.ui.main_window as main_window_module
+
+    class FixedDate(date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 6, 15)
+
+    monkeypatch.setattr(main_window_module, "date", FixedDate)
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    window.show_demo_data(3, start, end)
+
+    analytics = window.pages[3]
+    assert window.stack.currentIndex() == 3
+    assert analytics.preset.currentText() == "自定义"
+    assert analytics.source.currentText() == "演示数据"
+    assert analytics.start.date().toPython() == start
+    assert analytics.end.date().toPython() == end
+    assert f"{start} 至 {end}" in analytics.scope.text()
