@@ -193,7 +193,8 @@ class MainWindow(QMainWindow):
                 and (end.year, end.month) == (today.year, today.month)
             )
         )
-        if not current_month_only:
+        includes_today = start is None or end is None or start <= today <= end
+        if not current_month_only or not includes_today:
             self.navigate(3)
             self.pages[3].show_demo_range(start, end)
             self.notify(

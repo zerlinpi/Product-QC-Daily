@@ -152,3 +152,12 @@ def test_save_dialog_confirms_overwrite_after_adding_xlsx_suffix(ctx, qtbot, tmp
     assert observed == ["overwrite"]
     assert path == (str(output) if replace else "")
     assert output.read_bytes() == b"existing report must remain until an explicit export"
+
+
+def test_windows_desktop_save_dialog_prefers_native_picker(monkeypatch):
+    monkeypatch.setattr(file_dialogs.sys, "platform", "win32")
+    monkeypatch.setenv("QT_QPA_PLATFORM", "windows")
+    assert file_dialogs._use_native_windows_dialog()
+
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assert not file_dialogs._use_native_windows_dialog()

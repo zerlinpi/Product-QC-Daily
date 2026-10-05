@@ -1,5 +1,12 @@
 # 验证与审查记录
 
+## v1.1.11 Windows 保存窗口与演示路由审计
+
+- 基于 v1.1.10 继续审计文件保存、演示数据路由、跨天状态和 Windows/CI 差异，不修改七页结构、数据库 schema 或 Excel 模板。
+- 新增 Windows 桌面保存窗口策略回归：正常 win32 运行优先系统原生保存窗口，`QT_QPA_PLATFORM=offscreen` 时使用 Qt 对话框，确保 Linux/Windows CI 与打包 EXE 自检不会阻塞。
+- 新增本月内“已过去范围”和“未来范围”两项演示完成回归；两者都必须进入质量分析自定义日期和演示数据，避免总览的今日指标让用户误以为数据未生成。
+- 在原有 133 项回归基础上新增 3 项，总计 136 项；Linux/Windows pytest、Ruff、Windows PyInstaller 与实际 EXE 自检以本版本 GitHub Actions 结果为准。
+
 ## v1.1.10 全仓 UI / 操作审计
 
 - 基于 v1.1.9 对仓库全部 90 个文件进行分层检查：core/database/services、UI/dialogs/pages/widgets、tests、构建/发布配置、脚本、文档及二进制资源引用关系。

@@ -1,6 +1,6 @@
 [project]
 name = "product-qc-daily"
-version = "1.1.10"
+version = "1.1.11"
 description = "Offline desktop finished-product inspection management"
 requires-python = ">=3.12"
 
