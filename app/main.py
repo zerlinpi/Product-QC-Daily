@@ -1,6 +1,7 @@
 """Desktop entry point; all user data remains outside the installation."""
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -137,6 +138,8 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert sheet.freeze_panes == "C2"
     assert sheet.sheet_view.selection[-1].activeCell == "C2"
     workbook.close()
+    preview = reopened.excel.preview(output)
+    assert preview.file_hash == hashlib.sha256(output.read_bytes()).hexdigest()
     year = date.today().year
     reopened.settings.update({"company": "自检公司", "factory": "一厂"})
     standard = reopened.excel.export(
