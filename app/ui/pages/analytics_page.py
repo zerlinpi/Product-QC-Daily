@@ -60,7 +60,7 @@ class AnalyticsPage(Page):
         content = QWidget()
         grid = QGridLayout(content)
         grid.setContentsMargins(0, 0, 0, 0)
-        grid.setSpacing(14)
+        grid.setSpacing(9)
         self.metrics = []
         definitions = [
             ("检验数量", "inspection_quantity"),
