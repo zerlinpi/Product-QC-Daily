@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from app.ui.common import label, table
+from app.ui.common import friendly_error, label, table
 
 
 class DemoDialog(QDialog):
@@ -28,7 +28,7 @@ class DemoDialog(QDialog):
         layout.setSpacing(12)
         layout.addWidget(
             label(
-                "演示记录与正式数据完全分开。生成完成后将自动打开质量总览并切换到“演示数据”。",
+                "演示记录与正式数据完全分开。当前月范围生成后打开质量总览；历史、未来或跨月范围会打开对应日期的质量分析。",
                 "muted",
                 True,
             )
@@ -114,6 +114,20 @@ class DemoDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def accept(self):
+        try:
+            start, end = self.start.date().toPython(), self.end.date().toPython()
+            if start > end:
+                raise ValueError("开始日期不能晚于结束日期")
+            if not any(item.isChecked() for item in self.teams):
+                raise ValueError("请至少选择一个参与组别")
+            if not any(widget.value() > 0 for _, widget in self.items):
+                raise ValueError("请至少为一个不良项目设置大于 0 的相对频率")
+        except Exception as exc:
+            friendly_error(self, exc)
+            return
+        super().accept()
 
     def options(self):
         return dict(
