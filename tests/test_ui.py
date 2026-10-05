@@ -1,5 +1,7 @@
 from PySide6.QtCore import Qt
 
+import pytest
+
 
 def test_ui_entry_save_and_reopen_without_duplicate(ctx, qtbot):
     from app.ui.main_window import MainWindow
@@ -277,3 +279,36 @@ def test_analysis_reports_and_dashboard_show_scope_feedback(ctx, qtbot):
     reports = window.pages[5]
     assert reports.export_scope.text().startswith("将导出：")
     assert reports.source.currentText() in reports.export_scope.text()
+
+
+
+def test_reports_invalid_custom_range_disables_export_before_save_dialog(
+    ctx, qtbot, monkeypatch
+):
+    from PySide6.QtCore import QDate
+
+    from app.ui.dialogs import file_dialogs
+    from app.ui.main_window import MainWindow
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[5]
+    page.preset.setCurrentText("自定义")
+    page.start.setDate(QDate(2026, 10, 2))
+    page.end.setDate(QDate(2026, 10, 1))
+
+    assert page.export_scope.text() == "日期范围无效：开始日期不能晚于结束日期"
+    assert not page.original_export.isEnabled()
+    assert not page.detailed_export.isEnabled()
+
+    monkeypatch.setattr(
+        file_dialogs,
+        "save_excel",
+        lambda *args, **kwargs: pytest.fail("无效日期范围不应打开保存窗口"),
+    )
+    page.export(False)
+
+    page.end.setDate(QDate(2026, 10, 2))
+    assert page.export_scope.text().startswith("将导出：")
+    assert page.original_export.isEnabled()
+    assert page.detailed_export.isEnabled()
