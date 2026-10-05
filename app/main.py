@@ -116,6 +116,13 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert not records.query_button.isEnabled()
     records.refresh()
     assert "上一次查询结果" in records.count.text()
+    records.range_enabled.setChecked(False)
+    records.source.setCurrentText("演示数据")
+    assert records.filters_dirty
+    assert "筛选条件尚未应用" in records.action_buttons["export"].toolTip()
+    records.refresh()
+    assert not records.filters_dirty
+    assert records.applied_filters.source == "demo"
 
     assert header_footer_text("A" * 63 + "&TRAILING", 64).endswith("&&")
 
