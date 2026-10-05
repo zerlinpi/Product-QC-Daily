@@ -440,7 +440,6 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
                     "work_order": "WO-LONG-QUALITY-REPORT-001",
                     "remark": "返工原因：尺寸偏差，已复检并记录处理结果。",
                     "judgment": "返工",
-                    "defect_quantity": 2,
                 }
             )
         )
