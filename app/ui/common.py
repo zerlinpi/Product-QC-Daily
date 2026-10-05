@@ -86,21 +86,25 @@ def label(text, kind="", wrap=False):
 
 
 def card():
+    """Compact native section panel; avoid web-style rounded card chrome."""
     frame = QFrame()
     frame.setObjectName("card")
+    frame.setFrameShape(QFrame.Shape.StyledPanel)
+    frame.setFrameShadow(QFrame.Shadow.Plain)
+    frame.setLineWidth(1)
     layout = QVBoxLayout(frame)
-    layout.setContentsMargins(14, 12, 14, 12)
-    layout.setSpacing(10)
+    layout.setContentsMargins(10, 8, 10, 8)
+    layout.setSpacing(8)
     return frame, layout
 
 
 def table(headers):
     widget = QTableWidget(0, len(headers))
     widget.setHorizontalHeaderLabels(headers)
-    widget.setAlternatingRowColors(True)
-    widget.setShowGrid(False)
+    widget.setAlternatingRowColors(False)
+    widget.setShowGrid(True)
     widget.verticalHeader().setVisible(False)
-    widget.verticalHeader().setDefaultSectionSize(34)
+    widget.verticalHeader().setDefaultSectionSize(28)
     widget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     widget.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     widget.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -109,6 +113,10 @@ def table(headers):
     widget.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
     widget.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
     widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+    widget.horizontalHeader().setHighlightSections(False)
+    widget.horizontalHeader().setDefaultAlignment(
+        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+    )
     widget.horizontalHeader().setStretchLastSection(True)
     return widget
 
@@ -131,8 +139,8 @@ class Page(QWidget):
         self.ctx, self.window = ctx, window
         self.setObjectName("page")
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(22, 18, 22, 16)
-        self.layout.setSpacing(12)
+        self.layout.setContentsMargins(12, 10, 12, 10)
+        self.layout.setSpacing(6)
         self.layout.addWidget(label(title, "title"))
         self.layout.addWidget(label(subtitle, "subtitle", True))
 

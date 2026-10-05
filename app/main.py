@@ -11,7 +11,13 @@ from pathlib import Path
 from openpyxl import load_workbook
 from PySide6.QtCore import QLockFile, QTimer
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QDialogButtonBox, QFileDialog, QMessageBox
+from PySide6.QtWidgets import (
+    QApplication,
+    QDialogButtonBox,
+    QFileDialog,
+    QMessageBox,
+    QStyleFactory,
+)
 
 from app import __version__
 from app.core.context import AppContext
@@ -22,7 +28,7 @@ from app.ui.common import friendly_error
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.main_window import MainWindow
-from app.ui.styles.theme import configure_platform_style
+from app.ui.styles.theme import configure_platform_style, preferred_style_name
 
 
 def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> int:
@@ -43,6 +49,26 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     reopened = AppContext(ctx.paths.root)
     assert reopened.inspections.get(record["id"])["work_order"] == "PACKAGED-SMOKE"
     window = MainWindow(reopened)
+    if sys.platform == "win32":
+        selected_style = preferred_style_name(sys.platform, QStyleFactory.keys())
+        assert selected_style and selected_style.lower() in (
+            "windowsvista",
+            "windows",
+        ), "Windows 原生 Qt style 不可用"
+    stylesheet = app.styleSheet()
+    for selector in (
+        "QPushButton {",
+        "QListWidget {",
+        "QLineEdit",
+        "QComboBox",
+        "QDateEdit",
+        "QMenu {",
+        "QTableWidget {",
+        "QHeaderView::section",
+        "QGroupBox {",
+        "QMessageBox {",
+    ):
+        assert selector not in stylesheet
     controls = QDialogButtonBox(
         QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, window
     )
@@ -58,9 +84,11 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     controls.deleteLater()
     picker.deleteLater()
     window.show()
+    assert window.navigation.count() == 7
     for index in range(7):
         window.navigate(index)
         app.processEvents()
+        assert window.navigation.currentRow() == index
     output = reopened.excel.export(
         ctx.paths.exports / "smoke.xlsx", RecordFilter(source="demo"), legacy=True, prefer_com=False
     )
@@ -108,6 +136,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "export_view_reset": True,
         "export_path_dialog": True,
         "annual_standard_export": True,
+        "native_windows_ui": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)

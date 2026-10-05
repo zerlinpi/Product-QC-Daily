@@ -1,5 +1,15 @@
 # 更新记录
 
+## v1.1.13 — 2026-10-05
+
+- 继续收口为 Windows 本地 EXE 视觉，不新增业务功能、不修改数据库 schema 或 Excel 规则。
+- 移除对 QPushButton、输入框、ComboBox、DateEdit、QMenu、QTableWidget、QHeaderView、QGroupBox、QMessageBox 等标准控件的全局 QSS 重绘，让 WindowsVista/Windows style 负责原生外观与交互度量。
+- 内容区域由白底圆角卡片改为 Qt 原生 StyledPanel；质量总览和质量分析的指标块改用原生 QGroupBox。
+- 左侧导航由自绘按钮改为原生 QListWidget，系统负责选中态、键盘焦点和图标间距；取消未保存切页时会恢复原导航选择。
+- 页面标题缩小到 12pt，页面边距继续收紧；顶栏、表格行高及主要布局保持紧凑，表格使用原生网格。
+- 导入预览改用 QDialogButtonBox，由 Windows 决定按钮顺序，并保留默认导入按钮与 Esc 取消行为。
+- 新增原生控件回归与导入按钮框回归；完整 pytest 为 139 项，打包 EXE self-test 同时检查 Windows 原生 style 与标准控件未被全局 QSS 覆盖。
+
 ## v1.1.12 — 2026-10-05
 
 - 演示数据生成窗口默认日期范围改为当前完整年度，保留原有数量、组别、返工率、不良率和项目权重自定义能力。

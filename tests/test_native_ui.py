@@ -1,5 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QFrame
+from PySide6.QtWidgets import QApplication, QFrame, QGroupBox, QListWidget
 
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.main_window import MainWindow
@@ -18,10 +18,12 @@ def test_non_windows_keeps_stable_fusion_fallback():
     assert preferred_style_name("linux", ["Windows", "Fusion"]) == "Fusion"
 
 
-def test_main_navigation_uses_system_icons_and_compact_desktop_metrics(ctx, qtbot):
+def test_main_navigation_uses_native_list_and_compact_desktop_metrics(ctx, qtbot):
     window = MainWindow(ctx)
     qtbot.addWidget(window)
-    assert [button.text() for button in window.nav_buttons] == [
+    navigation = window.findChild(QListWidget, "navigation")
+    assert navigation is not None
+    assert [navigation.item(i).text() for i in range(navigation.count())] == [
         "质量总览",
         "日检录入",
         "检验记录",
@@ -30,10 +32,15 @@ def test_main_navigation_uses_system_icons_and_compact_desktop_metrics(ctx, qtbo
         "报表中心",
         "系统设置",
     ]
-    assert all(not button.icon().isNull() for button in window.nav_buttons)
+    assert all(not navigation.item(i).icon().isNull() for i in range(navigation.count()))
+    assert all(navigation.item(i).sizeHint().height() == 28 for i in range(navigation.count()))
     sidebar = window.findChild(QFrame, "qcSidebar")
-    assert sidebar is not None and sidebar.width() == 184
-    assert window.pages[2].table.verticalHeader().defaultSectionSize() == 34
+    assert sidebar is not None and sidebar.width() == 176
+    navigation.setCurrentRow(3)
+    assert window.stack.currentIndex() == 3
+    records = window.pages[2].table
+    assert records.verticalHeader().defaultSectionSize() == 28
+    assert records.showGrid()
 
 
 def test_native_primitives_are_not_overpainted_by_global_theme(ctx, qtbot):
@@ -44,6 +51,56 @@ def test_native_primitives_are_not_overpainted_by_global_theme(ctx, qtbot):
     assert "font-family" not in stylesheet
     assert "QScrollBar" not in stylesheet
     assert "QCheckBox::indicator" not in stylesheet
+    for selector in (
+        "QPushButton {",
+        "QListWidget {",
+        "QLineEdit",
+        "QComboBox",
+        "QDateEdit",
+        "QMenu {",
+        "QTableWidget {",
+        "QHeaderView::section",
+        "QGroupBox {",
+        "QMessageBox {",
+    ):
+        assert selector not in stylesheet
     dialog = TaskProgressDialog(window, "导出报表")
     qtbot.addWidget(dialog)
     assert not bool(dialog.windowFlags() & Qt.WindowType.WindowCloseButtonHint)
+
+
+
+def test_sections_and_metrics_use_native_desktop_frames(ctx, qtbot):
+    from app.ui.common import card
+    from app.ui.widgets.stat_card import stat_card
+
+    panel, _ = card()
+    qtbot.addWidget(panel)
+    assert panel.frameShape() == QFrame.Shape.StyledPanel
+
+    metric = stat_card("今日检验批次")
+    qtbot.addWidget(metric)
+    assert isinstance(metric, QGroupBox)
+    assert metric.title() == "今日检验批次"
+
+
+
+def test_native_navigation_reverts_when_unsaved_entry_refuses_page_change(
+    ctx, qtbot, monkeypatch
+):
+    import app.ui.pages.inspection_page as inspection_module
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.navigate(1)
+    entry = window.pages[1]
+    entry.work_order.setText("UNSAVED")
+    entry.dirty = True
+    monkeypatch.setattr(inspection_module, "confirm", lambda *args, **kwargs: False)
+
+    window.navigation.setCurrentRow(2)
+
+    assert window.stack.currentIndex() == 1
+    assert window.navigation.currentRow() == 1
+    assert entry.work_order.text() == "UNSAVED"
+    assert entry.dirty

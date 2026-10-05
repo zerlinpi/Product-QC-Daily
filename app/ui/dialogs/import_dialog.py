@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QDialog, QHBoxLayout, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
 from app.ui.common import button, guarded, label, populate, table
@@ -17,7 +17,7 @@ class ImportDialog(QDialog):
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.resize(1040, 680)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setContentsMargins(14, 12, 14, 12)
         layout.addWidget(label("检查导入内容", "title"))
         layout.addWidget(label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "muted"))
         layout.addWidget(
@@ -54,17 +54,20 @@ class ImportDialog(QDialog):
         pagination.addWidget(self.previous_button)
         pagination.addWidget(self.next_button)
         layout.addLayout(pagination)
-        actions = QHBoxLayout()
+        actions = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
         report_button = button("导出异常报告", self.report)
         report_button.setEnabled(any(row.status != "valid" or row.message for row in preview.rows))
         report_button.setToolTip("将重复、冲突、异常和签名警告另存为表格，便于核对")
-        actions.addWidget(report_button)
-        actions.addStretch()
-        actions.addWidget(button("取消", self.reject))
-        accept = button(f"导入 {preview.counts['valid']} 条正常记录", self.accept, primary=True)
+        actions.addButton(report_button, QDialogButtonBox.ButtonRole.ActionRole)
+        accept = actions.addButton(
+            f"导入 {preview.counts['valid']} 条正常记录",
+            QDialogButtonBox.ButtonRole.AcceptRole,
+        )
         accept.setEnabled(preview.counts["valid"] > 0)
-        actions.addWidget(accept)
-        layout.addLayout(actions)
+        accept.setDefault(True)
+        actions.accepted.connect(self.accept)
+        actions.rejected.connect(self.reject)
+        layout.addWidget(actions)
         self.refresh()
 
     def filtered(self):

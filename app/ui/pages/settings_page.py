@@ -44,7 +44,7 @@ class SettingsPage(Page):
         content = QWidget()
         body = QVBoxLayout(content)
         body.setContentsMargins(0, 0, 0, 0)
-        body.setSpacing(16)
+        body.setSpacing(10)
         frame, layout = card()
         layout.addWidget(label("基础设置", "section"))
         form = QFormLayout()

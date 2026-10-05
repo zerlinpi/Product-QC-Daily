@@ -230,3 +230,37 @@ def test_team_dialog_uses_desktop_window_flags_and_default_save(ctx, qtbot, monk
     page.edit_team(False)
 
     assert observed == {"help": False, "default_save": True, "minimum_width": 380}
+
+
+
+def test_import_preview_uses_native_dialog_button_box(ctx, qtbot, tmp_path):
+    from datetime import datetime
+
+    from openpyxl import Workbook
+
+    from app.ui.dialogs.import_dialog import ImportDialog
+
+    path = tmp_path / "native-preview.xlsx"
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "成品日检表"
+    ws.append(
+        ["填写ID", "时间", "组别", "加工单号", "检验数量", "抽检数", "不良数", "不良项目", "判定"]
+    )
+    ws.append(["NATIVE-1", datetime(2026, 1, 5), "U1", "MO-1", 100, 20, 0, "", "合格"])
+    wb.save(path)
+    wb.close()
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    dialog = ImportDialog(ctx, window, ctx.excel.preview(path))
+    qtbot.addWidget(dialog)
+    buttons = dialog.findChild(QDialogButtonBox)
+    assert buttons is not None
+    accept = next(
+        button
+        for button in buttons.buttons()
+        if buttons.buttonRole(button) == QDialogButtonBox.ButtonRole.AcceptRole
+    )
+    assert accept.isDefault()
+    assert buttons.button(QDialogButtonBox.StandardButton.Cancel) is not None

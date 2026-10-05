@@ -3,9 +3,12 @@ from datetime import date
 from PySide6.QtCore import QSize, Qt, QThread, Slot
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QApplication,
     QFrame,
     QHBoxLayout,
+    QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QProgressBar,
@@ -16,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from app import __version__
-from app.ui.common import button, friendly_error, guarded, label
+from app.ui.common import friendly_error, guarded, label
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.pages.analytics_page import AnalyticsPage
@@ -47,14 +50,13 @@ class MainWindow(QMainWindow):
         root.setSpacing(0)
         sidebar = QFrame()
         sidebar.setObjectName("qcSidebar")
-        sidebar.setFixedWidth(184)
+        sidebar.setFixedWidth(176)
         nav = QVBoxLayout(sidebar)
-        nav.setContentsMargins(10, 16, 10, 14)
-        nav.setSpacing(4)
+        nav.setContentsMargins(7, 10, 7, 8)
+        nav.setSpacing(2)
         nav.addWidget(label("成品日检", "brand"))
         nav.addWidget(label("质量管理", "muted"))
-        nav.addSpacing(14)
-        self.nav_buttons = []
+        nav.addSpacing(4)
         nav_items = [
             ("质量总览", QStyle.StandardPixmap.SP_ComputerIcon),
             ("日检录入", QStyle.StandardPixmap.SP_FileDialogNewFolder),
@@ -64,16 +66,23 @@ class MainWindow(QMainWindow):
             ("报表中心", QStyle.StandardPixmap.SP_FileIcon),
             ("系统设置", QStyle.StandardPixmap.SP_FileDialogInfoView),
         ]
+        self.navigation = QListWidget()
+        self.navigation.setObjectName("navigation")
+        self.navigation.setFrameShape(QFrame.Shape.NoFrame)
+        self.navigation.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self.navigation.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.navigation.setUniformItemSizes(True)
+        self.navigation.setIconSize(QSize(16, 16))
+        self.navigation.setSpacing(0)
+        self.nav_items = []
         for i, (title, icon) in enumerate(nav_items):
-            item = button(title, lambda _, index=i: self.navigate(index))
-            item.setCheckable(True)
-            item.setObjectName("nav")
-            item.setIcon(self.style().standardIcon(icon))
-            item.setIconSize(QSize(16, 16))
+            item = QListWidgetItem(self.style().standardIcon(icon), title)
             item.setToolTip(f"{title} · Ctrl+{i + 1}")
-            nav.addWidget(item)
-            self.nav_buttons.append(item)
-        nav.addStretch()
+            item.setSizeHint(QSize(0, 28))
+            self.navigation.addItem(item)
+            self.nav_items.append(item)
+        self.navigation.currentRowChanged.connect(self._navigate_from_sidebar)
+        nav.addWidget(self.navigation, 1)
         nav.addWidget(label("数据保存在本机", "muted"))
         nav.addWidget(label(f"版本 {__version__} · 离线使用", "muted"))
         root.addWidget(sidebar)
@@ -83,8 +92,8 @@ class MainWindow(QMainWindow):
         top = QFrame()
         top.setObjectName("topbar")
         toolbar = QHBoxLayout(top)
-        toolbar.setContentsMargins(20, 8, 20, 8)
-        top.setMinimumHeight(44)
+        toolbar.setContentsMargins(12, 4, 12, 4)
+        top.setMinimumHeight(36)
         self.company = label("成品质量管理", "section")
         toolbar.addWidget(self.company)
         toolbar.addStretch()
@@ -112,6 +121,7 @@ class MainWindow(QMainWindow):
         self.progress.setRange(0, 0)
         self.progress.setMaximumWidth(150)
         self.progress.hide()
+        self.statusBar().setSizeGripEnabled(True)
         self.statusBar().addPermanentWidget(self.progress)
         self.shortcuts = []
         for key, action in [
@@ -145,6 +155,16 @@ class MainWindow(QMainWindow):
         if hasattr(hints, "colorSchemeChanged"):
             hints.colorSchemeChanged.connect(self._system_color_scheme_changed)
         sync_native_titlebar(self, self._dark_theme)
+
+    def _navigate_from_sidebar(self, index):
+        if index < 0 or not hasattr(self, "pages"):
+            return
+        previous = self.stack.currentIndex()
+        self.navigate(index)
+        if self.stack.currentIndex() != index:
+            blocked = self.navigation.blockSignals(True)
+            self.navigation.setCurrentRow(previous)
+            self.navigation.blockSignals(blocked)
 
     def refresh_theme(self):
         self._dark_theme = apply_theme(self.ctx.settings.get("theme"))
@@ -239,8 +259,10 @@ class MainWindow(QMainWindow):
             if self.pages[1].dirty:
                 self.pages[1].discard_changes()
         self.stack.setCurrentIndex(index)
-        for i, item in enumerate(self.nav_buttons):
-            item.setChecked(i == index)
+        if hasattr(self, "navigation") and self.navigation.currentRow() != index:
+            blocked = self.navigation.blockSignals(True)
+            self.navigation.setCurrentRow(index)
+            self.navigation.blockSignals(blocked)
         if index == 1:
             entry = self.pages[1]
             if entry.record_id and not entry.dirty:
