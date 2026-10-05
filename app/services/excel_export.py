@@ -13,6 +13,8 @@ from openpyxl.drawing.xdr import XDRPositiveSize2D
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils.units import pixels_to_EMU
 from openpyxl.workbook.properties import CalcProperties
+from openpyxl.workbook.views import BookView
+from openpyxl.worksheet.views import Pane, Selection
 
 from app.core.labels import source_label
 from app.services.excel_common import load_compatible, write_text
@@ -35,7 +37,6 @@ HEADERS = [
 
 
 def style_table(ws):
-    ws.freeze_panes = "A2"
     ws.auto_filter.ref = ws.dimensions
     for cell in ws[1]:
         cell.font = Font(name="Microsoft YaHei", bold=True, color="FFFFFF")
@@ -45,6 +46,44 @@ def style_table(ws):
     for col in ws.columns:
         letter = col[0].column_letter
         ws.column_dimensions[letter].width = min(42, max(15, len(str(col[0].value or "")) * 2 + 4))
+
+
+def reset_workbook_views(wb, active_title, legacy=False):
+    """Do not carry a template's saved scroll position into a fresh report.
+
+    Setting freeze_panes alone leaves topLeftCell and old selections intact.
+    The source template scrolled to B453 and selected I454, which conflicts
+    with a newly frozen C2 pane in Excel/WPS. Rebuild one consistent view.
+    """
+    active_sheet = wb[active_title]
+    # External templates can hide the primary record sheet. openpyxl refuses
+    # to activate a hidden worksheet, so restore the exported primary sheet
+    # to visible in the output without modifying the source template.
+    if active_sheet.sheet_state != "visible":
+        active_sheet.sheet_state = "visible"
+    wb.active = active_sheet
+    wb.views = [BookView(activeTab=wb.index(active_sheet))]
+    for ws in wb:
+        view = copy(ws.sheet_view)
+        view.workbookViewId = 0
+        view.view = "normal"
+        view.topLeftCell = "A1"
+        view.tabSelected = ws.title == active_title
+        view.pane = None
+        view.selection = [Selection(activeCell="A1", sqref="A1")]
+        if legacy and ws.title == active_title:
+            view.pane = Pane(
+                xSplit=2, ySplit=1, topLeftCell="C2", activePane="bottomRight", state="frozen"
+            )
+            view.selection = [
+                Selection(pane="topRight", activeCell="C1", sqref="C1"),
+                Selection(pane="bottomLeft", activeCell="B2", sqref="B2"),
+                Selection(pane="bottomRight", activeCell="C2", sqref="C2"),
+            ]
+        elif not legacy:
+            view.pane = Pane(ySplit=1, topLeftCell="A2", activePane="bottomLeft", state="frozen")
+            view.selection = [Selection(pane="bottomLeft", activeCell="A2", sqref="A2")]
+        ws.views.sheetView = [view]
 
 
 def add_signature(ws, index: int, path: Path, preserve_height=False):
@@ -254,7 +293,6 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         for chart in wb["数据分析表"]._charts:
             clear_chart_caches(chart)
             repair_chart_ranges(chart)
-        ws.freeze_panes = "C2"
     else:
         summary = wb.create_sheet("统计摘要")
         summary.append(["指标", "数值"])
@@ -284,6 +322,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
     # A full timestamp needs more room than the short date in the old template.
     # Apply this after standard table styling, which otherwise resets B to 15.
     ws.column_dimensions["B"].width = max(ws.column_dimensions["B"].width, 26)
+    reset_workbook_views(wb, ws.title, legacy)
     with NamedTemporaryFile(suffix=".xlsx", dir=path.parent, delete=False) as handle:
         temp = Path(handle.name)
     try:
@@ -363,6 +402,7 @@ def create_empty_template(source: Path, target: Path) -> None:
         clear_chart_caches(chart)
         repair_chart_ranges(chart)
     repair_analysis(wb, date(2026, 1, 1), date(2026, 1, 31), 0)
+    reset_workbook_views(wb, "成品日检表", legacy=True)
     wb.properties.creator = "Product-QC-Daily"
     wb.properties.lastModifiedBy = "Product-QC-Daily"
     target.parent.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.core.labels import import_status_label
 from app.database.models import InspectionRecord
 from app.services.excel_common import write_text
-from app.services.excel_export import export_workbook, style_table
+from app.services.excel_export import export_workbook, reset_workbook_views, style_table
 from app.services.excel_import import ImportPreview, preview_workbook
 
 
@@ -81,6 +81,7 @@ class ExcelService:
                 for cell in ws[ws.max_row]:
                     write_text(cell, cell.value)
         style_table(ws)
+        reset_workbook_views(wb, ws.title)
         Path(path).parent.mkdir(parents=True, exist_ok=True)
         wb.save(path)
         wb.close()

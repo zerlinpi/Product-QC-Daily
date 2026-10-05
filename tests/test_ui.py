@@ -179,8 +179,8 @@ def test_record_source_cells_use_chinese(ctx, payload, qtbot):
 
 def test_record_export_defaults_to_original_layout(ctx, payload, qtbot, monkeypatch, tmp_path):
     from openpyxl import load_workbook
-    from PySide6.QtWidgets import QFileDialog
 
+    from app.ui.dialogs import file_dialogs
     from app.ui.main_window import MainWindow
 
     ctx.inspections.save(payload)
@@ -189,7 +189,7 @@ def test_record_export_defaults_to_original_layout(ctx, payload, qtbot, monkeypa
     page = window.pages[2]
     page.refresh()
     output = tmp_path / "ui-export.xlsx"
-    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *args: (str(output), ""))
+    monkeypatch.setattr(file_dialogs, "save_excel", lambda *args: (str(output), ""))
     monkeypatch.setattr(window, "run_job", lambda title, work, done: done(work()))
     page.export()
     wb = load_workbook(output)

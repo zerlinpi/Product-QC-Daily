@@ -7,6 +7,7 @@ from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import Page, button, card, guarded, label
+from app.ui.dialogs import file_dialogs
 from app.ui.dialogs.import_dialog import ImportDialog
 
 
@@ -131,7 +132,7 @@ class ReportsPage(Page):
         )
         directory = Path(self.ctx.settings.get("export_directory") or self.ctx.paths.exports)
         kind = "原表日检表" if legacy else "检验明细报表"
-        path, _ = QFileDialog.getSaveFileName(
+        path, _ = file_dialogs.save_excel(
             self,
             "导出报表",
             str(directory / f"{kind}_{filters.start}_{filters.end}.xlsx"),

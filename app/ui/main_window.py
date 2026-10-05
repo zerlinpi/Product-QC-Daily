@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
         sidebar = QFrame()
-        sidebar.setObjectName("sidebar")
+        sidebar.setObjectName("qcSidebar")
         sidebar.setFixedWidth(200)
         nav = QVBoxLayout(sidebar)
         nav.setContentsMargins(18, 30, 18, 22)
