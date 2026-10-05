@@ -115,7 +115,25 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
     path = Path(path)
     if path.suffix.lower() != ".xlsx":
         raise ValueError("请选择 .xlsx 文件；旧 .xls 请先另存为 .xlsx")
+    try:
+        file_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as exc:
+        raise ValueError("无法读取源文件，请确认文件存在且未被其他程序占用") from exc
     wb = load_compatible(path)
+    try:
+        preview = _preview_loaded_workbook(ctx, path, wb, file_hash)
+        try:
+            current_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+        except OSError as exc:
+            raise ValueError("源文件在预览过程中不可用，请重新选择文件") from exc
+        if current_hash != file_hash:
+            raise ValueError("源文件在预览过程中发生变化，请重新生成导入预览")
+        return preview
+    finally:
+        wb.close()
+
+
+def _preview_loaded_workbook(ctx, path: Path, wb, file_hash: str) -> ImportPreview:
     candidates = []
     for ws in wb:
         for row_number, row in enumerate(
@@ -169,7 +187,7 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
                     "quantity": values[3],
                     "remark": str(values[4] or ""),
                 }
-    preview = ImportPreview(path, hashlib.sha256(path.read_bytes()).hexdigest(), title)
+    preview = ImportPreview(path, file_hash, title)
     seen = {}
     for number, raw in enumerate(ws.iter_rows(min_row=header + 1, values_only=True), header + 1):
         if not any(
@@ -273,5 +291,5 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
                 if item.status == "duplicate"
                 else "已有相同记录编号但内容不同的记录，不会覆盖"
             )
-    wb.close()
     return preview
+
