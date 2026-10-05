@@ -18,12 +18,12 @@ def test_legacy_export_keeps_full_blank_form_after_last_record(ctx, payload, tmp
     assert ws.max_row == LEGACY_FORM_ROWS + 1
     assert ws.row_dimensions[50].height == ws.row_dimensions[2].height
     assert ws["B50"].value is None and ws["J50"].value is None
-    assert ws["B50"].font == ws["B2"].font
-    assert ws["B50"].fill == ws["B2"].fill
-    assert ws["B50"].border == ws["B2"].border
-    assert ws["B50"].alignment == ws["B2"].alignment
+    template = load_workbook(ctx.paths.template)
+    template_ws = template["成品日检表"]
+    assert ws["B50"]._style == template_ws["B2"]._style
+    assert ws["J50"]._style == template_ws["J2"]._style
+    template.close()
     assert ws["B2"].number_format == "yyyy-mm-dd hh:mm:ss"
-    assert ws["J50"].style_id == ws["J2"].style_id
     assert ws.column_dimensions["B"].width >= 26
     assert ws.column_dimensions["D"].width >= 20
     assert ws.row_dimensions[1].height >= 30
