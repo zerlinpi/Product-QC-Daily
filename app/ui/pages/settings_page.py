@@ -31,7 +31,6 @@ from app.ui.common import (
     table,
 )
 from app.ui.dialogs.demo_dialog import DemoDialog
-from app.ui.styles.theme import apply_theme
 
 
 class SettingsPage(Page):
@@ -197,7 +196,7 @@ class SettingsPage(Page):
             backup_retention_days=self.retention.value(),
         )
         self.ctx.settings.update(values)
-        apply_theme(values["theme"])
+        self.window.refresh_theme()
         self.window.update_company()
         self.window.notify("设置已保存")
 
@@ -271,7 +270,7 @@ class SettingsPage(Page):
         self.window.pages[1].reset()
         self.window.pages[1].refresh()
         self.refresh()
-        apply_theme(self.ctx.settings.get("theme"))
+        self.window.refresh_theme()
         self.window.update_company()
         QMessageBox.information(self, "恢复完成", f"数据库已恢复。恢复前备份：\n{before}")
 

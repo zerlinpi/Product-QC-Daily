@@ -89,8 +89,8 @@ def card():
     frame = QFrame()
     frame.setObjectName("card")
     layout = QVBoxLayout(frame)
-    layout.setContentsMargins(18, 16, 18, 16)
-    layout.setSpacing(12)
+    layout.setContentsMargins(14, 12, 14, 12)
+    layout.setSpacing(10)
     return frame, layout
 
 
@@ -100,7 +100,7 @@ def table(headers):
     widget.setAlternatingRowColors(True)
     widget.setShowGrid(False)
     widget.verticalHeader().setVisible(False)
-    widget.verticalHeader().setDefaultSectionSize(42)
+    widget.verticalHeader().setDefaultSectionSize(34)
     widget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     widget.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     widget.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -120,8 +120,7 @@ def populate(widget, rows):
             item = QTableWidgetItem(str(value if value is not None else "—"))
             item.setToolTip(item.text())
             if value in ("合格", "返工", "演示数据"):
-                item.setForeground(QColor("#12805c" if value == "合格" else "#c96c16"))
-                item.setBackground(QColor("#e7f6ee" if value == "合格" else "#fff0dd"))
+                item.setForeground(QColor("#107c10" if value == "合格" else "#ca5010"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             widget.setItem(row, col, item)
 
@@ -132,8 +131,8 @@ class Page(QWidget):
         self.ctx, self.window = ctx, window
         self.setObjectName("page")
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(28, 24, 28, 20)
-        self.layout.setSpacing(16)
+        self.layout.setContentsMargins(22, 18, 22, 16)
+        self.layout.setSpacing(12)
         self.layout.addWidget(label(title, "title"))
         self.layout.addWidget(label(subtitle, "subtitle", True))
 

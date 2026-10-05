@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt, QThread, Slot
+from PySide6.QtCore import QSize, Qt, QThread, Slot
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QStackedWidget,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -23,7 +24,7 @@ from app.ui.pages.inspection_page import InspectionPage
 from app.ui.pages.records_page import RecordsPage
 from app.ui.pages.reports_page import ReportsPage
 from app.ui.pages.settings_page import SettingsPage
-from app.ui.styles.theme import apply_theme
+from app.ui.styles.theme import apply_theme, sync_native_titlebar
 from app.ui.worker import Worker
 
 
@@ -37,41 +38,42 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("成品日检管理系统")
         self.resize(1440, 920)
         self.setMinimumSize(1080, 720)
-        apply_theme(ctx.settings.get("theme"))
+        self._dark_theme = apply_theme(ctx.settings.get("theme"))
         central = QWidget()
         root = QHBoxLayout(central)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
         sidebar = QFrame()
         sidebar.setObjectName("qcSidebar")
-        sidebar.setFixedWidth(200)
+        sidebar.setFixedWidth(184)
         nav = QVBoxLayout(sidebar)
-        nav.setContentsMargins(18, 30, 18, 22)
-        nav.setSpacing(8)
+        nav.setContentsMargins(10, 16, 10, 14)
+        nav.setSpacing(4)
         nav.addWidget(label("成品日检", "brand"))
-        nav.addWidget(label("每日质检管理", "muted"))
-        nav.addSpacing(34)
+        nav.addWidget(label("质量管理", "muted"))
+        nav.addSpacing(14)
         self.nav_buttons = []
-        for i, title in enumerate(
-            [
-                "◈  质量总览",
-                "＋  日检录入",
-                "▤  检验记录",
-                "↗  质量分析",
-                "▦  不良项目",
-                "▧  报表中心",
-                "⚙  系统设置",
-            ]
-        ):
+        nav_items = [
+            ("质量总览", QStyle.StandardPixmap.SP_ComputerIcon),
+            ("日检录入", QStyle.StandardPixmap.SP_FileDialogNewFolder),
+            ("检验记录", QStyle.StandardPixmap.SP_FileDialogDetailedView),
+            ("质量分析", QStyle.StandardPixmap.SP_FileDialogContentsView),
+            ("不良项目", QStyle.StandardPixmap.SP_MessageBoxWarning),
+            ("报表中心", QStyle.StandardPixmap.SP_FileIcon),
+            ("系统设置", QStyle.StandardPixmap.SP_FileDialogInfoView),
+        ]
+        for i, (title, icon) in enumerate(nav_items):
             item = button(title, lambda _, index=i: self.navigate(index))
             item.setCheckable(True)
             item.setObjectName("nav")
-            item.setToolTip(f"{title.strip()} · Ctrl+{i + 1}")
+            item.setIcon(self.style().standardIcon(icon))
+            item.setIconSize(QSize(16, 16))
+            item.setToolTip(f"{title} · Ctrl+{i + 1}")
             nav.addWidget(item)
             self.nav_buttons.append(item)
         nav.addStretch()
-        nav.addWidget(label("●  数据保存在本机", "muted"))
-        nav.addWidget(label(f"版本 {__version__}  ·  离线使用", "muted"))
+        nav.addWidget(label("数据保存在本机", "muted"))
+        nav.addWidget(label(f"版本 {__version__} · 离线使用", "muted"))
         root.addWidget(sidebar)
         right = QVBoxLayout()
         right.setContentsMargins(0, 0, 0, 0)
@@ -79,11 +81,12 @@ class MainWindow(QMainWindow):
         top = QFrame()
         top.setObjectName("topbar")
         toolbar = QHBoxLayout(top)
-        toolbar.setContentsMargins(28, 15, 28, 15)
+        toolbar.setContentsMargins(20, 8, 20, 8)
+        top.setMinimumHeight(44)
         self.company = label("成品质量管理", "section")
         toolbar.addWidget(self.company)
         toolbar.addStretch()
-        toolbar.addWidget(label("本机使用 · 无需联网", "muted"))
+        toolbar.addWidget(label("本机 · 离线", "muted"))
         right.addWidget(top)
         self.stack = QStackedWidget()
         right.addWidget(self.stack, 1)
@@ -136,6 +139,18 @@ class MainWindow(QMainWindow):
             self.resize(max(1080, min(size[0], 2400)), max(720, min(size[1], 1600)))
         if ctx.settings.get("window_maximized", False):
             self.setWindowState(Qt.WindowState.WindowMaximized)
+        hints = QApplication.instance().styleHints()
+        if hasattr(hints, "colorSchemeChanged"):
+            hints.colorSchemeChanged.connect(self._system_color_scheme_changed)
+        sync_native_titlebar(self, self._dark_theme)
+
+    def refresh_theme(self):
+        self._dark_theme = apply_theme(self.ctx.settings.get("theme"))
+        sync_native_titlebar(self, self._dark_theme)
+
+    def _system_color_scheme_changed(self, *_):
+        if self.ctx.settings.get("theme") == "system":
+            self.refresh_theme()
 
     def update_company(self):
         self.company.setText(

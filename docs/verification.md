@@ -1,5 +1,14 @@
 # 验证与审查记录
 
+## v1.1.7 Windows 桌面系统样式验收
+
+- 在 v1.1.6 的 115 项回归基础上新增 5 项系统 UI 测试，总计 120 项。
+- 验证 Windows style 选择优先级为 WindowsVista → Windows，非 Windows CI 保留 Fusion 稳定回退。
+- 验证七个导航入口使用系统标准图标和纯中文文本，侧栏宽度与表格行高收紧为桌面应用尺度。
+- 验证全局主题不再覆盖系统字体、不再自绘滚动条与复选框 indicator，减少“网页套壳”观感。
+- 验证导出进度保持窗口级模态交互，任务执行期间不提供会误导用户的关闭按钮。
+- Windows/Linux pytest、Ruff、Windows PyInstaller 与实际 EXE 自检以本版本 GitHub Actions 结果为准。
+
 ## v1.1.6 导出布局与交互验收
 
 - 在 v1.1.5 的 111 项回归基础上新增 4 项测试，总计 115 项。
