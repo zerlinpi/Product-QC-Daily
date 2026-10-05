@@ -175,8 +175,22 @@ class SettingsPage(Page):
         }
         if values["default_team"] not in {r["name"] for r in self.ctx.settings.teams(True)}:
             raise ValueError("默认组别必须是启用的组别")
-        if values["template_path"] and not Path(values["template_path"]).is_file():
-            raise ValueError("模板文件不存在")
+        if values["template_path"]:
+            template = Path(values["template_path"]).expanduser()
+            if template.suffix.lower() != ".xlsx" or not template.is_file():
+                raise ValueError("原表模板必须是存在的 .xlsx 文件")
+            values["template_path"] = str(template.resolve())
+        for key, title in (
+            ("export_directory", "导出目录"),
+            ("backup_directory", "备份目录"),
+        ):
+            if not values[key]:
+                continue
+            directory = Path(values[key]).expanduser()
+            if directory.exists() and not directory.is_dir():
+                raise ValueError(f"{title}必须是文件夹，当前路径指向文件")
+            directory.mkdir(parents=True, exist_ok=True)
+            values[key] = str(directory.resolve())
         values.update(
             theme=["light", "dark", "system"][self.theme.currentIndex()],
             auto_backup=self.auto_backup.isChecked(),

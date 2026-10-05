@@ -141,8 +141,10 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
                 "judgment",
             }
             if required <= mapping.keys():
-                score = (100 if ws.title == "成品日检表" else 0) + (
-                    50 if ws.sheet_state == "visible" else 0
+                # Prefer what the user can actually see. A hidden legacy/cached
+                # "成品日检表" must not outrank a visible current record sheet.
+                score = (200 if ws.sheet_state == "visible" else 0) + (
+                    100 if ws.title == "成品日检表" else 0
                 )
                 candidates.append((score, ws.title, row_number, mapping))
                 break

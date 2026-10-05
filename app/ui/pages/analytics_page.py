@@ -50,6 +50,10 @@ class AnalyticsPage(Page):
         filter_box.addWidget(self.scope)
         self.layout.addWidget(filter_card)
         self.preset.currentTextChanged.connect(self.set_range)
+        self.source.currentIndexChanged.connect(self.mark_stale)
+        self.metric_choice.currentIndexChanged.connect(self.mark_stale)
+        self.start.dateChanged.connect(self.mark_stale)
+        self.end.dateChanged.connect(self.mark_stale)
         self.set_range("本月")
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -105,6 +109,10 @@ class AnalyticsPage(Page):
             start, end = date_range(preset)
             self.start.setDate(QDate(start))
             self.end.setDate(QDate(end))
+        self.mark_stale()
+
+    def mark_stale(self, *_):
+        self.scope.setText("筛选条件已更改 · 点击“开始分析”更新结果")
 
     @guarded
     def refresh(self, *_):
