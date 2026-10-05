@@ -1,4 +1,3 @@
-import hashlib
 import logging
 from pathlib import Path
 
@@ -7,7 +6,7 @@ from sqlalchemy import select
 
 from app.core.labels import import_status_label
 from app.database.models import InspectionRecord
-from app.services.excel_common import write_text
+from app.services.excel_common import file_sha256, write_text
 from app.services.excel_export import export_workbook, reset_workbook_views, style_table
 from app.services.excel_import import ImportPreview, preview_workbook
 
@@ -20,7 +19,7 @@ class ExcelService:
         return preview_workbook(self.ctx, path)
 
     def import_preview(self, preview: ImportPreview) -> int:
-        if hashlib.sha256(preview.path.read_bytes()).hexdigest() != preview.file_hash:
+        if file_sha256(preview.path) != preview.file_hash:
             raise ValueError("源文件已改变，请重新生成导入预览")
         copied, count = [], 0
         try:
