@@ -538,3 +538,43 @@ def test_header_footer_truncation_never_splits_ampersand_escape():
     rendered = header_footer_text(value, 64)
     assert rendered == "A" * 63 + "&&"
     assert rendered.replace("&&", "&") == value[:64]
+
+
+
+def test_import_preview_rejects_source_changed_during_preview(ctx, tmp_path, monkeypatch):
+    from app.core.schemas import RecordFilter
+    from app.services import excel_import
+
+    path = workbook(tmp_path / "changing.xlsx", [row()])
+
+    def mutate_source(source):
+        changed = load_workbook(source)
+        changed.active["D2"] = "CHANGED-DURING-PREVIEW"
+        changed.save(source)
+        changed.close()
+        return {}
+
+    monkeypatch.setattr(excel_import, "wps_images", mutate_source)
+    with pytest.raises(ValueError, match="预览过程中发生变化"):
+        ctx.excel.preview(path)
+    assert ctx.inspections.query(RecordFilter())[1] == 0
+
+
+def test_import_preview_closes_workbook_on_early_validation_error(ctx, tmp_path, monkeypatch):
+    from app.services import excel_import
+
+    path = tmp_path / "no-header.xlsx"
+    path.write_bytes(b"snapshot")
+    closed = []
+
+    class EmptyWorkbook:
+        def __iter__(self):
+            return iter(())
+
+        def close(self):
+            closed.append(True)
+
+    monkeypatch.setattr(excel_import, "load_compatible", lambda _: EmptyWorkbook())
+    with pytest.raises(ValueError, match="未找到包含记录编号"):
+        ctx.excel.preview(path)
+    assert closed == [True]
