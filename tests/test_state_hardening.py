@@ -1,6 +1,4 @@
 from datetime import date
-from pathlib import Path
-
 from openpyxl import Workbook
 
 from app.ui.main_window import MainWindow
