@@ -1,10 +1,10 @@
-v1.1.12 在现有七页结构内完善年度演示数据与 Excel 年度报表，不新增业务模块、不修改数据库 schema，也不改变原表模板规则。
+v1.1.13 继续把现有七页界面收口为 Windows 本地桌面软件风格，不新增业务模块、不修改数据库 schema，也不改变 Excel 原表兼容规则。
 
-- “生成演示数据”默认范围改为当前完整年度，生成数量、组别、返工率、不良率和各不良项目频率仍可调整；年度数据继续使用 `source=demo` 与正式数据隔离。
-- 报表中心已有“本年 + 演示数据”可直接导出全年演示数据。
-- 标准明细报表的“检验记录”新增“月份”列，Excel/WPS 可通过表头筛选按月查看全年数据。
-- 新增“月度统计”Sheet，提供 12 个月的检验批次、检验/抽检/不良数量、不良率、返工批次、返工率，并附“月度检验批次”柱状图和“月度质量率趋势”折线图。
-- 原表导出保持现有 4 个 Sheet、6 张图表、布局、公式、冻结窗格与 500+ 行连续表单兼容逻辑，不参与本轮结构调整。
-- 完整 pytest 为 137 项；Windows onedir 和实际 `Product-QC-Daily.exe --self-test` 同时验证年度标准报表结构。
+- Windows 下继续优先 WindowsVista / Windows 原生 style，标准按钮、输入框、ComboBox、DateEdit、菜单、表格表头、GroupBox、MessageBox、复选框和滚动条不再由全局 QSS 重绘。
+- 原来的白底圆角卡片改为 Qt 原生 StyledPanel；质量指标使用原生 QGroupBox，页面层级更接近普通 Windows 管理软件。
+- 左侧导航、顶栏、页面边距、表格行高和主要布局间距进一步收紧；数据表恢复 28px 紧凑网格。
+- 导入预览底部改用 QDialogButtonBox，让按钮顺序、默认按钮和 Esc 行为遵循 Windows Dialog 规则。
+- 保留浅色 / 深色 / 跟随系统、Windows 标题栏同步、中文 UI、原生文件保存窗口和既有快捷键。
+- 完整 pytest 为 139 项；Windows onedir 和实际 `Product-QC-Daily.exe --self-test` 验证原生 style、七页导航及现有导出/备份流程。
 
 下载 `Product-QC-Daily-windows-x64.zip`，完整解压后运行 `Product-QC-Daily.exe`。升级仅替换程序目录，用户数据仍保存在 `%LOCALAPPDATA%/Product-QC-Daily/`。
