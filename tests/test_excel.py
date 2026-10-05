@@ -355,3 +355,29 @@ def test_external_template_quantity_chart_excludes_rank(ctx, payload, tmp_path, 
     assert (chart.anchor._from, chart.anchor.to) == (anchor._from, anchor.to)
     assert source.read_bytes() == source_bytes
     result.close()
+
+
+
+def test_legacy_export_syncs_current_team_and_defect_names(ctx, tmp_path):
+    from app.core.schemas import RecordFilter
+
+    team = next(item for item in ctx.settings.teams() if item["name"] == "U1")
+    ctx.settings.save_team("一组", team["id"], enabled=True, sort_order=team["sort_order"])
+    defect = next(item for item in ctx.defects.list() if item["code"] == "a")
+    ctx.defects.save(defect | {"name": "端子包角（新名称）"}, defect["id"])
+
+    path = ctx.excel.export(
+        tmp_path / "renamed-labels.xlsx",
+        RecordFilter(),
+        legacy=True,
+        prefer_com=False,
+    )
+    wb = load_workbook(path)
+    analysis, tool = wb["数据分析表"], wb["工具"]
+    assert analysis["A4"].value == "端子包角（新名称）"
+    assert analysis["A34"].value == "端子包角（新名称）"
+    assert analysis["E4"].value == "一组"
+    assert analysis["E34"].value == "一组"
+    assert tool["A2"].value == "a"
+    assert tool["B2"].value == "端子包角（新名称）"
+    wb.close()

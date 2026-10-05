@@ -207,7 +207,14 @@ def add_signature(ws, index: int, path: Path, preserve_height=False):
     ws.add_image(image)
 
 
-def repair_analysis(wb, start: date, end: date, record_count: int):
+def repair_analysis(
+    wb,
+    start: date,
+    end: date,
+    record_count: int,
+    teams: list[str] | None = None,
+    defect_names: dict[str, str] | None = None,
+):
     ws = wb["数据分析表"]
     last = max(record_count + 1, 2)
     dates = f"'成品日检表'!$B$2:$B${last}"
@@ -228,11 +235,15 @@ def repair_analysis(wb, start: date, end: date, record_count: int):
         ws.cell(control, 2, "月出货抽检不良统计表" if first == 4 else "周出货抽检不良统计表")
         for i in range(24):
             r, code = first + i, chr(97 + i)
+            if defect_names is not None:
+                write_text(ws.cell(r, 1), defect_names.get(code, ""))
             ws.cell(r, 2, f'=COUNTIFS({date_args},{codes},"*{code}*")')
             ws.cell(r, 3, f"=RANK(B{r},$B${first}:$B${first + 23},0)")
         ws.cell(total_row, 2, f"=SUM(B{first}:B{first + 23})")
         for i in range(8):
             r = first + i
+            if teams is not None:
+                write_text(ws.cell(r, 5), teams[i] if i < len(teams) else "")
             ws.cell(r, 6, f'=COUNTIFS({date_args},{groups},E{r},{judgments},"返工")')
         ws.cell(first + 8, 6, f"=SUM(F{first}:F{first + 7})")
         for target, source in (("H", "E"), ("I", "F"), ("J", "G")):
@@ -241,6 +252,12 @@ def repair_analysis(wb, start: date, end: date, record_count: int):
             )
         ws[f"K{first}"] = f"=IFERROR(J{first}/I{first},0)"
         ws[f"K{first}"].number_format = "0.00%"
+    if defect_names is not None and "工具" in wb.sheetnames:
+        tool = wb["工具"]
+        for i in range(24):
+            code = chr(97 + i)
+            write_text(tool.cell(i + 2, 1), code)
+            write_text(tool.cell(i + 2, 2), defect_names.get(code, ""))
     ws["A61"] = "项目统计为出现批次；不良率=不良件数/抽检件数。逐项已知数量见标准报表。"
     for column in ("L", "M"):
         ws.column_dimensions[column].width = max(ws.column_dimensions[column].width, 12)
@@ -399,6 +416,12 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             filters.start or minimum or date.today(),
             filters.end or maximum or date.today(),
             count,
+            teams=[team["name"] for team in ctx.settings.teams()][:8],
+            defect_names={
+                item["code"]: item["name"]
+                for item in ctx.defects.list()
+                if item["code"] in "abcdefghijklmnopqrstuvwx"
+            },
         )
         for chart in wb["数据分析表"]._charts:
             clear_chart_caches(chart)

@@ -1,3 +1,5 @@
+from datetime import date
+
 from PySide6.QtCore import QSize, Qt, QThread, Slot
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
@@ -181,7 +183,20 @@ class MainWindow(QMainWindow):
     def notify(self, message):
         self.statusBar().showMessage(message, 15000)
 
-    def show_demo_data(self, count):
+    def show_demo_data(self, count, start=None, end=None):
+        today = date.today()
+        includes_current_month = (
+            start is None
+            or end is None
+            or (start.year, start.month) <= (today.year, today.month) <= (end.year, end.month)
+        )
+        if not includes_current_month:
+            self.navigate(3)
+            self.pages[3].show_demo_range(start, end)
+            self.notify(
+                f"已生成 {count:,} 条演示记录 · 当前正在查看 {start} 至 {end} 的演示分析"
+            )
+            return
         dashboard = self.pages[0]
         dashboard.source.blockSignals(True)
         dashboard.source.setCurrentIndex(1)
