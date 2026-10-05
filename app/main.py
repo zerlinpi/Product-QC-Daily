@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sys
+from datetime import date
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -71,6 +72,26 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert sheet.freeze_panes == "C2"
     assert sheet.sheet_view.selection[-1].activeCell == "C2"
     workbook.close()
+    year = date.today().year
+    standard = reopened.excel.export(
+        ctx.paths.exports / "smoke-standard.xlsx",
+        RecordFilter(
+            start=date(year, 1, 1),
+            end=date(year, 12, 31),
+            source="demo",
+        ),
+        legacy=False,
+        prefer_com=False,
+    )
+    workbook = load_workbook(standard)
+    assert workbook["检验记录"]["N1"].value == "月份"
+    assert workbook["检验记录"].auto_filter.ref.endswith(
+        f"N{workbook['检验记录'].max_row}"
+    )
+    monthly = workbook["月度统计"]
+    assert monthly.max_row == 13
+    assert len(monthly._charts) == 2
+    workbook.close()
     backup = reopened.backup.backup()
     reopened.backup.restore(backup)
     window.close()
@@ -86,6 +107,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "chinese_controls": True,
         "export_view_reset": True,
         "export_path_dialog": True,
+        "annual_standard_export": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)

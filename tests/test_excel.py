@@ -381,3 +381,48 @@ def test_legacy_export_syncs_current_team_and_defect_names(ctx, tmp_path):
     assert tool["A2"].value == "a"
     assert tool["B2"].value == "端子包角（新名称）"
     wb.close()
+
+
+
+def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_path):
+    from datetime import date
+
+    from app.core.schemas import RecordFilter
+
+    ctx.demo.generate(
+        240,
+        date(2026, 1, 1),
+        date(2026, 12, 31),
+        ["U1"],
+        rework_rate=0.08,
+        defect_rate=0.02,
+        seed=42,
+    )
+    path = ctx.excel.export(
+        tmp_path / "annual-demo.xlsx",
+        RecordFilter(
+            start=date(2026, 1, 1),
+            end=date(2026, 12, 31),
+            source="demo",
+        ),
+        legacy=False,
+    )
+    wb = load_workbook(path)
+    records = wb["检验记录"]
+    headers = [cell.value for cell in records[1]]
+    assert headers[-1] == "月份"
+    assert records.auto_filter.ref.endswith(f"N{records.max_row}")
+    months = {records.cell(row, 14).value for row in range(2, records.max_row + 1)}
+    assert months <= {f"2026-{month:02d}" for month in range(1, 13)}
+    assert months
+
+    monthly = wb["月度统计"]
+    assert [monthly.cell(row, 1).value for row in range(2, 14)] == [
+        f"2026-{month:02d}" for month in range(1, 13)
+    ]
+    assert sum(monthly.cell(row, 2).value for row in range(2, 14)) == 240
+    assert monthly["F2"].number_format == "0.00%"
+    assert monthly["H2"].number_format == "0.00%"
+    assert len(monthly._charts) == 2
+    assert dict(wb["统计摘要"].values)["数据范围"] == "演示数据"
+    wb.close()

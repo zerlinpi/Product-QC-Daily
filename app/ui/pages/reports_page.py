@@ -61,7 +61,7 @@ class ReportsPage(Page):
         self.set_range("本月")
         layout.addWidget(
             label(
-                "日报选“今天”、周报选“本周”、月报选“本月”。筛选记录和选中记录可在检验记录页导出。",
+                "日报选“今天”、周报选“本周”、月报选“本月”、年度报表选“本年”。演示数据也可直接导出；明细报表支持按月份筛选。",
                 "muted",
                 True,
             )
@@ -72,11 +72,11 @@ class ReportsPage(Page):
             )
         )
         layout.addWidget(
-            button("导出明细报表 · 保留检验员与逐项件数", lambda: self.export(False))
+            button("导出明细报表 · 月份筛选 + 月度统计图", lambda: self.export(False))
         )
         layout.addWidget(
             label(
-                "需要原有表格样式，请选“按原表导出”；需要完整检验员、备注和逐项件数，请选“导出明细报表”。用电子表格软件打开文件后，统计公式会自动重新计算。",
+                "需要原有表格样式，请选“按原表导出”；年度分析建议使用“导出明细报表”，其中记录表可按月份筛选，并附月度统计与趋势图。原表模板布局保持不变。",
                 "muted",
                 True,
             )

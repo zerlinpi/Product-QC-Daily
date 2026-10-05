@@ -28,7 +28,7 @@ class DemoDialog(QDialog):
         layout.setSpacing(12)
         layout.addWidget(
             label(
-                "演示记录与正式数据完全分开。当前月范围生成后打开质量总览；历史、未来或跨月范围会打开对应日期的质量分析。",
+                "演示记录与正式数据完全分开。默认生成当前完整年度；年度或跨月范围生成后会打开对应日期的质量分析，并可在报表中心选择“演示数据”导出。",
                 "muted",
                 True,
             )
@@ -42,9 +42,10 @@ class DemoDialog(QDialog):
         self.count.setRange(1, 100_000)
         self.count.setValue(1000)
         self.count.setSingleStep(100)
+        today = QDate.currentDate()
         self.start, self.end = (
-            QDateEdit(QDate.currentDate().addDays(-29)),
-            QDateEdit(QDate.currentDate()),
+            QDateEdit(QDate(today.year(), 1, 1)),
+            QDateEdit(QDate(today.year(), 12, 31)),
         )
         for widget in (self.start, self.end):
             widget.setCalendarPopup(True)

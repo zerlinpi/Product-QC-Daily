@@ -7,6 +7,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 from openpyxl import Workbook
+from openpyxl.chart import BarChart, LineChart, Reference
 from openpyxl.chart.text import RichText
 from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
@@ -43,6 +44,7 @@ HEADERS = [
     "检验员",
     "备注",
     "数据来源",
+    "月份",
 ]
 
 
@@ -56,6 +58,93 @@ def style_table(ws):
     for col in ws.columns:
         letter = col[0].column_letter
         ws.column_dimensions[letter].width = min(42, max(15, len(str(col[0].value or "")) * 2 + 4))
+
+
+def month_keys(start: date | None, end: date | None) -> list[str]:
+    if start is None or end is None:
+        return []
+    current = date(start.year, start.month, 1)
+    last = date(end.year, end.month, 1)
+    result = []
+    while current <= last:
+        result.append(current.strftime("%Y-%m"))
+        current = (
+            date(current.year + 1, 1, 1)
+            if current.month == 12
+            else date(current.year, current.month + 1, 1)
+        )
+    return result
+
+
+def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: date | None):
+    ws = wb.create_sheet("月度统计")
+    ws.append(
+        ["月份", "检验批次", "检验数量", "抽检数量", "不良件数", "不良率", "返工批次", "返工率"]
+    )
+    months = month_keys(start, end) or sorted(monthly)
+    for month in months:
+        values = monthly.get(
+            month,
+            {
+                "batches": 0,
+                "inspection_quantity": 0,
+                "sampling_quantity": 0,
+                "defect_quantity": 0,
+                "rework_batches": 0,
+            },
+        )
+        defect_rate = (
+            values["defect_quantity"] / values["sampling_quantity"]
+            if values["sampling_quantity"]
+            else 0
+        )
+        rework_rate = values["rework_batches"] / values["batches"] if values["batches"] else 0
+        ws.append(
+            [
+                month,
+                values["batches"],
+                values["inspection_quantity"],
+                values["sampling_quantity"],
+                values["defect_quantity"],
+                defect_rate,
+                values["rework_batches"],
+                rework_rate,
+            ]
+        )
+        ws.cell(ws.max_row, 6).number_format = "0.00%"
+        ws.cell(ws.max_row, 8).number_format = "0.00%"
+
+    if months:
+        categories = Reference(ws, min_col=1, min_row=2, max_row=ws.max_row)
+        volume = BarChart()
+        volume.title = "月度检验批次"
+        volume.y_axis.title = "批次"
+        volume.x_axis.title = "月份"
+        volume.height = 7
+        volume.width = 14
+        volume.add_data(
+            Reference(ws, min_col=2, max_col=2, min_row=1, max_row=ws.max_row),
+            titles_from_data=True,
+        )
+        volume.set_categories(categories)
+        ws.add_chart(volume, "J2")
+
+        rates = LineChart()
+        rates.title = "月度质量率趋势"
+        rates.y_axis.title = "比例"
+        rates.x_axis.title = "月份"
+        rates.height = 7
+        rates.width = 14
+        rates.add_data(
+            Reference(ws, min_col=6, max_col=8, min_row=1, max_row=ws.max_row),
+            titles_from_data=True,
+            from_rows=False,
+        )
+        # Keep only 不良率 and 返工率; column G is a batch count, not a rate.
+        del rates.series[1]
+        rates.set_categories(categories)
+        ws.add_chart(rates, "J18")
+    return ws
 
 
 def extend_legacy_form(ws, row_style, row_height, data_rows=0):
@@ -363,6 +452,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
                 ]
             )
     count, minimum, maximum = 0, None, None
+    monthly = {}
     for count, row in enumerate(ctx.inspections.iter_records(filters), 1):
         index = count + 1
         codes = [d["code"] for d in row["defects"]]
@@ -386,7 +476,23 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             "",
         ]
         if not legacy:
-            values += [row["inspector"], row["remark"], source_label(row["source"])]
+            month = stamp.strftime("%Y-%m")
+            values += [row["inspector"], row["remark"], source_label(row["source"]), month]
+            bucket = monthly.setdefault(
+                month,
+                {
+                    "batches": 0,
+                    "inspection_quantity": 0,
+                    "sampling_quantity": 0,
+                    "defect_quantity": 0,
+                    "rework_batches": 0,
+                },
+            )
+            bucket["batches"] += 1
+            bucket["inspection_quantity"] += row["inspection_quantity"]
+            bucket["sampling_quantity"] += row["sampling_quantity"]
+            bucket["defect_quantity"] += row["defect_quantity"]
+            bucket["rework_batches"] += int(row["judgment"] == "返工")
         for col, value in enumerate(values, 1):
             cell = ws.cell(index, col)
             write_text(cell, value)
@@ -447,6 +553,13 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
                 summary.cell(summary.max_row, 2).number_format = "0.00%"
         summary.append(["口径", "不良率=不良件数/抽检件数；项目件数未知保留空白，多缺陷可重叠。"])
         summary.append(["数据范围", source_label(filters.source)])
+        summary.append(["日期范围", f"{filters.start or minimum or ''} 至 {filters.end or maximum or ''}"])
+        add_monthly_analysis(
+            wb,
+            monthly,
+            filters.start or minimum,
+            filters.end or maximum,
+        )
         for sheet in wb:
             for cells in sheet:
                 for cell in cells:
