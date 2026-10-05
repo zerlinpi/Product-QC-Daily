@@ -14,7 +14,7 @@ from app.core.labels import imported_source
 from app.core.schemas import InspectionInput
 from app.core.validation import validation_message
 from app.database.models import InspectionRecord
-from app.services.excel_common import load_compatible, wps_images
+from app.services.excel_common import file_sha256, load_compatible, wps_images
 
 ALIASES = {
     "填写ID": "inspection_no",
@@ -116,14 +116,14 @@ def preview_workbook(ctx, path: Path) -> ImportPreview:
     if path.suffix.lower() != ".xlsx":
         raise ValueError("请选择 .xlsx 文件；旧 .xls 请先另存为 .xlsx")
     try:
-        file_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+        file_hash = file_sha256(path)
     except OSError as exc:
         raise ValueError("无法读取源文件，请确认文件存在且未被其他程序占用") from exc
     wb = load_compatible(path)
     try:
         preview = _preview_loaded_workbook(ctx, path, wb, file_hash)
         try:
-            current_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+            current_hash = file_sha256(path)
         except OSError as exc:
             raise ValueError("源文件在预览过程中不可用，请重新选择文件") from exc
         if current_hash != file_hash:
