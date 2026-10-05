@@ -63,11 +63,12 @@ def extend_legacy_form(ws, row_style, row_height, data_rows=0):
     last_row = max(LEGACY_FORM_ROWS + 1, data_rows + 1)
     for row in range(2, last_row + 1):
         ws.row_dimensions[row].height = row_height
+        if row <= data_rows + 1:
+            continue
         for col, style in enumerate(row_style, 1):
             cell = ws.cell(row, col)
             cell._style = copy(style)
-            if row > data_rows + 1:
-                cell.value = None
+            cell.value = None
 
 
 def improve_legacy_sheet_display(ws):
