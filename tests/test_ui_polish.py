@@ -178,9 +178,8 @@ def test_entry_footer_tracks_saved_modified_copied_and_new_records(ctx, payload,
 
 
 
-def test_record_context_menu_targets_clicked_row(ctx, payload, qtbot, monkeypatch):
+def test_record_context_menu_targets_clicked_row(ctx, payload, qtbot):
     from app.core.schemas import InspectionInput
-    from app.ui.pages import records_page
 
     ctx.inspections.save(InspectionInput(**(payload.model_dump() | {"work_order": "RIGHT-A"})))
     ctx.inspections.save(InspectionInput(**(payload.model_dump() | {"work_order": "RIGHT-B"})))
@@ -192,9 +191,7 @@ def test_record_context_menu_targets_clicked_row(ctx, payload, qtbot, monkeypatc
     page.table.selectRow(0)
     target_id = page.rows[1]["id"]
     point = page.table.visualItemRect(page.table.item(1, 0)).center()
-    monkeypatch.setattr(records_page.QMenu, "exec", lambda *args, **kwargs: None)
-
-    page.context_menu(point)
+    page.select_context_row(point)
 
     assert page.selected_ids() == [target_id]
     assert page.selection_count.text() == "已选择 1 条"
