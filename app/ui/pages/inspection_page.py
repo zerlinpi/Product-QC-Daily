@@ -44,7 +44,7 @@ class InspectionPage(Page):
         content = QWidget()
         grid = QGridLayout(content)
         grid.setContentsMargins(0, 0, 0, 0)
-        grid.setSpacing(18)
+        grid.setSpacing(12)
         left, left_layout = card()
         left_layout.addWidget(label("检验信息", "section"))
         fields = QGridLayout()
