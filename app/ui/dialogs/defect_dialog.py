@@ -40,6 +40,7 @@ class DefectDialog(QDialog):
             form.addRow(title, widget)
         self.enabled = QCheckBox("启用此项目")
         self.enabled.setChecked((item or {}).get("enabled", True))
+        control_metrics(self.enabled)
         self.order = QSpinBox()
         self.order.setRange(0, 10000)
         self.order.setValue((item or {}).get("sort_order", 25))
