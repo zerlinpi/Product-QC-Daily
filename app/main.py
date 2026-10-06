@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 
 from openpyxl import load_workbook
-from PySide6.QtCore import QDate, QLockFile, QTimer, Qt
+from PySide6.QtCore import QDate, QLockFile, Qt, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
