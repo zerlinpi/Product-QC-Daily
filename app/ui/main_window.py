@@ -30,6 +30,7 @@ from app.ui.pages.records_page import RecordsPage
 from app.ui.pages.reports_page import ReportsPage
 from app.ui.pages.settings_page import SettingsPage
 from app.ui.styles.theme import apply_theme, sync_native_titlebar
+from app.ui.widgets.chart_widget import ChartWidget
 from app.ui.worker import Worker
 
 
@@ -168,6 +169,8 @@ class MainWindow(QMainWindow):
 
     def refresh_theme(self):
         self._dark_theme = apply_theme(self.ctx.settings.get("theme"))
+        for chart in self.findChildren(ChartWidget):
+            chart.refresh_theme()
         sync_native_titlebar(self, self._dark_theme)
 
     def _system_color_scheme_changed(self, *_):
