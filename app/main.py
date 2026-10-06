@@ -176,6 +176,26 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     ]
     assert all(control.minimumHeight() == CONTROL_MIN_HEIGHT for control in field_controls)
 
+    settings_field_titles = {
+        "公司名称",
+        "工厂名称",
+        "默认检验员",
+        "默认组别",
+        "界面主题",
+        "原表模板",
+        "导出目录",
+        "备份目录",
+        "自动备份",
+        "自动备份保留",
+    }
+    settings_labels = {
+        item.text(): item.objectName()
+        for item in settings.findChildren(type(settings.title_label))
+        if item.text() in settings_field_titles
+    }
+    assert settings_labels.keys() == settings_field_titles
+    assert all(kind == "fieldLabel" for kind in settings_labels.values())
+
     primary_probe = button("主要操作", primary=True)
     danger_probe = button("危险操作", danger=True)
     assert primary_probe.minimumHeight() == CONTROL_MIN_HEIGHT
