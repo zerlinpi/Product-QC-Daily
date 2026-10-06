@@ -28,7 +28,7 @@ class ImportDialog(QDialog):
         self.page = 1
         self.setWindowTitle("表格导入预览")
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
-        self.resize(1040, 680)
+        self.resize(*IMPORT_DIALOG_SIZE)
         layout = dialog_layout(self)
         layout.addWidget(
             label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "summary")
