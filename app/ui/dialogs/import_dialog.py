@@ -13,6 +13,7 @@ from app.ui.common import (
     control_metrics,
     dialog_button_box,
     dialog_layout,
+    field_label,
     guarded,
     label,
     populate,
@@ -49,7 +50,7 @@ class ImportDialog(QDialog):
             )
         )
         filter_row = toolbar_layout()
-        filter_row.addWidget(label("显示", "fieldLabel"))
+        filter_row.addWidget(field_label("显示", self.filter))
         self.filter = QComboBox()
         self.filter.setAccessibleName("导入状态筛选")
         control_metrics(self.filter, min_width=FILTER_FIELD_MIN_WIDTH)
