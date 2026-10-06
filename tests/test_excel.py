@@ -136,8 +136,27 @@ def test_legacy_template_preserves_sheets_charts_and_correct_formulas(ctx, paylo
     path = ctx.excel.export(tmp_path / "legacy.xlsx", RecordFilter(), legacy=True, prefer_com=False)
     wb = load_workbook(path)
     assert wb.sheetnames[:4] == ["成品日检表报表", "成品日检表", "数据分析表", "工具"]
-    assert len(wb["数据分析表"]._charts) == 6
-    assert "SUMIFS" in wb["数据分析表"]["J4"].value
+    analysis = wb["数据分析表"]
+    assert len(analysis._charts) == 6
+    monthly_totals = analysis._charts[1].series[0]
+    weekly_totals = analysis._charts[3].series[0]
+    assert [point.v for point in monthly_totals.cat.strRef.strCache.pt] == [
+        "检验数量",
+        "抽检数",
+        "不良数",
+        "不良率",
+    ]
+    assert [point.v for point in monthly_totals.val.numRef.numCache.pt][:3] == [
+        payload.inspection_quantity,
+        payload.sampling_quantity,
+        payload.defect_quantity,
+    ]
+    assert [point.v for point in weekly_totals.val.numRef.numCache.pt][:3] == [
+        payload.inspection_quantity,
+        payload.sampling_quantity,
+        payload.defect_quantity,
+    ]
+    assert "SUMIFS" in analysis["J4"].value
     assert '"*x*"' in wb["数据分析表"]["B27"].value
     assert "$B$4:$B$27" in wb["数据分析表"]["C4"].value
     assert "B34:B57" in wb["数据分析表"]["B58"].value
@@ -386,6 +405,7 @@ def test_legacy_export_syncs_current_team_and_defect_names(ctx, tmp_path):
 
 def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_path):
     from datetime import date
+    from zipfile import ZipFile
 
     from app.core.schemas import RecordFilter
 
@@ -424,8 +444,41 @@ def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_p
     assert monthly["F2"].number_format == "0.00%"
     assert monthly["H2"].number_format == "0.00%"
     assert len(monthly._charts) == 2
+
+    volume, rates = monthly._charts
+    assert volume.series[0].cat.strRef is not None
+    assert [point.v for point in volume.series[0].cat.strRef.strCache.pt] == [
+        f"2026-{month:02d}" for month in range(1, 13)
+    ]
+    assert [point.v for point in volume.series[0].val.numRef.numCache.pt] == [
+        monthly.cell(row, 2).value for row in range(2, 14)
+    ]
+    assert [point.v for point in rates.series[0].val.numRef.numCache.pt] == [
+        monthly.cell(row, 6).value for row in range(2, 14)
+    ]
+    assert [point.v for point in rates.series[1].val.numRef.numCache.pt] == [
+        monthly.cell(row, 8).value for row in range(2, 14)
+    ]
+    assert wb.calculation.calcMode == "auto"
+    assert wb.calculation.fullCalcOnLoad
+    assert wb.calculation.forceFullCalc
     assert dict(wb["统计摘要"].values)["数据范围"] == "演示数据"
     wb.close()
+
+    with ZipFile(path) as archive:
+        chart_xml = b"".join(
+            archive.read(name)
+            for name in archive.namelist()
+            if name.startswith("xl/charts/chart") and name.endswith(".xml")
+        )
+        assert b"strCache" in chart_xml
+        assert b"numCache" in chart_xml
+        assert b"2026-01" in chart_xml
+        assert b"2026-12" in chart_xml
+        workbook_xml = archive.read("xl/workbook.xml")
+        assert b'calcMode="auto"' in workbook_xml
+        assert b'fullCalcOnLoad="1"' in workbook_xml
+        assert b'forceFullCalc="1"' in workbook_xml
 
 
 

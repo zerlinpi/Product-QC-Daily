@@ -8,6 +8,7 @@ from tempfile import NamedTemporaryFile
 
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.chart.data_source import AxDataSource, NumData, NumVal, StrData, StrRef, StrVal
 from openpyxl.chart.text import RichText
 from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
@@ -284,6 +285,127 @@ def month_keys(start: date | None, end: date | None) -> list[str]:
     return result
 
 
+def embed_chart_data(chart, categories: list[str], series_values: list[list], titles: list[str], formats: list[str]):
+    """Embed chart caches so Excel/WPS can render data without recalculating first."""
+    if not (len(chart.series) == len(series_values) == len(titles) == len(formats)):
+        raise ValueError("图表系列数据不完整")
+    for series, values, title, number_format in zip(
+        chart.series, series_values, titles, formats, strict=True
+    ):
+        category_formula = None
+        if series.cat is not None:
+            for reference_name in ("strRef", "numRef"):
+                reference = getattr(series.cat, reference_name, None)
+                if reference is not None and reference.f:
+                    category_formula = reference.f
+                    break
+        if category_formula:
+            series.cat = AxDataSource(
+                strRef=StrRef(
+                    f=category_formula,
+                    strCache=StrData(
+                        ptCount=len(categories),
+                        pt=[StrVal(idx=index, v=str(value)) for index, value in enumerate(categories)],
+                    ),
+                )
+            )
+        if series.val is not None and series.val.numRef is not None:
+            series.val.numRef.numCache = NumData(
+                formatCode=number_format,
+                ptCount=len(values),
+                pt=[
+                    NumVal(idx=index, v=0 if value is None else value)
+                    for index, value in enumerate(values)
+                ],
+            )
+        if series.tx is not None and series.tx.strRef is not None:
+            series.tx.strRef.strCache = StrData(
+                ptCount=1,
+                pt=[StrVal(idx=0, v=title)],
+            )
+
+
+def new_chart_snapshot():
+    return {
+        "inspection_quantity": 0,
+        "sampling_quantity": 0,
+        "defect_quantity": 0,
+        "defect_batches": {code: 0 for code in "abcdefghijklmnopqrstuvwx"},
+        "rework_batches": {},
+    }
+
+
+def update_chart_snapshot(snapshot, row):
+    snapshot["inspection_quantity"] += row["inspection_quantity"]
+    snapshot["sampling_quantity"] += row["sampling_quantity"]
+    snapshot["defect_quantity"] += row["defect_quantity"]
+    if row["judgment"] == "返工":
+        team = row["team"]
+        snapshot["rework_batches"][team] = snapshot["rework_batches"].get(team, 0) + 1
+    for code in {item["code"] for item in row["defects"]}:
+        if code in snapshot["defect_batches"]:
+            snapshot["defect_batches"][code] += 1
+
+
+def embed_legacy_analysis_chart_data(wb, period, week, teams, defect_names):
+    analysis = wb["数据分析表"]
+    team_categories = [teams[index] if index < len(teams) else "" for index in range(8)]
+    defect_categories = [defect_names.get(chr(97 + index), "") for index in range(24)]
+    totals_categories = ["检验数量", "抽检数", "不良数", "不良率"]
+
+    def totals(snapshot):
+        rate = (
+            snapshot["defect_quantity"] / snapshot["sampling_quantity"]
+            if snapshot["sampling_quantity"]
+            else 0
+        )
+        return [
+            snapshot["inspection_quantity"],
+            snapshot["sampling_quantity"],
+            snapshot["defect_quantity"],
+            rate,
+        ]
+
+    values_by_range = {
+        "$F$4:$F$11": (
+            team_categories,
+            [period["rework_batches"].get(team, 0) if team else 0 for team in team_categories],
+            "#,##0",
+        ),
+        "$H$4:$K$4": (totals_categories, totals(period), "General"),
+        "$B$4:$B$27": (
+            defect_categories,
+            [period["defect_batches"][chr(97 + index)] for index in range(24)],
+            "#,##0",
+        ),
+        "$H$34:$K$34": (totals_categories, totals(week), "General"),
+        "$B$34:$B$57": (
+            defect_categories,
+            [week["defect_batches"][chr(97 + index)] for index in range(24)],
+            "#,##0",
+        ),
+        "$F$34:$F$41": (
+            team_categories,
+            [week["rework_batches"].get(team, 0) if team else 0 for team in team_categories],
+            "#,##0",
+        ),
+    }
+    for chart in analysis._charts:
+        if not chart.series:
+            continue
+        series = chart.series[0]
+        formula = (
+            series.val.numRef.f.replace("'", "")
+            if series.val is not None and series.val.numRef is not None
+            else ""
+        )
+        match = next((key for key in values_by_range if formula.endswith(key)), None)
+        if match is None:
+            continue
+        categories, values, number_format = values_by_range[match]
+        embed_chart_data(chart, categories, [values], [""], [number_format])
+
+
 def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: date | None):
     ws = wb.create_sheet("月度统计")
     ws.append(
@@ -362,6 +484,13 @@ def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: 
             titles_from_data=True,
         )
         volume.set_categories(categories)
+        embed_chart_data(
+            volume,
+            months,
+            [[ws.cell(row, 2).value for row in range(2, month_last_row + 1)]],
+            ["检验批次"],
+            ["0"],
+        )
         ws.add_chart(volume, "J2")
 
         rates = LineChart()
@@ -382,6 +511,16 @@ def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: 
         # Keep only 不良率 and 返工率; column G is a batch count, not a rate.
         del rates.series[1]
         rates.set_categories(categories)
+        embed_chart_data(
+            rates,
+            months,
+            [
+                [ws.cell(row, 6).value for row in range(2, month_last_row + 1)],
+                [ws.cell(row, 8).value for row in range(2, month_last_row + 1)],
+            ],
+            ["不良率", "返工率"],
+            ["0.00%", "0.00%"],
+        )
         ws.add_chart(rates, "J18")
     return ws
 
@@ -701,6 +840,8 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             )
     count, minimum, maximum = 0, None, None
     monthly = {}
+    legacy_period = new_chart_snapshot() if legacy else None
+    legacy_weeks = {}
     for count, row in enumerate(ctx.inspections.iter_records(filters), 1):
         index = count + 1
         codes = [d["code"] for d in row["defects"]]
@@ -711,6 +852,13 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         stamp = datetime.fromisoformat(f"{row['inspection_date']}T{row['inspection_time']}")
         minimum = min(minimum, stamp.date()) if minimum else stamp.date()
         maximum = max(maximum, stamp.date()) if maximum else stamp.date()
+        if legacy:
+            update_chart_snapshot(legacy_period, row)
+            week_start = stamp.date() - timedelta(days=stamp.date().weekday())
+            update_chart_snapshot(
+                legacy_weeks.setdefault(week_start, new_chart_snapshot()),
+                row,
+            )
         values = [
             row["inspection_no"],
             stamp,
@@ -765,22 +913,34 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         extend_legacy_form(duplicate, duplicate_style, duplicate_height, 0)
         improve_legacy_sheet_display(duplicate)
         # The hidden duplicate is intentionally empty to avoid two copies being imported.
+        analysis_start = filters.start or minimum or date.today()
+        analysis_end = filters.end or maximum or date.today()
+        teams = [team["name"] for team in ctx.settings.teams()][:8]
+        defect_names = {
+            item["code"]: item["name"]
+            for item in ctx.defects.list()
+            if item["code"] in "abcdefghijklmnopqrstuvwx"
+        }
         repair_analysis(
             wb,
-            filters.start or minimum or date.today(),
-            filters.end or maximum or date.today(),
+            analysis_start,
+            analysis_end,
             count,
-            teams=[team["name"] for team in ctx.settings.teams()][:8],
-            defect_names={
-                item["code"]: item["name"]
-                for item in ctx.defects.list()
-                if item["code"] in "abcdefghijklmnopqrstuvwx"
-            },
+            teams=teams,
+            defect_names=defect_names,
         )
         for chart in wb["数据分析表"]._charts:
             clear_chart_caches(chart)
             repair_chart_ranges(chart)
             improve_chart_labels(chart)
+        selected_week = analysis_end - timedelta(days=analysis_end.weekday())
+        embed_legacy_analysis_chart_data(
+            wb,
+            legacy_period,
+            legacy_weeks.get(selected_week, new_chart_snapshot()),
+            teams,
+            defect_names,
+        )
     else:
         summary = wb.create_sheet("统计摘要")
         summary.append(["指标", "数值"])
@@ -821,6 +981,13 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             filters.start or minimum,
             filters.end or maximum,
         )
+    wb.calculation = CalcProperties(
+        calcId=191029,
+        calcMode="auto",
+        fullCalcOnLoad=True,
+        calcOnSave=True,
+        forceFullCalc=True,
+    )
     # A full timestamp needs more room than the short date in the old template.
     # Apply this after standard table styling, which otherwise resets B to 15.
     ws.column_dimensions["B"].width = max(ws.column_dimensions["B"].width, 26)
