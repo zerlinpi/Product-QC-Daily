@@ -189,6 +189,13 @@ def label(text, kind="", wrap=False):
     return widget
 
 
+def field_label(text, field=None):
+    widget = label(text, "fieldLabel")
+    if isinstance(field, QWidget):
+        widget.setBuddy(field)
+    return widget
+
+
 def set_label_kind(widget, kind):
     widget.setObjectName(kind)
     widget.style().unpolish(widget)
@@ -251,9 +258,7 @@ def form_layout(parent=None):
 
 def form_row(layout, title, field):
     """Add a form row using the same field-label semantics as grid-based forms."""
-    caption = label(title, "fieldLabel")
-    if isinstance(field, QWidget):
-        caption.setBuddy(field)
+    caption = field_label(title, field)
     layout.addRow(caption, field)
     return caption
 
