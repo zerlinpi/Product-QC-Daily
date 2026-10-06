@@ -30,9 +30,12 @@ from app.core.validation import validation_message
 PAGE_MARGINS = (14, 12, 14, 12)
 DIALOG_MARGINS = (14, 12, 14, 12)
 SECTION_MARGINS = (10, 12, 10, 10)
+SIDEBAR_MARGINS = (8, 10, 8, 8)
+TOPBAR_MARGINS = (14, 4, 14, 4)
 LAYOUT_SPACING = 8
 TOOLBAR_SPACING = 6
 CONTROL_MIN_HEIGHT = 28
+TOPBAR_MIN_HEIGHT = 36
 
 
 def friendly_error(parent, error):
@@ -214,6 +217,7 @@ def table(headers):
     widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     widget.horizontalHeader().setHighlightSections(False)
     widget.horizontalHeader().setMinimumSectionSize(55)
+    widget.horizontalHeader().setMinimumHeight(CONTROL_MIN_HEIGHT)
     widget.horizontalHeader().setDefaultAlignment(
         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
     )
