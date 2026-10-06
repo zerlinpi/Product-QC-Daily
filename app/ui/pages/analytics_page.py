@@ -32,7 +32,7 @@ class AnalyticsPage(Page):
         filter_card, filter_box = native_group("分析范围")
         self.filters_grid = QGridLayout()
         self.filters_grid.setHorizontalSpacing(12)
-        self.filters_grid.setVerticalSpacing(6)
+        self.filters_grid.setVerticalSpacing(8)
         self.preset, self.source, self.metric_choice = QComboBox(), QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)
         self.preset.setCurrentText("本月")
@@ -74,7 +74,7 @@ class AnalyticsPage(Page):
         content = QWidget()
         self.grid = QGridLayout(content)
         self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.setSpacing(9)
+        self.grid.setSpacing(8)
         self.metrics = []
         self._layout_mode = None
         definitions = [
