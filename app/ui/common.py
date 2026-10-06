@@ -36,6 +36,12 @@ TOPBAR_MARGINS = (14, 4, 14, 4)
 LAYOUT_SPACING = 8
 TOOLBAR_SPACING = 6
 CONTROL_MIN_HEIGHT = 28
+BUTTON_MIN_WIDTH = 84
+COMPACT_FIELD_MIN_WIDTH = 110
+FILTER_FIELD_MIN_WIDTH = 120
+SEARCH_FIELD_MIN_WIDTH = 240
+TABLE_ROW_HEIGHT = 28
+CHART_MIN_HEIGHT = 190
 TOPBAR_MIN_HEIGHT = 36
 
 
@@ -92,6 +98,7 @@ def button(text, callback=None, primary=False, danger=False):
     widget.setObjectName("primary" if primary else "danger" if danger else "")
     widget.setAutoDefault(False)
     widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+    widget.setMinimumWidth(BUTTON_MIN_WIDTH)
     if primary:
         font = widget.font()
         font.setBold(True)
@@ -103,6 +110,17 @@ def button(text, callback=None, primary=False, danger=False):
     if callback:
         widget.clicked.connect(callback)
     return widget
+
+
+def control_metrics(*widgets, min_width=None):
+    """Apply shared desktop field metrics without repainting native controls."""
+    for widget in widgets:
+        widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+        if min_width is not None:
+            widget.setMinimumWidth(min_width)
+    if len(widgets) == 1:
+        return widgets[0]
+    return widgets
 
 
 def label(text, kind="", wrap=False):
@@ -196,6 +214,7 @@ def dialog_button_box(buttons, default=None):
     box = QDialogButtonBox(buttons)
     for control in box.buttons():
         control.setMinimumHeight(CONTROL_MIN_HEIGHT)
+        control.setMinimumWidth(BUTTON_MIN_WIDTH)
         control.setAutoDefault(False)
     if default is not None:
         control = box.button(default)
@@ -225,7 +244,7 @@ def table(headers):
     widget.setAlternatingRowColors(True)
     widget.setShowGrid(True)
     widget.verticalHeader().setVisible(False)
-    widget.verticalHeader().setDefaultSectionSize(28)
+    widget.verticalHeader().setDefaultSectionSize(TABLE_ROW_HEIGHT)
     widget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     widget.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     widget.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
