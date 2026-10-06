@@ -286,6 +286,10 @@ def test_all_pages_share_one_native_spacing_system(ctx, qtbot):
     ]
     assert embedded_scrolls
     assert all(scroll.frameShape() == QFrame.Shape.NoFrame for scroll in embedded_scrolls)
+    assert all(
+        scroll.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        for scroll in embedded_scrolls
+    )
 
 
 def test_workflow_sections_use_consistent_native_group_boxes(ctx, qtbot):
@@ -339,3 +343,61 @@ def test_dynamic_status_labels_use_consistent_tones(ctx, qtbot):
     analytics.start.setDate(QDate(2026, 2, 2))
     analytics.end.setDate(QDate(2026, 2, 1))
     assert analytics.scope.objectName() == "error"
+
+
+
+def test_dialog_button_box_helper_unifies_native_metrics(qtbot):
+    from PySide6.QtWidgets import QDialogButtonBox
+
+    from app.ui.common import CONTROL_MIN_HEIGHT, dialog_button_box
+
+    box = dialog_button_box(
+        QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+        default=QDialogButtonBox.StandardButton.Save,
+    )
+    qtbot.addWidget(box)
+
+    save = box.button(QDialogButtonBox.StandardButton.Save)
+    cancel = box.button(QDialogButtonBox.StandardButton.Cancel)
+    assert save.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert cancel.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert save.isDefault()
+    assert save.autoDefault()
+    assert not cancel.autoDefault()
+
+
+def test_summary_labels_share_one_visual_role(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    assert window.pages[0].refreshed.objectName() == "summary"
+    assert window.pages[2].selection_count.objectName() == "summary"
+    assert window.pages[2].count.objectName() == "summary"
+    assert window.pages[4].count.objectName() == "summary"
+    assert window.pages[4].selection_state.objectName() == "summary"
+    assert window.pages[5].import_status.objectName() == "summary"
+    assert window.pages[6].team_count.objectName() == "summary"
+    assert window.pages[1].defects.total.objectName() == "summary"
+
+
+def test_chart_palette_tracks_application_theme(qtbot):
+    from app.ui.common import chart_palette
+    from app.ui.widgets.chart_widget import ChartWidget
+
+    chart = ChartWidget("主题测试")
+    qtbot.addWidget(chart)
+    chart.draw(["A", "B"], [1, 2])
+
+    apply_theme("light")
+    chart.refresh_theme()
+    light = chart_palette()
+    assert light["warning"].name() == "#ca5010"
+    assert light["text"].name() == QApplication.palette().windowText().color().name()
+
+    apply_theme("dark")
+    chart.refresh_theme()
+    dark = chart_palette()
+    assert dark["warning"].name() == "#f5a623"
+    assert dark["text"].name() == QApplication.palette().windowText().color().name()
+
+    apply_theme("light")
