@@ -1,8 +1,8 @@
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QLineEdit
 
 from app.ui.common import (
-    align_table_columns,
     Page,
+    align_table_columns,
     button,
     confirm,
     guarded,
