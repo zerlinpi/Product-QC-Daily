@@ -31,12 +31,17 @@ from app.services.excel_export import header_footer_text
 from app.ui.common import (
     BUTTON_MIN_WIDTH,
     CONTROL_MIN_HEIGHT,
+    PROGRESS_DIALOG_MIN_WIDTH,
+    REMARK_MAX_HEIGHT,
+    SIGNATURE_PREVIEW_MIN_HEIGHT,
+    STATUS_PROGRESS_MAX_WIDTH,
     LAYOUT_SPACING,
     PAGE_MARGINS,
     TABLE_ROW_HEIGHT,
     button,
     dialog_button_box,
     friendly_error,
+    message_box,
     show_information,
     stack_layout,
 )
@@ -95,6 +100,11 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert controls.button(QDialogButtonBox.StandardButton.Cancel).minimumHeight() == CONTROL_MIN_HEIGHT
     assert controls.button(QDialogButtonBox.StandardButton.Save).minimumWidth() == BUTTON_MIN_WIDTH
     assert controls.button(QDialogButtonBox.StandardButton.Cancel).minimumWidth() == BUTTON_MIN_WIDTH
+    info_probe = message_box(window, "提示", "自检消息")
+    ok_probe = info_probe.button(QDialogButtonBox.StandardButton.Ok)
+    assert ok_probe.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert ok_probe.minimumWidth() == BUTTON_MIN_WIDTH
+    info_probe.deleteLater()
     picker_directory = ctx.paths.exports / "自检导出目录"
     picker = ExcelSaveDialog(
         window, "导出报表", picker_directory / "日检报告.xlsx", "电子表格 (*.xlsx)"
@@ -137,6 +147,12 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         assert titles.issubset(present)
 
     dashboard, entry, records, analytics, defects, reports, settings = window.pages
+    assert window.progress.maximumWidth() == STATUS_PROGRESS_MAX_WIDTH
+    assert entry.remark.maximumHeight() == REMARK_MAX_HEIGHT
+    assert entry.signature_label.minimumHeight() == SIGNATURE_PREVIEW_MIN_HEIGHT
+    progress_probe = TaskProgressDialog(window, "正在处理")
+    assert progress_probe.minimumWidth() == PROGRESS_DIALOG_MIN_WIDTH
+    progress_probe.deleteLater()
     field_controls = [
         dashboard.source,
         entry.inspection_date,
@@ -409,6 +425,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "unified_native_ui": True,
         "component_ui_consistency": True,
         "full_ui_style_consistency": True,
+        "dialog_ui_consistency": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)
