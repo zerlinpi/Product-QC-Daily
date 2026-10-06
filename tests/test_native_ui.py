@@ -154,24 +154,29 @@ def test_core_pages_reflow_at_minimum_and_wide_desktop_widths(ctx, qtbot):
     qtbot.waitUntil(lambda: dashboard._layout_mode == "narrow")
     assert position(dashboard.grid, dashboard.cards[2][0]) == (1, 0, 1, 5)
     assert position(dashboard.grid, dashboard.chart_frames[0]) == (5, 0, 1, 10)
+    assert dashboard.grid.count() == 16
 
     window.navigate(1)
     entry = window.pages[1]
     qtbot.waitUntil(lambda: entry._layout_mode == "narrow")
     assert position(entry.content_grid, entry.left_panel) == (0, 0, 1, 1)
     assert position(entry.content_grid, entry.right_panel) == (1, 0, 1, 1)
+    assert entry.content_grid.count() == 2
 
     window.navigate(2)
     records = window.pages[2]
     qtbot.waitUntil(lambda: records._filter_layout_mode == "narrow")
     assert position(records.filters_grid, records.search_field) == (1, 2, 1, 1)
     assert position(records.filters_grid, records.defect_field) == (3, 0, 1, 2)
+    assert records.filters_grid.count() == 13
 
     window.navigate(3)
     analytics = window.pages[3]
     qtbot.waitUntil(lambda: analytics._layout_mode == "narrow")
     assert position(analytics.filters_grid, analytics.analyze_button) == (3, 2, 1, 1)
     assert position(analytics.grid, analytics.trend_frame) == (4, 0, 1, 10)
+    assert analytics.filters_grid.count() == 11
+    assert analytics.grid.count() == 10
 
     window.resize(1440, 920)
     qtbot.wait(50)
@@ -194,3 +199,8 @@ def test_core_pages_reflow_at_minimum_and_wide_desktop_widths(ctx, qtbot):
     qtbot.waitUntil(lambda: analytics._layout_mode == "wide")
     assert position(analytics.filters_grid, analytics.analyze_button) == (1, 5, 1, 1)
     assert position(analytics.grid, analytics.trend_frame) == (2, 0, 1, 5)
+    assert dashboard.grid.count() == 16
+    assert entry.content_grid.count() == 2
+    assert records.filters_grid.count() == 13
+    assert analytics.filters_grid.count() == 11
+    assert analytics.grid.count() == 10
