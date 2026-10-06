@@ -119,3 +119,78 @@ def test_reports_page_uses_native_group_boxes_and_compact_export_actions(ctx, qt
     assert "按原表导出" in buttons
     assert "导出明细报表" in buttons
     assert "月份筛选" in buttons["导出明细报表"].toolTip()
+
+
+
+def test_native_tables_use_alternating_rows_and_data_alignment(qtbot):
+    from app.ui.common import populate, table
+
+    widget = table(["名称", "数量", "比率", "判定", "来源"])
+    qtbot.addWidget(widget)
+    populate(widget, [["工单 A", 1234, "2.37%", "合格", "正式数据"]])
+
+    assert widget.alternatingRowColors()
+    assert widget.item(0, 1).textAlignment() & Qt.AlignmentFlag.AlignRight
+    assert widget.item(0, 2).textAlignment() & Qt.AlignmentFlag.AlignRight
+    assert widget.item(0, 3).textAlignment() & Qt.AlignmentFlag.AlignHCenter
+    assert widget.item(0, 4).textAlignment() & Qt.AlignmentFlag.AlignHCenter
+
+
+def test_core_pages_reflow_at_minimum_and_wide_desktop_widths(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window, before_close_func=lambda w: setattr(w.pages[1], "dirty", False))
+    window.show()
+
+    def position(layout, widget):
+        index = layout.indexOf(widget)
+        assert index >= 0
+        return layout.getItemPosition(index)
+
+    window.resize(1080, 720)
+    qtbot.wait(50)
+
+    window.navigate(0)
+    dashboard = window.pages[0]
+    qtbot.waitUntil(lambda: dashboard._layout_mode == "narrow")
+    assert position(dashboard.grid, dashboard.cards[2][0]) == (1, 0, 1, 5)
+    assert position(dashboard.grid, dashboard.chart_frames[0]) == (5, 0, 1, 10)
+
+    window.navigate(1)
+    entry = window.pages[1]
+    qtbot.waitUntil(lambda: entry._layout_mode == "narrow")
+    assert position(entry.content_grid, entry.left_panel) == (0, 0, 1, 1)
+    assert position(entry.content_grid, entry.right_panel) == (1, 0, 1, 1)
+
+    window.navigate(2)
+    records = window.pages[2]
+    qtbot.waitUntil(lambda: records._filter_layout_mode == "narrow")
+    assert position(records.filters_grid, records.search_field) == (1, 2, 1, 1)
+    assert position(records.filters_grid, records.defect_field) == (3, 0, 1, 2)
+
+    window.navigate(3)
+    analytics = window.pages[3]
+    qtbot.waitUntil(lambda: analytics._layout_mode == "narrow")
+    assert position(analytics.filters_grid, analytics.analyze_button) == (3, 2, 1, 1)
+    assert position(analytics.grid, analytics.trend_frame) == (4, 0, 1, 10)
+
+    window.resize(1440, 920)
+    qtbot.wait(50)
+
+    window.navigate(0)
+    qtbot.waitUntil(lambda: dashboard._layout_mode == "wide")
+    assert position(dashboard.grid, dashboard.cards[2][0]) == (0, 4, 1, 2)
+    assert position(dashboard.grid, dashboard.chart_frames[0]) == (2, 0, 1, 5)
+
+    window.navigate(1)
+    qtbot.waitUntil(lambda: entry._layout_mode == "wide")
+    assert position(entry.content_grid, entry.right_panel) == (0, 1, 1, 1)
+
+    window.navigate(2)
+    qtbot.waitUntil(lambda: records._filter_layout_mode == "wide")
+    assert position(records.filters_grid, records.search_field) == (1, 0, 1, 2)
+    assert position(records.filters_grid, records.defect_field) == (2, 0, 1, 2)
+
+    window.navigate(3)
+    qtbot.waitUntil(lambda: analytics._layout_mode == "wide")
+    assert position(analytics.filters_grid, analytics.analyze_button) == (1, 5, 1, 1)
+    assert position(analytics.grid, analytics.trend_frame) == (2, 0, 1, 5)
