@@ -13,6 +13,7 @@ from app.ui.common import (
     card,
     content_grid,
     control_metrics,
+    field_label,
     form_grid,
     grid_place,
     guarded,
@@ -60,7 +61,7 @@ class AnalyticsPage(Page):
         control_metrics(*[widget for _, widget in controls])
         self.filter_controls = []
         for col, (title, widget) in enumerate(controls):
-            caption = label(title, "fieldLabel")
+            caption = field_label(title, widget)
             self.filter_controls.append((caption, widget))
             self.filters_grid.addWidget(caption, 0, col)
             self.filters_grid.addWidget(widget, 1, col)
