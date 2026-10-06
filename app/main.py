@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
     QGroupBox,
+    QMessageBox,
     QScrollArea,
     QStyleFactory,
 )
