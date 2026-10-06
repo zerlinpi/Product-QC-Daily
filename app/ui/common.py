@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QStyle,
     QTableWidget,
     QTableWidgetItem,
@@ -146,6 +147,13 @@ def dialog_layout(dialog):
     layout.setContentsMargins(*DIALOG_MARGINS)
     layout.setSpacing(LAYOUT_SPACING)
     return layout
+
+
+def page_scroll():
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QFrame.Shape.NoFrame)
+    return scroll
 
 
 def grid_place(layout, widget, row, column, row_span=1, column_span=1):
