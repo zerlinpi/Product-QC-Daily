@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 from app.ui.common import (
     FILTER_FIELD_MIN_WIDTH,
     SEARCH_FIELD_MIN_WIDTH,
+    SELECTOR_TABLE_MIN_HEIGHT,
     align_table_columns,
     control_metrics,
     label,
@@ -50,7 +51,7 @@ class DefectSelector(QWidget):
         self.table.setColumnWidth(1, 240)
         self.table.setColumnWidth(2, 105)
         align_table_columns(self.table, right=(2,), center=(0,))
-        self.table.setMinimumHeight(280)
+        self.table.setMinimumHeight(SELECTOR_TABLE_MIN_HEIGHT)
         layout.addWidget(self.table, 1)
         self.total = label("已选 0 项 · 已知件数合计 0", "summary", True)
         layout.addWidget(self.total)
