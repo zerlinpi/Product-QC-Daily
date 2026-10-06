@@ -19,6 +19,7 @@ from app.ui.common import (
     button,
     confirm,
     content_grid,
+    control_metrics,
     form_grid,
     grid_place,
     guarded,
@@ -86,6 +87,7 @@ class InspectionPage(Page):
             ("检验判定", self.judgment),
             ("检验员 *", self.inspector),
         ]
+        control_metrics(*[widget for _, widget in names])
         for index, (title, widget) in enumerate(names):
             row, col = (index // 2) * 2, index % 2
             fields.addWidget(label(title, "fieldLabel"), row, col)
