@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 
 from app.core.labels import source_label
 from app.core.schemas import RecordFilter
-from app.ui.common import Page, button, card, confirm, guarded, label, populate, table
+from app.ui.common import Page, button, card, confirm, grid_place, guarded, label, populate, table
 from app.ui.dialogs import file_dialogs
 
 
@@ -186,35 +186,35 @@ class RecordsPage(Page):
             return
         self._filter_layout_mode = mode
         if mode == "wide":
-            self.filters_grid.addWidget(self.range_enabled, 0, 0)
-            self.filters_grid.addWidget(self.start_field, 0, 1)
-            self.filters_grid.addWidget(self.end_field, 0, 2)
-            self.filters_grid.addWidget(self.team_field, 0, 3)
-            self.filters_grid.addWidget(self.source_field, 0, 4)
-            self.filters_grid.addWidget(self.search_field, 1, 0, 1, 2)
-            self.filters_grid.addWidget(self.work_order_field, 1, 2)
-            self.filters_grid.addWidget(self.inspector_field, 1, 3)
-            self.filters_grid.addWidget(self.judgment_field, 1, 4)
-            self.filters_grid.addWidget(self.defect_field, 2, 0, 1, 2)
-            self.filters_grid.addWidget(self.has_defects, 2, 2)
-            self.filters_grid.addWidget(self.trash, 2, 3)
-            self.filters_grid.addWidget(self.filter_actions_widget, 2, 4)
+            grid_place(self.filters_grid, self.range_enabled, 0, 0, 1, 1)
+            grid_place(self.filters_grid, self.start_field, 0, 1, 1, 1)
+            grid_place(self.filters_grid, self.end_field, 0, 2, 1, 1)
+            grid_place(self.filters_grid, self.team_field, 0, 3, 1, 1)
+            grid_place(self.filters_grid, self.source_field, 0, 4, 1, 1)
+            grid_place(self.filters_grid, self.search_field, 1, 0, 1, 2)
+            grid_place(self.filters_grid, self.work_order_field, 1, 2, 1, 1)
+            grid_place(self.filters_grid, self.inspector_field, 1, 3, 1, 1)
+            grid_place(self.filters_grid, self.judgment_field, 1, 4, 1, 1)
+            grid_place(self.filters_grid, self.defect_field, 2, 0, 1, 2)
+            grid_place(self.filters_grid, self.has_defects, 2, 2, 1, 1)
+            grid_place(self.filters_grid, self.trash, 2, 3, 1, 1)
+            grid_place(self.filters_grid, self.filter_actions_widget, 2, 4, 1, 1)
             for col in range(5):
                 self.filters_grid.setColumnStretch(col, 1)
         else:
-            self.filters_grid.addWidget(self.range_enabled, 0, 0)
-            self.filters_grid.addWidget(self.start_field, 0, 1)
-            self.filters_grid.addWidget(self.end_field, 0, 2)
-            self.filters_grid.addWidget(self.team_field, 1, 0)
-            self.filters_grid.addWidget(self.source_field, 1, 1)
-            self.filters_grid.addWidget(self.search_field, 1, 2)
-            self.filters_grid.addWidget(self.work_order_field, 2, 0)
-            self.filters_grid.addWidget(self.inspector_field, 2, 1)
-            self.filters_grid.addWidget(self.judgment_field, 2, 2)
-            self.filters_grid.addWidget(self.defect_field, 3, 0, 1, 2)
-            self.filters_grid.addWidget(self.has_defects, 3, 2)
-            self.filters_grid.addWidget(self.trash, 4, 0)
-            self.filters_grid.addWidget(self.filter_actions_widget, 4, 2)
+            grid_place(self.filters_grid, self.range_enabled, 0, 0)
+            grid_place(self.filters_grid, self.start_field, 0, 1)
+            grid_place(self.filters_grid, self.end_field, 0, 2)
+            grid_place(self.filters_grid, self.team_field, 1, 0)
+            grid_place(self.filters_grid, self.source_field, 1, 1)
+            grid_place(self.filters_grid, self.search_field, 1, 2)
+            grid_place(self.filters_grid, self.work_order_field, 2, 0)
+            grid_place(self.filters_grid, self.inspector_field, 2, 1)
+            grid_place(self.filters_grid, self.judgment_field, 2, 2)
+            grid_place(self.filters_grid, self.defect_field, 3, 0, 1, 2)
+            grid_place(self.filters_grid, self.has_defects, 3, 2)
+            grid_place(self.filters_grid, self.trash, 4, 0)
+            grid_place(self.filters_grid, self.filter_actions_widget, 4, 2)
             for col in range(5):
                 self.filters_grid.setColumnStretch(col, 1 if col < 3 else 0)
 
