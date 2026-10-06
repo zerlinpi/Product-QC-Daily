@@ -98,6 +98,14 @@ def card():
     return frame, layout
 
 
+
+
+def grid_place(layout, widget, row, column, row_span=1, column_span=1):
+    """Move an existing widget inside a grid without leaving duplicate layout entries."""
+    layout.removeWidget(widget)
+    layout.addWidget(widget, row, column, row_span, column_span)
+
+
 def table(headers):
     widget = QTableWidget(0, len(headers))
     widget.setHorizontalHeaderLabels(headers)
