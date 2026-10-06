@@ -4,7 +4,7 @@ from functools import wraps
 
 from pydantic import ValidationError
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -206,17 +206,39 @@ def table(headers):
     return widget
 
 
+def semantic_color(kind):
+    palette = QApplication.palette()
+    dark = palette.color(QPalette.ColorRole.Window).lightness() < 128
+    colors = (
+        {
+            "success": "#6ccb5f",
+            "warning": "#f5a623",
+            "error": "#ff8a80",
+        }
+        if dark
+        else {
+            "success": "#107c10",
+            "warning": "#ca5010",
+            "error": "#c42b1c",
+        }
+    )
+    return QColor(colors[kind])
+
+
 def populate(widget, rows):
     widget.setRowCount(len(rows))
     for row, values in enumerate(rows):
         for col, value in enumerate(values):
             item = QTableWidgetItem(str(value if value is not None else "—"))
             item.setToolTip(item.text())
-            if value in ("合格", "启用"):
-                item.setForeground(QColor("#107c10"))
+            if value in ("合格", "启用", "正常"):
+                item.setForeground(semantic_color("success"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            elif value in ("返工", "演示数据", "停用"):
-                item.setForeground(QColor("#ca5010"))
+            elif value in ("返工", "演示数据", "停用", "重复", "编号冲突"):
+                item.setForeground(semantic_color("warning"))
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            elif value in ("异常", "无法识别"):
+                item.setForeground(semantic_color("error"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             elif value == "正式数据":
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
