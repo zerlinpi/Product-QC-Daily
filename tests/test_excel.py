@@ -136,8 +136,27 @@ def test_legacy_template_preserves_sheets_charts_and_correct_formulas(ctx, paylo
     path = ctx.excel.export(tmp_path / "legacy.xlsx", RecordFilter(), legacy=True, prefer_com=False)
     wb = load_workbook(path)
     assert wb.sheetnames[:4] == ["成品日检表报表", "成品日检表", "数据分析表", "工具"]
-    assert len(wb["数据分析表"]._charts) == 6
-    assert "SUMIFS" in wb["数据分析表"]["J4"].value
+    analysis = wb["数据分析表"]
+    assert len(analysis._charts) == 6
+    monthly_totals = analysis._charts[1].series[0]
+    weekly_totals = analysis._charts[3].series[0]
+    assert [point.v for point in monthly_totals.cat.strRef.strCache.pt] == [
+        "检验数量",
+        "抽检数",
+        "不良数",
+        "不良率",
+    ]
+    assert [point.v for point in monthly_totals.val.numRef.numCache.pt][:3] == [
+        payload.inspection_quantity,
+        payload.sampling_quantity,
+        payload.defect_quantity,
+    ]
+    assert [point.v for point in weekly_totals.val.numRef.numCache.pt][:3] == [
+        payload.inspection_quantity,
+        payload.sampling_quantity,
+        payload.defect_quantity,
+    ]
+    assert "SUMIFS" in analysis["J4"].value
     assert '"*x*"' in wb["数据分析表"]["B27"].value
     assert "$B$4:$B$27" in wb["数据分析表"]["C4"].value
     assert "B34:B57" in wb["数据分析表"]["B58"].value
