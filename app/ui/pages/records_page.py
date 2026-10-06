@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 
 from app.core.labels import source_label
 from app.core.schemas import RecordFilter
-from app.ui.common import Page, button, card, confirm, guarded, label, populate, table
+from app.ui.common import Page, button, card, confirm, grid_place, guarded, label, populate, table
 from app.ui.dialogs import file_dialogs
 
 
@@ -47,9 +47,10 @@ class RecordsPage(Page):
         self.filters_dirty = False
         self.result_summary = "暂无记录"
         filters, box = card()
-        grid = QGridLayout()
-        grid.setHorizontalSpacing(10)
-        grid.setVerticalSpacing(10)
+        self.filters_grid = QGridLayout()
+        self.filters_grid.setHorizontalSpacing(10)
+        self.filters_grid.setVerticalSpacing(10)
+        self._filter_layout_mode = None
         self.range_enabled = QCheckBox("按日期筛选")
         self.start, self.end = (
             QDateEdit(QDate.currentDate().addMonths(-1)),
@@ -88,28 +89,37 @@ class RecordsPage(Page):
             widget.setAccessibleName(accessible_name or title)
             return container
 
-        grid.addWidget(self.range_enabled, 0, 0)
-        for col, title, widget, name in [
-            (1, "从", self.start, "开始日期"),
-            (2, "至", self.end, "结束日期"),
-            (3, "组别", self.team, "组别"),
-            (4, "数据", self.source, "数据范围"),
-        ]:
-            grid.addWidget(field(title, widget, name), 0, col)
-        grid.addWidget(field("搜索", self.search), 1, 0, 1, 2)
-        grid.addWidget(field("工单", self.work_order, "加工单号"), 1, 2)
-        grid.addWidget(field("检验员", self.inspector), 1, 3)
-        grid.addWidget(field("判定", self.judgment), 1, 4)
-        grid.addWidget(field("不良项目", self.defect), 2, 0, 1, 2)
-        grid.addWidget(self.has_defects, 2, 2)
+        self.start_field = field("从", self.start, "开始日期")
+        self.end_field = field("至", self.end, "结束日期")
+        self.team_field = field("组别", self.team, "组别")
+        self.source_field = field("数据", self.source, "数据范围")
+        self.search_field = field("搜索", self.search)
+        self.work_order_field = field("工单", self.work_order, "加工单号")
+        self.inspector_field = field("检验员", self.inspector)
+        self.judgment_field = field("判定", self.judgment)
+        self.defect_field = field("不良项目", self.defect)
         self.has_defects.setAccessibleName("不良情况")
-        grid.addWidget(self.trash, 2, 3)
-        filter_actions = QHBoxLayout()
+        self.filter_actions_widget = QWidget()
+        filter_actions = QHBoxLayout(self.filter_actions_widget)
+        filter_actions.setContentsMargins(0, 0, 0, 0)
+        filter_actions.setSpacing(6)
         filter_actions.addWidget(button("重置筛选", self.reset_filters))
         self.query_button = button("查询", self.search_records, primary=True)
         filter_actions.addWidget(self.query_button)
-        grid.addLayout(filter_actions, 2, 4)
-        box.addLayout(grid)
+        self.filters_grid.addWidget(self.range_enabled, 0, 0)
+        self.filters_grid.addWidget(self.start_field, 0, 1)
+        self.filters_grid.addWidget(self.end_field, 0, 2)
+        self.filters_grid.addWidget(self.team_field, 0, 3)
+        self.filters_grid.addWidget(self.source_field, 0, 4)
+        self.filters_grid.addWidget(self.search_field, 1, 0, 1, 2)
+        self.filters_grid.addWidget(self.work_order_field, 1, 2)
+        self.filters_grid.addWidget(self.inspector_field, 1, 3)
+        self.filters_grid.addWidget(self.judgment_field, 1, 4)
+        self.filters_grid.addWidget(self.defect_field, 2, 0, 1, 2)
+        self.filters_grid.addWidget(self.has_defects, 2, 2)
+        self.filters_grid.addWidget(self.trash, 2, 3)
+        self.filters_grid.addWidget(self.filter_actions_widget, 2, 4)
+        box.addLayout(self.filters_grid)
         self.layout.addWidget(filters)
         actions = QHBoxLayout()
         self.action_buttons = {}
@@ -168,6 +178,50 @@ class RecordsPage(Page):
         self.start.dateChanged.connect(self.update_filter_state)
         self.end.dateChanged.connect(self.update_filter_state)
         self.update_selection_state()
+        self._reflow_filters()
+
+    def _reflow_filters(self):
+        mode = "wide" if self.width() >= 1100 else "narrow"
+        if mode == self._filter_layout_mode:
+            return
+        self._filter_layout_mode = mode
+        if mode == "wide":
+            grid_place(self.filters_grid, self.range_enabled, 0, 0, 1, 1)
+            grid_place(self.filters_grid, self.start_field, 0, 1, 1, 1)
+            grid_place(self.filters_grid, self.end_field, 0, 2, 1, 1)
+            grid_place(self.filters_grid, self.team_field, 0, 3, 1, 1)
+            grid_place(self.filters_grid, self.source_field, 0, 4, 1, 1)
+            grid_place(self.filters_grid, self.search_field, 1, 0, 1, 2)
+            grid_place(self.filters_grid, self.work_order_field, 1, 2, 1, 1)
+            grid_place(self.filters_grid, self.inspector_field, 1, 3, 1, 1)
+            grid_place(self.filters_grid, self.judgment_field, 1, 4, 1, 1)
+            grid_place(self.filters_grid, self.defect_field, 2, 0, 1, 2)
+            grid_place(self.filters_grid, self.has_defects, 2, 2, 1, 1)
+            grid_place(self.filters_grid, self.trash, 2, 3, 1, 1)
+            grid_place(self.filters_grid, self.filter_actions_widget, 2, 4, 1, 1)
+            for col in range(5):
+                self.filters_grid.setColumnStretch(col, 1)
+        else:
+            grid_place(self.filters_grid, self.range_enabled, 0, 0)
+            grid_place(self.filters_grid, self.start_field, 0, 1)
+            grid_place(self.filters_grid, self.end_field, 0, 2)
+            grid_place(self.filters_grid, self.team_field, 1, 0)
+            grid_place(self.filters_grid, self.source_field, 1, 1)
+            grid_place(self.filters_grid, self.search_field, 1, 2)
+            grid_place(self.filters_grid, self.work_order_field, 2, 0)
+            grid_place(self.filters_grid, self.inspector_field, 2, 1)
+            grid_place(self.filters_grid, self.judgment_field, 2, 2)
+            grid_place(self.filters_grid, self.defect_field, 3, 0, 1, 2)
+            grid_place(self.filters_grid, self.has_defects, 3, 2)
+            grid_place(self.filters_grid, self.trash, 4, 0)
+            grid_place(self.filters_grid, self.filter_actions_widget, 4, 2)
+            for col in range(5):
+                self.filters_grid.setColumnStretch(col, 1 if col < 3 else 0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "filters_grid"):
+            self._reflow_filters()
 
     def date_range_valid(self):
         return (

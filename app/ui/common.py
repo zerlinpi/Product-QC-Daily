@@ -98,10 +98,18 @@ def card():
     return frame, layout
 
 
+
+
+def grid_place(layout, widget, row, column, row_span=1, column_span=1):
+    """Move an existing widget inside a grid without leaving duplicate layout entries."""
+    layout.removeWidget(widget)
+    layout.addWidget(widget, row, column, row_span, column_span)
+
+
 def table(headers):
     widget = QTableWidget(0, len(headers))
     widget.setHorizontalHeaderLabels(headers)
-    widget.setAlternatingRowColors(False)
+    widget.setAlternatingRowColors(True)
     widget.setShowGrid(True)
     widget.verticalHeader().setVisible(False)
     widget.verticalHeader().setDefaultSectionSize(28)
@@ -130,6 +138,17 @@ def populate(widget, rows):
             if value in ("合格", "返工", "演示数据"):
                 item.setForeground(QColor("#107c10" if value == "合格" else "#ca5010"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            elif value in ("正式数据", "启用", "停用"):
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            elif (
+                isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                or isinstance(value, str)
+                and re.fullmatch(r"[+-]?\d[\d,]*(?:\.\d+)?%?", value.strip())
+            ):
+                item.setTextAlignment(
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+                )
             widget.setItem(row, col, item)
 
 
@@ -141,8 +160,11 @@ class Page(QWidget):
         self.layout = QVBoxLayout(self)
         self.layout.setContentsMargins(12, 10, 12, 10)
         self.layout.setSpacing(6)
-        self.layout.addWidget(label(title, "title"))
-        self.layout.addWidget(label(subtitle, "subtitle", True))
+        self.title_label = label(title, "title")
+        self.subtitle_label = label(subtitle, "subtitle", True)
+        self.layout.addWidget(self.title_label)
+        self.layout.addWidget(self.subtitle_label)
+        self.layout.addSpacing(2)
 
     def refresh(self):
         pass

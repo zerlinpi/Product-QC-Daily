@@ -92,6 +92,52 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         app.processEvents()
         assert window.navigation.currentRow() == index
 
+    def grid_position(layout, widget):
+        index = layout.indexOf(widget)
+        assert index >= 0
+        return layout.getItemPosition(index)
+
+    window.resize(1080, 720)
+    app.processEvents()
+    dashboard = window.pages[0]
+    window.navigate(0)
+    app.processEvents()
+    assert dashboard._layout_mode == "narrow"
+    assert grid_position(dashboard.grid, dashboard.cards[2][0]) == (1, 0, 1, 5)
+    entry = window.pages[1]
+    window.navigate(1)
+    app.processEvents()
+    assert entry._layout_mode == "narrow"
+    assert grid_position(entry.content_grid, entry.right_panel) == (1, 0, 1, 1)
+    records = window.pages[2]
+    window.navigate(2)
+    app.processEvents()
+    assert records._filter_layout_mode == "narrow"
+    assert grid_position(records.filters_grid, records.defect_field) == (3, 0, 1, 2)
+    analytics = window.pages[3]
+    window.navigate(3)
+    app.processEvents()
+    assert analytics._layout_mode == "narrow"
+    assert grid_position(analytics.grid, analytics.trend_frame) == (4, 0, 1, 10)
+
+    window.resize(1440, 920)
+    app.processEvents()
+    window.navigate(0)
+    app.processEvents()
+    assert dashboard._layout_mode == "wide"
+    assert grid_position(dashboard.grid, dashboard.cards[2][0]) == (0, 4, 1, 2)
+    window.navigate(1)
+    app.processEvents()
+    assert entry._layout_mode == "wide"
+    assert grid_position(entry.content_grid, entry.right_panel) == (0, 1, 1, 1)
+    window.navigate(2)
+    app.processEvents()
+    assert records._filter_layout_mode == "wide"
+    window.navigate(3)
+    app.processEvents()
+    assert analytics._layout_mode == "wide"
+    assert grid_position(analytics.grid, analytics.trend_frame) == (2, 0, 1, 5)
+
     reports = window.pages[5]
     reports.preset.setCurrentText("自定义")
     reports.start.setDate(QDate(2026, 10, 2))
@@ -188,6 +234,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "export_path_dialog": True,
         "annual_standard_export": True,
         "native_windows_ui": True,
+        "adaptive_native_layout": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)
