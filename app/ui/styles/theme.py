@@ -104,6 +104,7 @@ def apply_theme(mode="light"):
         QMainWindow, QWidget#page {{ background: {bg}; }}
         QLabel#title {{ font-size: 14pt; font-weight: 600; }}
         QLabel#subtitle, QLabel#muted {{ color: {muted}; }}
+        QLabel#summary {{ color: {muted}; font-weight: 600; }}
         QLabel#section {{ font-size: 10pt; font-weight: 600; }}
         QLabel#status {{ font-weight: 600; }}
         QLabel#success {{ color: {success}; font-weight: 600; }}
