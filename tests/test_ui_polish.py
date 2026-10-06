@@ -289,7 +289,13 @@ def test_import_preview_uses_native_dialog_button_box(ctx, qtbot, tmp_path):
         for button in buttons.buttons()
         if buttons.buttonRole(button) == QDialogButtonBox.ButtonRole.AcceptRole
     )
+    from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT
+
     assert accept.isDefault()
+    assert accept.autoDefault()
+    assert accept.font().bold()
+    assert accept.minimumWidth() == BUTTON_MIN_WIDTH
+    assert accept.minimumHeight() == CONTROL_MIN_HEIGHT
     assert buttons.button(QDialogButtonBox.StandardButton.Cancel) is not None
     assert dialog.visible_status.text() == "当前显示 1 条"
     assert dialog.table.item(0, 2).foreground().color().name() == "#107c10"
