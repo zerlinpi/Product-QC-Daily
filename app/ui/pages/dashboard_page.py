@@ -52,6 +52,7 @@ class DashboardPage(Page):
             self.grid.addWidget(widget, i // 5, i % 5 * 2, 1, 2)
             self.cards.append((widget, key, monthly))
         self.charts = []
+        self.chart_frames = []
         for i, title in enumerate(
             [
                 "近 7 天 · 不良率",
@@ -67,6 +68,7 @@ class DashboardPage(Page):
             layout.addWidget(chart)
             self.grid.addWidget(frame, 2 + i // 2, i % 2 * 5, 1, 5)
             self.charts.append(chart)
+            self.chart_frames.append(frame)
         scroll.setWidget(content)
         self.layout.addWidget(scroll, 1)
         self._reflow_content()
@@ -80,15 +82,13 @@ class DashboardPage(Page):
             for i, (widget, *_rest) in enumerate(self.cards):
                 self.grid.addWidget(widget, i // 5, (i % 5) * 2, 1, 2)
             chart_start = 2
-            for i, chart in enumerate(self.charts):
-                frame = chart.parentWidget()
+            for i, frame in enumerate(self.chart_frames):
                 self.grid.addWidget(frame, chart_start + i // 2, (i % 2) * 5, 1, 5)
         else:
             for i, (widget, *_rest) in enumerate(self.cards):
                 self.grid.addWidget(widget, i // 2, (i % 2) * 5, 1, 5)
             chart_start = 5
-            for i, chart in enumerate(self.charts):
-                frame = chart.parentWidget()
+            for i, frame in enumerate(self.chart_frames):
                 self.grid.addWidget(frame, chart_start + i, 0, 1, 10)
 
     def resizeEvent(self, event):
