@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.common import label, table, toolbar_layout
+from app.ui.common import LAYOUT_SPACING, label, table, toolbar_layout
 
 
 class DefectSelector(QWidget):
@@ -21,6 +21,7 @@ class DefectSelector(QWidget):
         self._remarks = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(LAYOUT_SPACING)
         filters = toolbar_layout()
         self.search = QLineEdit()
         self.search.setPlaceholderText("搜索不良项目…")
