@@ -64,6 +64,28 @@ TOPBAR_MIN_HEIGHT = 36
 WIDE_LAYOUT_BREAKPOINT = 1100
 
 
+def message_box(parent, title, text, icon=QMessageBox.Icon.Information, informative_text=""):
+    """Build a native message box with the same button metrics as all other dialogs."""
+    dialog = QMessageBox(parent)
+    dialog.setWindowTitle(title)
+    dialog.setText(text)
+    if informative_text:
+        dialog.setInformativeText(informative_text)
+    dialog.setIcon(icon)
+    dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
+    ok = dialog.button(QMessageBox.StandardButton.Ok)
+    if ok is not None:
+        button_metrics(ok)
+        ok.setAutoDefault(True)
+        ok.setDefault(True)
+    return dialog
+
+
+def show_information(parent, title, message):
+    dialog = message_box(parent, title, message)
+    dialog.exec()
+
+
 def friendly_error(parent, error):
     logging.getLogger("qc.ui").error("操作失败", exc_info=(type(error), error, error.__traceback__))
     if isinstance(error, ValidationError):
@@ -84,7 +106,12 @@ def friendly_error(parent, error):
         message = "无法读写文件。请检查路径、磁盘剩余空间和文件权限。"
     else:
         message = "操作未完成。请检查文件和数据库是否被占用；详细原因已写入日志。"
-    QMessageBox.warning(parent, "操作未完成", message[:1500])
+    message_box(
+        parent,
+        "操作未完成",
+        message[:1500],
+        icon=QMessageBox.Icon.Warning,
+    ).exec()
 
 
 def confirm(parent, title, message, action="确认", cancel="取消", danger=False):
