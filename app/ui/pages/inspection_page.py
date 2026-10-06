@@ -15,9 +15,9 @@ from PySide6.QtWidgets import (
 
 from app.core.schemas import InspectionInput, RecordFilter
 from app.ui.common import (
-    WIDE_LAYOUT_BREAKPOINT,
     REMARK_MAX_HEIGHT,
     SIGNATURE_PREVIEW_MIN_HEIGHT,
+    WIDE_LAYOUT_BREAKPOINT,
     Page,
     button,
     confirm,
