@@ -62,6 +62,15 @@ def header_footer_text(value, limit=72) -> str:
     return text.replace("&", "&&")
 
 
+def wrapped_row_height(*fields, base=22, line_height=15, maximum=72) -> float:
+    """Estimate a readable Excel row height for wrapped Chinese/English text."""
+    lines = 1
+    for value, column_width in fields:
+        width = max(int(float(column_width or 10) * 0.9), 8)
+        lines = max(lines, max(1, (display_width(value) + width - 1) // width))
+    return min(maximum, max(base, lines * line_height + 6))
+
+
 def apply_standard_report_identity(wb, settings: dict, filters, start, end) -> None:
     company = str(settings.get("company") or "").strip()
     factory = str(settings.get("factory") or "").strip()
@@ -183,6 +192,14 @@ def style_table(ws):
                 ws.cell(row, column).number_format = "#,##0"
             ws.cell(row, 8).alignment = Alignment(vertical="center", wrap_text=True)
             ws.cell(row, 12).alignment = Alignment(vertical="top", wrap_text=True)
+            ws.row_dimensions[row].height = max(
+                ws.row_dimensions[row].height or 22,
+                wrapped_row_height(
+                    (ws.cell(row, 8).value, ws.column_dimensions["H"].width),
+                    (ws.cell(row, 12).value, ws.column_dimensions["L"].width),
+                    maximum=66,
+                ),
+            )
             judgment = ws.cell(row, 9)
             if judgment.value == "合格":
                 judgment.fill = PatternFill("solid", fgColor="E2F0D9")
@@ -196,11 +213,29 @@ def style_table(ws):
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         for row in range(2, last_row + 1):
             ws.cell(row, 5).alignment = Alignment(vertical="top", wrap_text=True)
+            ws.row_dimensions[row].height = max(
+                ws.row_dimensions[row].height or 22,
+                wrapped_row_height(
+                    (ws.cell(row, 3).value, ws.column_dimensions["C"].width),
+                    (ws.cell(row, 5).value, ws.column_dimensions["E"].width),
+                    maximum=66,
+                ),
+            )
+        ws.print_area = f"A1:{last_letter}{last_row}"
         ws.sheet_properties.tabColor = "ED7D31"
     elif ws.title == "不良项目":
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         for row in range(2, last_row + 1):
             ws.cell(row, 6).alignment = Alignment(vertical="top", wrap_text=True)
+            ws.row_dimensions[row].height = max(
+                ws.row_dimensions[row].height or 22,
+                wrapped_row_height(
+                    (ws.cell(row, 2).value, ws.column_dimensions["B"].width),
+                    (ws.cell(row, 6).value, ws.column_dimensions["F"].width),
+                    maximum=60,
+                ),
+            )
+        ws.print_area = f"A1:{last_letter}{last_row}"
         ws.sheet_properties.tabColor = "A5A5A5"
     elif ws.title == "统计摘要":
         ws.page_setup.orientation = ws.ORIENTATION_PORTRAIT
@@ -214,11 +249,21 @@ def style_table(ws):
                 label_cell.fill = PatternFill("solid", fgColor="F2F2F2")
                 value.fill = PatternFill("solid", fgColor="F2F2F2")
                 value.font = Font(name="Microsoft YaHei", size=9, color="595959")
+                ws.row_dimensions[row].height = max(
+                    ws.row_dimensions[row].height or 22,
+                    wrapped_row_height(
+                        (value.value, ws.column_dimensions["B"].width),
+                        base=28,
+                        maximum=60,
+                    ),
+                )
             else:
+                ws.row_dimensions[row].height = max(ws.row_dimensions[row].height or 22, 24)
                 label_cell.fill = PatternFill("solid", fgColor="D9EAF7")
                 value.font = Font(name="Microsoft YaHei", size=10, bold=True)
             if isinstance(value.value, (int, float)) and value.number_format != "0.00%":
                 value.number_format = "#,##0"
+        ws.print_area = f"A1:B{last_row}"
         ws.sheet_properties.tabColor = "70AD47"
     elif ws.title == "月度统计":
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
@@ -231,6 +276,7 @@ def style_table(ws):
             for column in (2, 3, 4, 5, 7):
                 ws.cell(row, column).number_format = "#,##0"
         if total_row:
+            ws.row_dimensions[total_row].height = max(ws.row_dimensions[total_row].height or 22, 24)
             for column in range(1, 9):
                 cell = ws.cell(total_row, column)
                 cell.fill = PatternFill("solid", fgColor="D9EAF7")
@@ -476,6 +522,8 @@ def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: 
         volume.title = "月度检验批次趋势"
         volume.y_axis.title = "批次"
         volume.x_axis.title = "月份"
+        volume.x_axis.tickLblSkip = max(1, (len(months) + 17) // 18)
+        volume.x_axis.tickMarkSkip = volume.x_axis.tickLblSkip
         volume.height = 7
         volume.width = 14
         volume.legend = None
@@ -500,6 +548,8 @@ def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: 
         rates.y_axis.numFmt = "0.0%"
         rates.y_axis.scaling.min = 0
         rates.x_axis.title = "月份"
+        rates.x_axis.tickLblSkip = max(1, (len(months) + 17) // 18)
+        rates.x_axis.tickMarkSkip = rates.x_axis.tickLblSkip
         rates.height = 7
         rates.width = 14
         rates.legend.position = "b"
@@ -539,6 +589,14 @@ def extend_legacy_form(ws, row_style, row_height, data_rows=0):
 
 
 def improve_legacy_sheet_display(ws):
+    ws.sheet_view.showGridLines = False
+    ws.sheet_view.zoomScale = 90
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.print_title_rows = "1:1"
     widths = {
         "B": 26,
         "C": 12,
@@ -557,6 +615,7 @@ def improve_legacy_sheet_display(ws):
     for cell in ws[1]:
         alignment = copy(cell.alignment)
         alignment.wrap_text = True
+        alignment.horizontal = "center"
         alignment.vertical = "center"
         cell.alignment = alignment
 
