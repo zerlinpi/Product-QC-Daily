@@ -7,9 +7,7 @@ from PySide6.QtWidgets import (
     QDateEdit,
     QFileDialog,
     QGridLayout,
-    QHBoxLayout,
     QLineEdit,
-    QScrollArea,
     QSpinBox,
     QTextEdit,
     QTimeEdit,
@@ -17,7 +15,17 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.schemas import InspectionInput, RecordFilter
-from app.ui.common import Page, button, card, confirm, grid_place, guarded, label
+from app.ui.common import (
+    Page,
+    button,
+    confirm,
+    grid_place,
+    guarded,
+    label,
+    native_group,
+    page_scroll,
+    toolbar_layout,
+)
 from app.ui.widgets.defect_selector import DefectSelector
 
 
@@ -28,7 +36,7 @@ class InspectionPage(Page):
         )
         self.record_id, self.signature_path, self.source = None, None, "manual"
         self.dirty = False
-        toolbar = QHBoxLayout()
+        toolbar = toolbar_layout()
         self.mode = label("新建检验记录", "section")
         toolbar.addWidget(self.mode)
         toolbar.addStretch()
@@ -39,18 +47,16 @@ class InspectionPage(Page):
         new_button.setToolTip("开始填写下一条记录（Ctrl+N）")
         toolbar.addWidget(new_button)
         self.layout.addLayout(toolbar)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
+        scroll = page_scroll()
         content = QWidget()
         self.content_grid = QGridLayout(content)
         self.content_grid.setContentsMargins(0, 0, 0, 0)
         self.content_grid.setSpacing(12)
         self._layout_mode = None
-        self.left_panel, left_layout = card()
-        left_layout.addWidget(label("检验信息", "section"))
+        self.left_panel, left_layout = native_group("检验信息")
         fields = QGridLayout()
-        fields.setHorizontalSpacing(18)
-        fields.setVerticalSpacing(7)
+        fields.setHorizontalSpacing(12)
+        fields.setVerticalSpacing(8)
         self.inspection_date = QDateEdit(QDate.currentDate())
         self.inspection_date.setCalendarPopup(True)
         self.inspection_date.setDisplayFormat("yyyy-MM-dd")
@@ -84,7 +90,7 @@ class InspectionPage(Page):
         ]
         for index, (title, widget) in enumerate(names):
             row, col = (index // 2) * 2, index % 2
-            fields.addWidget(label(title, "muted"), row, col)
+            fields.addWidget(label(title, "fieldLabel"), row, col)
             fields.addWidget(widget, row + 1, col)
             widget.installEventFilter(self)
             for child in widget.findChildren(QLineEdit):
@@ -95,26 +101,25 @@ class InspectionPage(Page):
         left_layout.addWidget(self.auto_time)
         self.suggestion = label("历史抽样仅供参考，不代表正式检验标准。", "muted", True)
         left_layout.addWidget(self.suggestion)
-        helpers = QHBoxLayout()
+        helpers = toolbar_layout()
         helpers.addWidget(button("上一条加工单", self.previous_order))
         helpers.addWidget(button("采用历史抽样建议", self.use_sampling))
         left_layout.addLayout(helpers)
         self.judgment_hint = label("判定由检验员确认，系统建议仅供参考。", "muted", True)
         left_layout.addWidget(self.judgment_hint)
-        left_layout.addWidget(label("备注", "muted"))
+        left_layout.addWidget(label("备注", "fieldLabel"))
         self.remark = QTextEdit()
         self.remark.setPlaceholderText("检验说明、异常原因或处理结果")
         self.remark.setMaximumHeight(90)
         left_layout.addWidget(self.remark)
-        signature_row = QHBoxLayout()
+        signature_row = toolbar_layout()
         self.signature_label = label("尚未选择签名", "muted")
         self.signature_label.setMinimumHeight(44)
         signature_row.addWidget(self.signature_label, 1)
         signature_row.addWidget(button("选择签名图片", self.choose_signature))
         signature_row.addWidget(button("清除签名", self.clear_signature))
         left_layout.addLayout(signature_row)
-        self.right_panel, right_layout = card()
-        right_layout.addWidget(label("不良项目", "section"))
+        self.right_panel, right_layout = native_group("不良项目")
         right_layout.addWidget(label("勾选发现的不良项目，再填写各项件数", "muted", True))
         self.defects = DefectSelector(ctx)
         right_layout.addWidget(self.defects, 1)
@@ -124,8 +129,8 @@ class InspectionPage(Page):
         self.content_grid.setColumnStretch(1, 5)
         scroll.setWidget(content)
         self.layout.addWidget(scroll, 1)
-        keep_row = QHBoxLayout()
-        keep_row.addWidget(label("下一条沿用", "muted"))
+        keep_row = toolbar_layout()
+        keep_row.addWidget(label("下一条沿用", "fieldLabel"))
         self.keep = {}
         settings = ctx.settings.all()
         for key, title in [
@@ -141,8 +146,8 @@ class InspectionPage(Page):
             keep_row.addWidget(checkbox)
         keep_row.addStretch()
         self.layout.addLayout(keep_row)
-        footer = QHBoxLayout()
-        self.saved_note = label("* 为必填项 · 回车跳到下一项", "muted")
+        footer = toolbar_layout()
+        self.saved_note = label("* 为必填项 · 回车跳到下一项", "status")
         footer.addWidget(self.saved_note, 1)
         save_button = button("保存本条", lambda: self.save_record())
         save_button.setToolTip("保存当前记录并留在本页（Ctrl+S）")
