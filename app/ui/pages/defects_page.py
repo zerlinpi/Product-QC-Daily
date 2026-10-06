@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QHBoxLayout, QLineEdit
+from PySide6.QtWidgets import QAbstractItemView, QHBoxLayout, QHeaderView, QLineEdit
 
 from app.ui.common import Page, button, confirm, guarded, label, populate, table
 from app.ui.dialogs.defect_dialog import DefectDialog
