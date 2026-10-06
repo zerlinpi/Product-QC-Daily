@@ -18,8 +18,8 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.common import (
-    align_table_columns,
     Page,
+    align_table_columns,
     button,
     confirm,
     dialog_button_box,
