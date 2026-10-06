@@ -26,6 +26,7 @@ from app.ui.common import (
     control_metrics,
     dialog_button_box,
     dialog_layout,
+    field_label,
     form_grid,
     form_layout,
     form_row,
@@ -158,7 +159,7 @@ class SettingsPage(Page):
         backup_actions.addWidget(backup_button)
         backup_actions.addWidget(restore_button)
         backup_actions.addStretch()
-        maintenance.addWidget(label("备份与恢复", "fieldLabel"), 0, 0)
+        maintenance.addWidget(field_label("备份与恢复"), 0, 0)
         maintenance.addLayout(backup_actions, 0, 1)
 
         local_actions = toolbar_layout()
@@ -168,14 +169,14 @@ class SettingsPage(Page):
         local_actions.addWidget(folder_button)
         local_actions.addWidget(button("前往报表导入", lambda: self.window.navigate(5)))
         local_actions.addStretch()
-        maintenance.addWidget(label("本地数据", "fieldLabel"), 1, 0)
+        maintenance.addWidget(field_label("本地数据"), 1, 0)
         maintenance.addLayout(local_actions, 1, 1)
 
         demo_actions = toolbar_layout()
         demo_actions.addWidget(button("生成演示数据", self.demo))
         demo_actions.addWidget(button("删除全部演示数据", self.clear_demo, danger=True))
         demo_actions.addStretch()
-        maintenance.addWidget(label("演示数据", "fieldLabel"), 2, 0)
+        maintenance.addWidget(field_label("演示数据"), 2, 0)
         maintenance.addLayout(demo_actions, 2, 1)
         maintenance.setColumnStretch(1, 1)
         layout.addLayout(maintenance)
