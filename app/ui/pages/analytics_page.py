@@ -4,6 +4,8 @@ from PySide6.QtWidgets import QComboBox, QDateEdit, QWidget
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import (
+    TABLE_LARGE_MIN_HEIGHT,
+    TABLE_MEDIUM_MIN_HEIGHT,
     Page,
     align_table_columns,
     button,
@@ -106,14 +108,14 @@ class AnalyticsPage(Page):
         self.ranking = table(
             ["编码", "不良项目", "出现批次", "已填件数", "未填件数批次", "累计占比"]
         )
-        self.ranking.setMinimumHeight(300)
+        self.ranking.setMinimumHeight(TABLE_LARGE_MIN_HEIGHT)
         self.ranking.setColumnWidth(1, 240)
         align_table_columns(self.ranking, right=(2, 3, 4, 5))
         self.grid.addWidget(self.ranking, 3, 0, 1, 10)
         self.teams_table = table(
             ["组别", "检验数", "抽检数", "不良数", "不良率", "合格批次", "返工批次", "返工率"]
         )
-        self.teams_table.setMinimumHeight(260)
+        self.teams_table.setMinimumHeight(TABLE_MEDIUM_MIN_HEIGHT)
         align_table_columns(self.teams_table, right=(1, 2, 3, 4, 5, 6, 7))
         self.grid.addWidget(self.teams_table, 4, 0, 1, 10)
         scroll.setWidget(content)
