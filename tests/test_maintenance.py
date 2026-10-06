@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
@@ -120,3 +121,44 @@ def test_backup_restore_closes_owned_sqlite_handles(ctx, payload, monkeypatch):
     finally:
         for connection in opened:
             connection.close()
+
+
+def test_backup_restore_streams_payload_files_without_path_read_bytes(
+    ctx, payload, tmp_path, monkeypatch
+):
+    from PIL import Image
+
+    from app.core.schemas import InspectionInput
+
+    signature = tmp_path / "streaming-signature.png"
+    Image.new("RGB", (64, 24), "white").save(signature)
+    saved = ctx.inspections.save(
+        InspectionInput(**(payload.model_dump() | {"signature_path": str(signature)}))
+    )
+
+    original_read_bytes = Path.read_bytes
+
+    def reject_payload_read_bytes(path):
+        if path.suffix.lower() in {".db", ".png"}:
+            raise AssertionError(f"备份/恢复不应整文件 read_bytes：{path.name}")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", reject_payload_read_bytes)
+
+    backup = ctx.backup.backup()
+    assert backup.is_file()
+
+    original_zip_read = ZipFile.read
+
+    def reject_payload_zip_read(archive, name, *args, **kwargs):
+        filename = name.filename if hasattr(name, "filename") else str(name)
+        if filename != "manifest.json":
+            raise AssertionError(f"恢复不应整条目 ZipFile.read：{filename}")
+        return original_zip_read(archive, name, *args, **kwargs)
+
+    monkeypatch.setattr(ZipFile, "read", reject_payload_zip_read)
+
+    before = ctx.backup.restore(backup)
+    assert before.is_file()
+    assert (ctx.paths.signatures / saved["signature_path"]).is_file()
+    assert ctx.db.health_check() == "ok"
