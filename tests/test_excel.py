@@ -276,6 +276,11 @@ def test_legacy_layout_keeps_original_chart_positions_and_signature_cell(ctx, pa
     assert ws.column_dimensions["A"].hidden
     assert ws.row_dimensions[2].height == pytest.approx(34.45)
     assert ws["C2"].font.name == "微软雅黑"
+    assert not ws.sheet_view.showGridLines
+    assert ws.sheet_view.zoomScale == 90
+    assert ws.page_setup.orientation == "landscape"
+    assert ws.page_setup.fitToWidth == 1
+    assert ws.print_title_rows == "$1:$1"
     anchor = ws._images[0].anchor
     assert (anchor._from.col, anchor._from.row) == (9, 1)
     assert (anchor._from.colOff + anchor.ext.cx) / 9525 <= ws.column_dimensions["J"].width * 7 + 5
