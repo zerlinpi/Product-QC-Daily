@@ -76,8 +76,11 @@ class ImportDialog(QDialog):
         pagination.addWidget(self.next_button)
         layout.addLayout(pagination)
         actions = dialog_button_box(QDialogButtonBox.StandardButton.Cancel)
-        report_button = button("导出异常报告", self.report)
-        report_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+        report_button = button(
+            "导出异常报告",
+            self.report,
+            icon=QStyle.StandardPixmap.SP_DialogSaveButton,
+        )
         report_button.setEnabled(any(row.status != "valid" or row.message for row in preview.rows))
         report_button.setToolTip("将重复、冲突、异常和签名警告另存为表格，便于核对")
         actions.addButton(report_button, QDialogButtonBox.ButtonRole.ActionRole)
