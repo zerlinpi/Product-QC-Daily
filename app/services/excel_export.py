@@ -112,6 +112,18 @@ def style_table(ws):
     )
     header_fill = PatternFill("solid", fgColor="1F4E78")
     band_fill = PatternFill("solid", fgColor="F5F9FC")
+    header_border = Border(
+        left=Side(style="thin", color="D9E2F3"),
+        right=Side(style="thin", color="D9E2F3"),
+        top=Side(style="thin", color="D9E2F3"),
+        bottom=Side(style="medium", color="17365D"),
+    )
+    total_border = Border(
+        left=Side(style="thin", color="D9E2F3"),
+        right=Side(style="thin", color="D9E2F3"),
+        top=Side(style="medium", color="4472C4"),
+        bottom=Side(style="thin", color="D9E2F3"),
+    )
 
     ws.sheet_view.showGridLines = False
     ws.sheet_properties.pageSetUpPr.fitToPage = True
@@ -143,7 +155,7 @@ def style_table(ws):
     for cell in ws[1]:
         cell.font = Font(name="Microsoft YaHei", size=10, bold=True, color="FFFFFF")
         cell.fill = header_fill
-        cell.border = border
+        cell.border = header_border
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     ws.row_dimensions[1].height = 28
 
@@ -197,9 +209,10 @@ def style_table(ws):
             )
             ws.cell(row, 2).alignment = Alignment(horizontal="center", vertical="center")
             ws.cell(row, 4).alignment = Alignment(vertical="center", wrap_text=True)
-            for column in (3, 5, 6, 7, 9, 13, 14):
+            for column in (3, 9, 13, 14):
                 ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
             for column in (5, 6, 7):
+                ws.cell(row, column).alignment = Alignment(horizontal="right", vertical="center")
                 ws.cell(row, column).number_format = "#,##0"
             ws.cell(row, 8).alignment = Alignment(vertical="center", wrap_text=True)
             ws.cell(row, 12).alignment = Alignment(vertical="top", wrap_text=True)
@@ -213,6 +226,12 @@ def style_table(ws):
                     maximum=96,
                 ),
             )
+            defect_quantity = ws.cell(row, 7)
+            if isinstance(defect_quantity.value, (int, float)) and defect_quantity.value > 0:
+                defect_quantity.fill = PatternFill("solid", fgColor="FCE4D6")
+                defect_quantity.font = Font(
+                    name="Microsoft YaHei", size=9, bold=True, color="C65911"
+                )
             judgment = ws.cell(row, 9)
             if judgment.value == "合格":
                 judgment.fill = PatternFill("solid", fgColor="E2F0D9")
@@ -259,7 +278,8 @@ def style_table(ws):
             label_cell = ws.cell(row, 1)
             value = ws.cell(row, 2)
             label_cell.font = Font(name="Microsoft YaHei", size=9, bold=True, color="44546A")
-            value.alignment = Alignment(vertical="center", wrap_text=True)
+            label_cell.alignment = Alignment(horizontal="left", vertical="center")
+            value.alignment = Alignment(horizontal="right", vertical="center", wrap_text=True)
             if label_cell.value in note_labels:
                 label_cell.fill = PatternFill("solid", fgColor="F2F2F2")
                 value.fill = PatternFill("solid", fgColor="F2F2F2")
@@ -274,8 +294,19 @@ def style_table(ws):
                 )
             else:
                 ws.row_dimensions[row].height = max(ws.row_dimensions[row].height or 22, 24)
-                label_cell.fill = PatternFill("solid", fgColor="D9EAF7")
-                value.font = Font(name="Microsoft YaHei", size=10, bold=True)
+                metric = str(label_cell.value or "")
+                if metric in {"不良件数", "不良率", "返工批次", "返工率"}:
+                    metric_fill = PatternFill("solid", fgColor="FCE4D6")
+                    metric_color = "C65911"
+                elif metric in {"合格批次", "合格率"}:
+                    metric_fill = PatternFill("solid", fgColor="E2F0D9")
+                    metric_color = "375623"
+                else:
+                    metric_fill = PatternFill("solid", fgColor="D9EAF7")
+                    metric_color = "1F4E78"
+                label_cell.fill = metric_fill
+                value.fill = metric_fill
+                value.font = Font(name="Microsoft YaHei", size=11, bold=True, color=metric_color)
             if isinstance(value.value, (int, float)) and value.number_format != "0.00%":
                 value.number_format = "#,##0"
         ws.print_area = f"A1:B{last_row}"
@@ -286,8 +317,9 @@ def style_table(ws):
         data_last_row = last_row - 1 if total_row else last_row
         ws.auto_filter.ref = f"A1:H{max(data_last_row, 1)}"
         for row in range(2, last_row + 1):
-            for column in range(1, 9):
-                ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
+            ws.cell(row, 1).alignment = Alignment(horizontal="center", vertical="center")
+            for column in range(2, 9):
+                ws.cell(row, column).alignment = Alignment(horizontal="right", vertical="center")
             for column in (2, 3, 4, 5, 7):
                 ws.cell(row, column).number_format = "#,##0"
         if total_row:
@@ -296,6 +328,7 @@ def style_table(ws):
                 cell = ws.cell(total_row, column)
                 cell.fill = PatternFill("solid", fgColor="D9EAF7")
                 cell.font = Font(name="Microsoft YaHei", size=9, bold=True, color="1F1F1F")
+                cell.border = total_border
         if data_last_row >= 2:
             for column, color in {
                 "B": "5B9BD5",
