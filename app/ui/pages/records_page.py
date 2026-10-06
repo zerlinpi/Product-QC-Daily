@@ -25,6 +25,7 @@ from app.ui.common import (
     label,
     native_group,
     populate,
+    set_label_kind,
     table,
     toolbar_layout,
 )
@@ -257,12 +258,15 @@ class RecordsPage(Page):
                 self.count.setText(
                     "日期范围无效：开始日期不能晚于结束日期 · 当前表格仍为上一次查询结果"
                 )
+                set_label_kind(self.count, "error")
             elif dirty:
                 self.count.setText(
                     "筛选条件已更改 · 当前表格仍为上一次查询结果 · 点击“查询”应用"
                 )
+                set_label_kind(self.count, "warning")
             else:
                 self.count.setText(self.result_summary)
+                set_label_kind(self.count, "muted")
         if hasattr(self, "previous_button"):
             self.previous_button.setEnabled(not self.filters_dirty and self.page > 1)
             pages = max(1, (getattr(self, "total", 0) + 49) // 50)
@@ -393,6 +397,7 @@ class RecordsPage(Page):
             + (" · 可调整条件或重置筛选" if not total else "")
         )
         self.count.setText(self.result_summary)
+        set_label_kind(self.count, "muted")
         self.total = total
         self.filters_dirty = False
         self.previous_button.setEnabled(self.page > 1)
