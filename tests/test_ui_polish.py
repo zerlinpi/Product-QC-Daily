@@ -107,6 +107,9 @@ def test_confirmation_defaults_to_cancel_and_requires_explicit_acceptance(qtbot,
     def choose():
         dialog = QApplication.activeModalWidget()
         seen["default"] = dialog.defaultButton().text()
+        seen["button_sizes"] = {
+            (button.minimumWidth(), button.minimumHeight()) for button in dialog.buttons()
+        }
         chosen = next(
             b
             for b in dialog.buttons()
@@ -117,7 +120,10 @@ def test_confirmation_defaults_to_cancel_and_requires_explicit_acceptance(qtbot,
 
     QTimer.singleShot(0, choose)
     assert confirm(None, "移入回收站", "将所选记录移入回收站？", action="移入回收站") is accept
+    from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT
+
     assert seen["default"] == "取消"
+    assert seen["button_sizes"] == {(BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT)}
 
 
 def test_import_preview_pagination_matches_available_rows(ctx, qtbot, tmp_path):
