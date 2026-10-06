@@ -19,6 +19,7 @@ from app.ui.common import (
     guarded,
     label,
     native_group,
+    set_label_kind,
     toolbar_layout,
 )
 from app.ui.dialogs import file_dialogs
@@ -167,8 +168,10 @@ class ReportsPage(Page):
                 control.setEnabled(valid)
         if valid:
             self.export_scope.setText(f"将导出：{start} 至 {end} · {self.source.currentText()}")
+            set_label_kind(self.export_scope, "status")
         else:
             self.export_scope.setText("日期范围无效：开始日期不能晚于结束日期")
+            set_label_kind(self.export_scope, "error")
 
     def import_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "选择成品日检表", "", "电子表格 (*.xlsx)")
@@ -194,6 +197,7 @@ class ReportsPage(Page):
                 f"{import_status_label(key)}: {value}" for key, value in preview.counts.items()
             )
         )
+        set_label_kind(self.import_status, "success")
         self.window.notify(f"成功导入 {count} 条记录；历史日期数据可在检验记录页查询")
 
     @guarded
