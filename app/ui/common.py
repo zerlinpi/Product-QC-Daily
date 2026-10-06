@@ -88,6 +88,10 @@ def button(text, callback=None, primary=False, danger=False):
     widget.setObjectName("primary" if primary else "danger" if danger else "")
     widget.setAutoDefault(False)
     widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+    if primary:
+        font = widget.font()
+        font.setBold(True)
+        widget.setFont(font)
     if danger:
         style = QApplication.instance().style() if QApplication.instance() else None
         if style:
@@ -102,6 +106,13 @@ def label(text, kind="", wrap=False):
     widget.setObjectName(kind)
     widget.setWordWrap(wrap)
     return widget
+
+
+def set_label_kind(widget, kind):
+    widget.setObjectName(kind)
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+    widget.update()
 
 
 def card():
