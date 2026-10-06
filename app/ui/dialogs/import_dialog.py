@@ -50,9 +50,9 @@ class ImportDialog(QDialog):
             )
         )
         filter_row = toolbar_layout()
-        filter_row.addWidget(field_label("显示", self.filter))
         self.filter = QComboBox()
         self.filter.setAccessibleName("导入状态筛选")
+        filter_row.addWidget(field_label("显示", self.filter))
         control_metrics(self.filter, min_width=FILTER_FIELD_MIN_WIDTH)
         self.filter.addItem("全部状态", "")
         for key, value in IMPORT_STATUS_LABELS.items():
