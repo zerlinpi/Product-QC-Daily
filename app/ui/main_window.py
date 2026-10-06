@@ -32,6 +32,7 @@ from app.ui.common import (
     friendly_error,
     guarded,
     label,
+    message_box,
     toolbar_layout,
 )
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
@@ -252,13 +253,13 @@ class MainWindow(QMainWindow):
         self.notify("导出完成")
         if self._export_message is not None:
             self._export_message.close()
-        box = QMessageBox(self)
+        box = message_box(
+            self,
+            "导出完成",
+            "导出完成",
+            informative_text=f"文件已成功保存到：\n{result}",
+        )
         box.setObjectName("exportCompleteDialog")
-        box.setIcon(QMessageBox.Icon.Information)
-        box.setWindowTitle("导出完成")
-        box.setText("导出完成")
-        box.setInformativeText(f"文件已成功保存到：\n{result}")
-        box.setStandardButtons(QMessageBox.StandardButton.Ok)
         box.setWindowModality(Qt.WindowModality.WindowModal)
         box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         box.finished.connect(lambda *_: setattr(self, "_export_message", None))
