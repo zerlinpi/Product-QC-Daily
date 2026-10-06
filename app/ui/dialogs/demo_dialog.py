@@ -5,14 +5,11 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QDoubleSpinBox,
-    QFormLayout,
     QGridLayout,
-    QGroupBox,
     QSpinBox,
-    QVBoxLayout,
 )
 
-from app.ui.common import friendly_error, label, table
+from app.ui.common import dialog_layout, form_group, friendly_error, label, native_group, table
 
 
 class DemoDialog(QDialog):
@@ -23,9 +20,7 @@ class DemoDialog(QDialog):
         self.resize(680, 700)
         self.setMinimumSize(620, 560)
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 12, 14, 12)
-        layout.setSpacing(8)
+        layout = dialog_layout(self)
         layout.addWidget(
             label(
                 "演示记录与正式数据完全分开。默认生成当前完整年度；年度或跨月范围生成后会打开对应日期的质量分析，并可在报表中心选择“演示数据”导出。",
@@ -34,10 +29,7 @@ class DemoDialog(QDialog):
             )
         )
 
-        range_group = QGroupBox("生成范围")
-        range_form = QFormLayout(range_group)
-        range_form.setHorizontalSpacing(12)
-        range_form.setVerticalSpacing(8)
+        range_group, range_form = form_group("生成范围")
         self.count = QSpinBox()
         self.count.setRange(1, 100_000)
         self.count.setValue(1000)
@@ -57,7 +49,7 @@ class DemoDialog(QDialog):
             widget.setDecimals(1)
         self.rework.setValue(8)
         self.defect.setValue(2)
-        self.pass_rate = label("合格率目标：92.0%", "muted")
+        self.pass_rate = label("合格率目标：92.0%", "status")
         self.rework.valueChanged.connect(
             lambda v: self.pass_rate.setText(f"合格率目标：{100 - v:.1f}%")
         )
@@ -72,10 +64,11 @@ class DemoDialog(QDialog):
         range_form.addRow("判定参考", self.pass_rate)
         layout.addWidget(range_group)
 
-        team_group = QGroupBox("参与组别")
-        team_grid = QGridLayout(team_group)
+        team_group, team_layout = native_group("参与组别")
+        team_grid = QGridLayout()
         team_grid.setHorizontalSpacing(12)
-        team_grid.setVerticalSpacing(6)
+        team_grid.setVerticalSpacing(8)
+        team_layout.addLayout(team_grid)
         self.teams = []
         for i, team in enumerate(ctx.settings.teams(True)):
             checkbox = QCheckBox(team["name"])
@@ -84,10 +77,7 @@ class DemoDialog(QDialog):
             team_grid.addWidget(checkbox, i // 6, i % 6)
         layout.addWidget(team_group)
 
-        defect_group = QGroupBox("不良项目出现频率")
-        defect_layout = QVBoxLayout(defect_group)
-        defect_layout.setContentsMargins(10, 12, 10, 10)
-        defect_layout.setSpacing(8)
+        defect_group, defect_layout = native_group("不良项目出现频率")
         defect_layout.addWidget(label("数值越大越常出现；0 表示演示数据中不生成该项目。", "muted", True))
         self.table = table(["不良项目", "相对频率"])
         self.table.setColumnWidth(0, 430)

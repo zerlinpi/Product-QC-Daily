@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import QApplication, QFrame, QGroupBox, QListWidget, QPushButton
 
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
@@ -264,3 +264,78 @@ def test_progress_dialog_uses_readable_native_task_metrics(ctx, qtbot):
     assert dialog.minimumWidth() == 400
     labels = dialog.findChildren(type(window.pages[0].title_label))
     assert any(label.wordWrap() for label in labels if "正在生成文件" in label.text())
+
+
+
+def test_all_pages_share_one_native_spacing_system(ctx, qtbot):
+    from PySide6.QtWidgets import QScrollArea
+
+    from app.ui.common import LAYOUT_SPACING, PAGE_MARGINS
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    for page in window.pages:
+        assert page.layout.getContentsMargins() == PAGE_MARGINS
+        assert page.layout.spacing() == LAYOUT_SPACING
+
+    embedded_scrolls = [
+        scroll
+        for page in window.pages
+        for scroll in page.findChildren(QScrollArea)
+    ]
+    assert embedded_scrolls
+    assert all(scroll.frameShape() == QFrame.Shape.NoFrame for scroll in embedded_scrolls)
+
+
+def test_workflow_sections_use_consistent_native_group_boxes(ctx, qtbot):
+    from PySide6.QtWidgets import QGroupBox
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    expected = {
+        1: {"检验信息", "不良项目"},
+        2: {"筛选条件"},
+        3: {"分析范围"},
+        4: {"项目列表"},
+        5: {"导入历史日检表", "导出质量报表"},
+        6: {"基础设置", "组别管理", "数据维护"},
+    }
+    for index, titles in expected.items():
+        present = {group.title() for group in window.pages[index].findChildren(QGroupBox)}
+        assert titles.issubset(present)
+
+
+def test_common_buttons_share_native_height_and_action_hierarchy(qtbot):
+    from app.ui.common import CONTROL_MIN_HEIGHT, button
+
+    normal = button("普通")
+    primary = button("主要", primary=True)
+    danger = button("危险", danger=True)
+    for widget in (normal, primary, danger):
+        qtbot.addWidget(widget)
+        assert widget.minimumHeight() == CONTROL_MIN_HEIGHT
+        assert not widget.autoDefault()
+
+    assert primary.font().bold()
+    assert not danger.icon().isNull()
+
+
+def test_dynamic_status_labels_use_consistent_tones(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    reports = window.pages[5]
+    reports.preset.setCurrentText("自定义")
+    reports.start.setDate(QDate(2026, 2, 2))
+    reports.end.setDate(QDate(2026, 2, 1))
+    assert reports.export_scope.objectName() == "error"
+    reports.end.setDate(QDate(2026, 2, 2))
+    assert reports.export_scope.objectName() == "status"
+
+    analytics = window.pages[3]
+    analytics.preset.setCurrentText("自定义")
+    analytics.start.setDate(QDate(2026, 2, 2))
+    analytics.end.setDate(QDate(2026, 2, 1))
+    assert analytics.scope.objectName() == "error"

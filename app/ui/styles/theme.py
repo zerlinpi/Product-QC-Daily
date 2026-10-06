@@ -56,6 +56,7 @@ def apply_theme(mode="light"):
             "#252525",
         )
         disabled = "#808080"
+        success, warning, error = "#6ccb5f", "#f5a623", "#ff8a80"
     else:
         bg, panel, text, muted, border, sidebar = (
             "#f3f3f3",
@@ -66,6 +67,7 @@ def apply_theme(mode="light"):
             "#f3f3f3",
         )
         disabled = "#8a8a8a"
+        success, warning, error = "#107c10", "#ca5010", "#c42b1c"
     accent = "#0067c0"
 
     palette = QPalette()
@@ -104,6 +106,9 @@ def apply_theme(mode="light"):
         QLabel#subtitle, QLabel#muted {{ color: {muted}; }}
         QLabel#section {{ font-size: 10pt; font-weight: 600; }}
         QLabel#status {{ font-weight: 600; }}
+        QLabel#success {{ color: {success}; font-weight: 600; }}
+        QLabel#warning {{ color: {warning}; font-weight: 600; }}
+        QLabel#error {{ color: {error}; font-weight: 600; }}
         QLabel#fieldLabel {{ color: {muted}; font-weight: 600; }}
         QLabel#metric {{ font-size: 18pt; font-weight: 600; }}
 

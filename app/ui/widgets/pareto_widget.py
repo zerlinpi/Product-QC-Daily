@@ -31,7 +31,7 @@ class ParetoWidget(ChartWidget):
             pg.PlotCurveItem(
                 list(range(len(rows))),
                 [r["cumulative"] * 100 for r in rows],
-                pen=pg.mkPen("#e49b38", width=2.5),
+                pen=pg.mkPen("#ca5010", width=2.5),
             )
         )
         self.percentage_view.addItem(
@@ -39,7 +39,7 @@ class ParetoWidget(ChartWidget):
                 80,
                 angle=0,
                 pen=pg.mkPen(
-                    "#e49b38",
+                    "#ca5010",
                     width=1,
                     style=__import__("PySide6.QtCore", fromlist=["Qt"]).Qt.PenStyle.DashLine,
                 ),

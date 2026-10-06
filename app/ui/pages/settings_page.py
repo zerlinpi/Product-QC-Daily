@@ -9,13 +9,10 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFileDialog,
-    QFormLayout,
     QGridLayout,
-    QHBoxLayout,
     QHeaderView,
     QLineEdit,
     QMessageBox,
-    QScrollArea,
     QSpinBox,
     QStyle,
     QVBoxLayout,
@@ -26,12 +23,16 @@ from app.ui.common import (
     Page,
     button,
     confirm,
+    dialog_layout,
+    form_layout,
     friendly_error,
     guarded,
     label,
     native_group,
+    page_scroll,
     populate,
     table,
+    toolbar_layout,
 )
 from app.ui.dialogs.demo_dialog import DemoDialog
 
@@ -41,17 +42,13 @@ class SettingsPage(Page):
         super().__init__(
             ctx, window, "系统设置", "管理工厂信息、组别与本地数据 · 升级程序不会覆盖用户数据"
         )
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
+        scroll = page_scroll()
         content = QWidget()
         body = QVBoxLayout(content)
         body.setContentsMargins(0, 0, 0, 0)
-        body.setSpacing(10)
+        body.setSpacing(8)
         frame, layout = native_group("基础设置")
-        form = QFormLayout()
-        form.setSpacing(12)
-        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form = form_layout()
         self.fields = {}
         for key, title in [
             ("company", "公司名称"),
@@ -76,7 +73,7 @@ class SettingsPage(Page):
             ("export_directory", "导出目录"),
             ("backup_directory", "备份目录"),
         ]:
-            row = QHBoxLayout()
+            row = toolbar_layout()
             field = QLineEdit()
             field.setPlaceholderText(
                 "留空使用内置原表模板" if key == "template_path" else "留空使用默认文件夹"
@@ -104,7 +101,7 @@ class SettingsPage(Page):
                 True,
             )
         )
-        save_row = QHBoxLayout()
+        save_row = toolbar_layout()
         save_row.addStretch()
         self.save_button = button("保存设置", self.save, primary=True)
         self.save_button.setIcon(
@@ -114,7 +111,7 @@ class SettingsPage(Page):
         layout.addLayout(save_row)
         body.addWidget(frame)
         frame, layout = native_group("组别管理")
-        toolbar = QHBoxLayout()
+        toolbar = toolbar_layout()
         self.team_count = label("", "muted")
         toolbar.addWidget(self.team_count)
         toolbar.addStretch()
@@ -145,7 +142,7 @@ class SettingsPage(Page):
         maintenance.setHorizontalSpacing(12)
         maintenance.setVerticalSpacing(8)
 
-        backup_actions = QHBoxLayout()
+        backup_actions = toolbar_layout()
         backup_button = button("立即备份全部数据", self.backup)
         backup_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         restore_button = button("恢复备份", self.restore)
@@ -156,7 +153,7 @@ class SettingsPage(Page):
         maintenance.addWidget(label("备份与恢复", "fieldLabel"), 0, 0)
         maintenance.addLayout(backup_actions, 0, 1)
 
-        local_actions = QHBoxLayout()
+        local_actions = toolbar_layout()
         local_actions.addWidget(button("检查数据是否正常", self.health))
         folder_button = button("打开数据文件夹", self.open_folder)
         folder_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
@@ -166,7 +163,7 @@ class SettingsPage(Page):
         maintenance.addWidget(label("本地数据", "fieldLabel"), 1, 0)
         maintenance.addLayout(local_actions, 1, 1)
 
-        demo_actions = QHBoxLayout()
+        demo_actions = toolbar_layout()
         demo_actions.addWidget(button("生成演示数据", self.demo))
         demo_actions.addWidget(button("删除全部演示数据", self.clear_demo, danger=True))
         demo_actions.addStretch()
@@ -253,9 +250,7 @@ class SettingsPage(Page):
         dialog.setWindowTitle("编辑组别" if item else "新增组别")
         dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         dialog.setMinimumWidth(380)
-        layout, form = QVBoxLayout(dialog), QFormLayout()
-        form.setSpacing(10)
-        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        layout, form = dialog_layout(dialog), form_layout()
         name = QLineEdit(item["name"] if item else "")
         name.setPlaceholderText("请输入组别名称")
         enabled = QCheckBox("启用此组别")

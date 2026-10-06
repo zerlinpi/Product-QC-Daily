@@ -15,7 +15,10 @@ from PySide6.QtWidgets import (
     QApplication,
     QDialogButtonBox,
     QFileDialog,
+    QFrame,
+    QGroupBox,
     QMessageBox,
+    QScrollArea,
     QStyleFactory,
 )
 
@@ -26,7 +29,7 @@ from app.core.paths import AppPaths, resource_path
 from app.core.schemas import InspectionInput, RecordFilter
 from app.services.excel_common import file_sha256
 from app.services.excel_export import header_footer_text
-from app.ui.common import friendly_error
+from app.ui.common import CONTROL_MIN_HEIGHT, LAYOUT_SPACING, PAGE_MARGINS, button, friendly_error
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.main_window import MainWindow
@@ -91,6 +94,35 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         window.navigate(index)
         app.processEvents()
         assert window.navigation.currentRow() == index
+    for page in window.pages:
+        assert page.layout.getContentsMargins() == PAGE_MARGINS
+        assert page.layout.spacing() == LAYOUT_SPACING
+    embedded_scrolls = [
+        scroll
+        for page in window.pages
+        for scroll in page.findChildren(QScrollArea)
+    ]
+    assert embedded_scrolls
+    assert all(scroll.frameShape() == QFrame.Shape.NoFrame for scroll in embedded_scrolls)
+    expected_groups = {
+        1: {"检验信息", "不良项目"},
+        2: {"筛选条件"},
+        3: {"分析范围"},
+        4: {"项目列表"},
+        5: {"导入历史日检表", "导出质量报表"},
+        6: {"基础设置", "组别管理", "数据维护"},
+    }
+    for index, titles in expected_groups.items():
+        present = {group.title() for group in window.pages[index].findChildren(QGroupBox)}
+        assert titles.issubset(present)
+    primary_probe = button("主要操作", primary=True)
+    danger_probe = button("危险操作", danger=True)
+    assert primary_probe.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert danger_probe.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert primary_probe.font().bold()
+    assert not danger_probe.icon().isNull()
+    primary_probe.deleteLater()
+    danger_probe.deleteLater()
 
     def grid_position(layout, widget):
         index = layout.indexOf(widget)
@@ -251,6 +283,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "native_windows_ui": True,
         "adaptive_native_layout": True,
         "native_utility_pages": True,
+        "unified_native_ui": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)

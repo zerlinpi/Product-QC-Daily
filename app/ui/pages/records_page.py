@@ -8,7 +8,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
     QGridLayout,
-    QHBoxLayout,
     QInputDialog,
     QLineEdit,
     QMenu,
@@ -17,7 +16,19 @@ from PySide6.QtWidgets import (
 
 from app.core.labels import source_label
 from app.core.schemas import RecordFilter
-from app.ui.common import Page, button, card, confirm, grid_place, guarded, label, populate, table
+from app.ui.common import (
+    Page,
+    button,
+    confirm,
+    grid_place,
+    guarded,
+    label,
+    native_group,
+    populate,
+    set_label_kind,
+    table,
+    toolbar_layout,
+)
 from app.ui.dialogs import file_dialogs
 
 
@@ -46,10 +57,10 @@ class RecordsPage(Page):
         self.applied_filters = RecordFilter()
         self.filters_dirty = False
         self.result_summary = "暂无记录"
-        filters, box = card()
+        filters, box = native_group("筛选条件")
         self.filters_grid = QGridLayout()
-        self.filters_grid.setHorizontalSpacing(10)
-        self.filters_grid.setVerticalSpacing(10)
+        self.filters_grid.setHorizontalSpacing(12)
+        self.filters_grid.setVerticalSpacing(8)
         self._filter_layout_mode = None
         self.range_enabled = QCheckBox("按日期筛选")
         self.start, self.end = (
@@ -74,14 +85,13 @@ class RecordsPage(Page):
             (self.inspector, "检验员"),
         ]:
             widget.setPlaceholderText(placeholder)
+            widget.setClearButtonEnabled(True)
             widget.returnPressed.connect(self.search_records)
         self.trash = QCheckBox("查看回收站")
 
         def field(title, widget, accessible_name=None):
             container = QWidget()
-            row = QHBoxLayout(container)
-            row.setContentsMargins(0, 0, 0, 0)
-            row.setSpacing(6)
+            row = toolbar_layout(container)
             caption = label(title, "fieldLabel")
             caption.setBuddy(widget)
             row.addWidget(caption)
@@ -100,9 +110,7 @@ class RecordsPage(Page):
         self.defect_field = field("不良项目", self.defect)
         self.has_defects.setAccessibleName("不良情况")
         self.filter_actions_widget = QWidget()
-        filter_actions = QHBoxLayout(self.filter_actions_widget)
-        filter_actions.setContentsMargins(0, 0, 0, 0)
-        filter_actions.setSpacing(6)
+        filter_actions = toolbar_layout(self.filter_actions_widget)
         filter_actions.addWidget(button("重置筛选", self.reset_filters))
         self.query_button = button("查询", self.search_records, primary=True)
         filter_actions.addWidget(self.query_button)
@@ -121,7 +129,7 @@ class RecordsPage(Page):
         self.filters_grid.addWidget(self.filter_actions_widget, 2, 4)
         box.addLayout(self.filters_grid)
         self.layout.addWidget(filters)
-        actions = QHBoxLayout()
+        actions = toolbar_layout()
         self.action_buttons = {}
         for key, text, callback in [
             ("edit", "编辑记录", self.edit),
@@ -134,10 +142,12 @@ class RecordsPage(Page):
         ]:
             control = button(text, callback, primary=key == "export", danger=key == "delete")
             self.action_buttons[key] = control
-            actions.addWidget(control)
+            if key != "export":
+                actions.addWidget(control)
         actions.addStretch()
         self.selection_count = label("未选择记录", "muted")
         actions.addWidget(self.selection_count)
+        actions.addWidget(self.action_buttons["export"])
         self.layout.addLayout(actions)
         self.table = table(
             [
@@ -163,7 +173,7 @@ class RecordsPage(Page):
         self.table.itemSelectionChanged.connect(self.update_selection_state)
         self.trash.toggled.connect(self.search_records)
         self.layout.addWidget(self.table, 1)
-        footer = QHBoxLayout()
+        footer = toolbar_layout()
         self.count = label("暂无记录", "muted")
         footer.addWidget(self.count, 1)
         self.previous_button = button("上一页", lambda: self.turn(-1))
@@ -248,12 +258,15 @@ class RecordsPage(Page):
                 self.count.setText(
                     "日期范围无效：开始日期不能晚于结束日期 · 当前表格仍为上一次查询结果"
                 )
+                set_label_kind(self.count, "error")
             elif dirty:
                 self.count.setText(
                     "筛选条件已更改 · 当前表格仍为上一次查询结果 · 点击“查询”应用"
                 )
+                set_label_kind(self.count, "warning")
             else:
                 self.count.setText(self.result_summary)
+                set_label_kind(self.count, "muted")
         if hasattr(self, "previous_button"):
             self.previous_button.setEnabled(not self.filters_dirty and self.page > 1)
             pages = max(1, (getattr(self, "total", 0) + 49) // 50)
@@ -384,6 +397,7 @@ class RecordsPage(Page):
             + (" · 可调整条件或重置筛选" if not total else "")
         )
         self.count.setText(self.result_summary)
+        set_label_kind(self.count, "muted")
         self.total = total
         self.filters_dirty = False
         self.previous_button.setEnabled(self.page > 1)

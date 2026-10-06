@@ -1,11 +1,10 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QStyle, QVBoxLayout
+from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QStyle
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
-from app.ui.common import button, guarded, label, populate, table
+from app.ui.common import button, dialog_layout, guarded, label, populate, table, toolbar_layout
 from app.ui.dialogs import file_dialogs
 
 
@@ -17,8 +16,7 @@ class ImportDialog(QDialog):
         self.setWindowTitle("表格导入预览")
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.resize(1040, 680)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 12, 14, 12)
+        layout = dialog_layout(self)
         layout.addWidget(label("检查导入内容", "title"))
         layout.addWidget(label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "muted"))
         self.summary = label(
@@ -35,7 +33,7 @@ class ImportDialog(QDialog):
                 True,
             )
         )
-        filter_row = QHBoxLayout()
+        filter_row = toolbar_layout()
         filter_row.addWidget(label("显示", "fieldLabel"))
         self.filter = QComboBox()
         self.filter.setAccessibleName("导入状态筛选")
@@ -54,7 +52,7 @@ class ImportDialog(QDialog):
         self.table.setColumnWidth(1, 245)
         self.table.setColumnWidth(2, 100)
         layout.addWidget(self.table, 1)
-        pagination = QHBoxLayout()
+        pagination = toolbar_layout()
         self.count = label("", "muted")
         pagination.addWidget(self.count, 1)
         self.previous_button = button("上一页", lambda: self.turn(-1))
@@ -106,17 +104,6 @@ class ImportDialog(QDialog):
                 for r in page_rows
             ],
         )
-        status_colors = {
-            "valid": "#107c10",
-            "duplicate": "#ca5010",
-            "conflict": "#ca5010",
-            "invalid": "#c42b1c",
-            "unrecognized": "#c42b1c",
-        }
-        for index, row in enumerate(page_rows):
-            status_item = self.table.item(index, 2)
-            status_item.setForeground(QColor(status_colors.get(row.status, "#616161")))
-            status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         pages = max(1, (len(rows) + 199) // 200)
         self.visible_status.setText(f"当前显示 {len(rows)} 条")
         self.count.setText(f"共 {len(rows)} 条 · 第 {self.page} / {pages} 页 · 每页 200 条")

@@ -161,8 +161,10 @@ def test_entry_footer_tracks_saved_modified_copied_and_new_records(ctx, payload,
     page = window.pages[1]
     page.load_record(saved)
     assert "已保存" in page.saved_note.text()
+    assert page.saved_note.objectName() == "success"
     page.remark.setPlainText("修改后的备注")
     assert "修改尚未保存" in page.saved_note.text()
+    assert page.saved_note.objectName() == "warning"
     page.refresh()
     assert "修改尚未保存" in page.saved_note.text()
     page.discard_changes()
@@ -171,6 +173,7 @@ def test_entry_footer_tracks_saved_modified_copied_and_new_records(ctx, payload,
     assert "尚未保存" in page.saved_note.text()
     page.save_record()
     assert "保存成功" in page.saved_note.text()
+    assert page.saved_note.objectName() == "success"
     page.refresh()
     assert "保存成功" in page.saved_note.text()
     page.reset()

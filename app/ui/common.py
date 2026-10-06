@@ -4,15 +4,20 @@ from functools import wraps
 
 from pydantic import ValidationError
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
+    QFormLayout,
     QFrame,
     QGroupBox,
+    QHBoxLayout,
     QHeaderView,
     QLabel,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QStyle,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -20,6 +25,13 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.validation import validation_message
+
+PAGE_MARGINS = (14, 12, 14, 12)
+DIALOG_MARGINS = (14, 12, 14, 12)
+SECTION_MARGINS = (10, 12, 10, 10)
+LAYOUT_SPACING = 8
+TOOLBAR_SPACING = 6
+CONTROL_MIN_HEIGHT = 28
 
 
 def friendly_error(parent, error):
@@ -74,6 +86,15 @@ def button(text, callback=None, primary=False, danger=False):
     widget = QPushButton(text)
     widget.setObjectName("primary" if primary else "danger" if danger else "")
     widget.setAutoDefault(False)
+    widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+    if primary:
+        font = widget.font()
+        font.setBold(True)
+        widget.setFont(font)
+    if danger:
+        style = QApplication.instance().style() if QApplication.instance() else None
+        if style:
+            widget.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning))
     if callback:
         widget.clicked.connect(callback)
     return widget
@@ -86,26 +107,70 @@ def label(text, kind="", wrap=False):
     return widget
 
 
+def set_label_kind(widget, kind):
+    widget.setObjectName(kind)
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+    widget.update()
+
+
 def card():
-    """Compact native section panel; avoid web-style rounded card chrome."""
+    """Compact native panel for visualizations or untitled content."""
     frame = QFrame()
     frame.setObjectName("card")
     frame.setFrameShape(QFrame.Shape.StyledPanel)
     frame.setFrameShadow(QFrame.Shadow.Plain)
     frame.setLineWidth(1)
     layout = QVBoxLayout(frame)
-    layout.setContentsMargins(10, 8, 10, 8)
-    layout.setSpacing(8)
+    layout.setContentsMargins(*SECTION_MARGINS)
+    layout.setSpacing(LAYOUT_SPACING)
     return frame, layout
 
 
 def native_group(title):
-    """Native Windows-style titled section used for settings and utility pages."""
+    """Native Windows-style titled section for forms and utility workflows."""
     group = QGroupBox(title)
     layout = QVBoxLayout(group)
-    layout.setContentsMargins(10, 12, 10, 10)
-    layout.setSpacing(8)
+    layout.setContentsMargins(*SECTION_MARGINS)
+    layout.setSpacing(LAYOUT_SPACING)
     return group, layout
+
+
+def form_group(title):
+    group = QGroupBox(title)
+    layout = form_layout(group)
+    layout.setContentsMargins(*SECTION_MARGINS)
+    return group, layout
+
+
+def toolbar_layout(parent=None):
+    layout = QHBoxLayout(parent) if parent is not None else QHBoxLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(TOOLBAR_SPACING)
+    return layout
+
+
+def form_layout(parent=None):
+    layout = QFormLayout(parent) if parent is not None else QFormLayout()
+    layout.setHorizontalSpacing(12)
+    layout.setVerticalSpacing(8)
+    layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+    return layout
+
+
+def dialog_layout(dialog):
+    layout = QVBoxLayout(dialog)
+    layout.setContentsMargins(*DIALOG_MARGINS)
+    layout.setSpacing(LAYOUT_SPACING)
+    return layout
+
+
+def page_scroll():
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QFrame.Shape.NoFrame)
+    return scroll
 
 
 def grid_place(layout, widget, row, column, row_span=1, column_span=1):
@@ -140,17 +205,39 @@ def table(headers):
     return widget
 
 
+def semantic_color(kind):
+    palette = QApplication.palette()
+    dark = palette.color(QPalette.ColorRole.Window).lightness() < 128
+    colors = (
+        {
+            "success": "#6ccb5f",
+            "warning": "#f5a623",
+            "error": "#ff8a80",
+        }
+        if dark
+        else {
+            "success": "#107c10",
+            "warning": "#ca5010",
+            "error": "#c42b1c",
+        }
+    )
+    return QColor(colors[kind])
+
+
 def populate(widget, rows):
     widget.setRowCount(len(rows))
     for row, values in enumerate(rows):
         for col, value in enumerate(values):
             item = QTableWidgetItem(str(value if value is not None else "—"))
             item.setToolTip(item.text())
-            if value in ("合格", "启用"):
-                item.setForeground(QColor("#107c10"))
+            if value in ("合格", "启用", "正常"):
+                item.setForeground(semantic_color("success"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            elif value in ("返工", "演示数据", "停用"):
-                item.setForeground(QColor("#ca5010"))
+            elif value in ("返工", "演示数据", "停用", "重复", "编号冲突"):
+                item.setForeground(semantic_color("warning"))
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            elif value in ("异常", "无法识别"):
+                item.setForeground(semantic_color("error"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             elif value == "正式数据":
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -172,8 +259,8 @@ class Page(QWidget):
         self.ctx, self.window = ctx, window
         self.setObjectName("page")
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(12, 10, 12, 10)
-        self.layout.setSpacing(6)
+        self.layout.setContentsMargins(*PAGE_MARGINS)
+        self.layout.setSpacing(LAYOUT_SPACING)
         self.title_label = label(title, "title")
         self.subtitle_label = label(subtitle, "subtitle", True)
         self.layout.addWidget(self.title_label)

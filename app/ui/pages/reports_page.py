@@ -6,16 +6,22 @@ from PySide6.QtWidgets import (
     QDateEdit,
     QFileDialog,
     QGridLayout,
-    QGroupBox,
-    QHBoxLayout,
     QStyle,
-    QVBoxLayout,
 )
 
 from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
-from app.ui.common import Page, button, grid_place, guarded, label
+from app.ui.common import (
+    Page,
+    button,
+    grid_place,
+    guarded,
+    label,
+    native_group,
+    set_label_kind,
+    toolbar_layout,
+)
 from app.ui.dialogs import file_dialogs
 from app.ui.dialogs.import_dialog import ImportDialog
 
@@ -25,9 +31,7 @@ class ReportsPage(Page):
         super().__init__(
             ctx, window, "报表中心", "导入前先检查内容；导出时选择日期范围和报表格式"
         )
-        panel = QGroupBox("导入历史日检表")
-        layout = QVBoxLayout(panel)
-        layout.setSpacing(7)
+        panel, layout = native_group("导入历史日检表")
         layout.addWidget(
             label(
                 "支持原始成品日检表与本软件导出的明细报表。自动识别记录工作表，拆分不良编码，并导出异常清单。源文件不会被修改。",
@@ -35,7 +39,7 @@ class ReportsPage(Page):
                 True,
             )
         )
-        import_actions = QHBoxLayout()
+        import_actions = toolbar_layout()
         self.import_button = button("选择表格并预览", self.import_file, primary=True)
         self.import_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
         import_actions.addWidget(self.import_button)
@@ -45,12 +49,10 @@ class ReportsPage(Page):
         self.import_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.import_status)
         self.layout.addWidget(panel)
-        panel = QGroupBox("导出质量报表")
-        layout = QVBoxLayout(panel)
-        layout.setSpacing(7)
+        panel, layout = native_group("导出质量报表")
         self.filters_grid = QGridLayout()
         self.filters_grid.setHorizontalSpacing(12)
-        self.filters_grid.setVerticalSpacing(6)
+        self.filters_grid.setVerticalSpacing(8)
         self._layout_mode = None
         self.preset, self.source = QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)
@@ -87,7 +89,7 @@ class ReportsPage(Page):
                 True,
             )
         )
-        export_actions = QHBoxLayout()
+        export_actions = toolbar_layout()
         self.original_export = button("按原表导出", lambda: self.export(True), primary=True)
         self.original_export.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         self.original_export.setToolTip("保留原始表格、公式和 6 张图表布局")
@@ -166,8 +168,10 @@ class ReportsPage(Page):
                 control.setEnabled(valid)
         if valid:
             self.export_scope.setText(f"将导出：{start} 至 {end} · {self.source.currentText()}")
+            set_label_kind(self.export_scope, "status")
         else:
             self.export_scope.setText("日期范围无效：开始日期不能晚于结束日期")
+            set_label_kind(self.export_scope, "error")
 
     def import_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "选择成品日检表", "", "电子表格 (*.xlsx)")
@@ -193,6 +197,7 @@ class ReportsPage(Page):
                 f"{import_status_label(key)}: {value}" for key, value in preview.counts.items()
             )
         )
+        set_label_kind(self.import_status, "success")
         self.window.notify(f"成功导入 {count} 条记录；历史日期数据可在检验记录页查询")
 
     @guarded

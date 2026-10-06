@@ -2,7 +2,6 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
-    QHBoxLayout,
     QLineEdit,
     QSpinBox,
     QTableWidgetItem,
@@ -10,7 +9,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.common import label, table
+from app.ui.common import LAYOUT_SPACING, label, table, toolbar_layout
 
 
 class DefectSelector(QWidget):
@@ -22,7 +21,8 @@ class DefectSelector(QWidget):
         self._remarks = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        filters = QHBoxLayout()
+        layout.setSpacing(LAYOUT_SPACING)
+        filters = toolbar_layout()
         self.search = QLineEdit()
         self.search.setPlaceholderText("搜索不良项目…")
         self.search.setClearButtonEnabled(True)
