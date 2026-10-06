@@ -24,6 +24,7 @@ from app.ui.common import (
     label,
     native_group,
     page_scroll,
+    set_label_kind,
     toolbar_layout,
 )
 from app.ui.widgets.defect_selector import DefectSelector
@@ -209,6 +210,7 @@ class InspectionPage(Page):
     def mark_dirty(self, *_):
         self.dirty = True
         self.saved_note.setText("修改尚未保存" if self.record_id else "本条尚未保存 · * 为必填项")
+        set_label_kind(self.saved_note, "warning")
 
     def can_discard(self):
         return (
@@ -264,6 +266,7 @@ class InspectionPage(Page):
         self.signature_label.setText("尚未选择签名")
         self.mode.setText("新建检验记录")
         self.saved_note.setText("本条尚未保存 · * 为必填项")
+        set_label_kind(self.saved_note, "warning")
         self.dirty = False
         self.work_order.setFocus()
 
@@ -312,6 +315,7 @@ class InspectionPage(Page):
         self.saved_note.setText(
             "复制的新记录尚未保存" if copy_record else "已保存记录 · 修改后请保存本条"
         )
+        set_label_kind(self.saved_note, "warning" if copy_record else "success")
 
     @guarded
     def save_record(self, new=False):
@@ -340,6 +344,7 @@ class InspectionPage(Page):
         self.dirty = False
         self.mode.setText("已保存 · " + result["inspection_no"])
         self.saved_note.setText("保存成功 · " + result["inspection_no"])
+        set_label_kind(self.saved_note, "success")
         self.window.notify("检验记录已保存")
         if new:
             self.reset()
