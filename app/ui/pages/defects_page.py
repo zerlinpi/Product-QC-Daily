@@ -1,6 +1,6 @@
-from PySide6.QtWidgets import QAbstractItemView, QHBoxLayout, QLineEdit
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QHBoxLayout, QLineEdit
 
-from app.ui.common import Page, button, confirm, guarded, populate, table
+from app.ui.common import Page, button, confirm, guarded, label, populate, table
 from app.ui.dialogs.defect_dialog import DefectDialog
 
 
@@ -15,8 +15,13 @@ class DefectsPage(Page):
         toolbar = QHBoxLayout()
         self.search = QLineEdit()
         self.search.setPlaceholderText("搜索项目名称或编码")
+        self.search.setClearButtonEnabled(True)
+        self.search.setMinimumWidth(260)
         self.search.textChanged.connect(self.refresh)
         toolbar.addWidget(self.search, 1)
+        self.count = label("", "muted")
+        toolbar.addWidget(self.count)
+        toolbar.addStretch()
         toolbar.addWidget(button("新增项目", self.add, primary=True))
         self.edit_button = button("编辑项目", self.edit)
         self.disable_button = button("停用项目", self.disable, danger=True)
@@ -25,9 +30,19 @@ class DefectsPage(Page):
         self.layout.addLayout(toolbar)
         self.table = table(["编码", "名称", "分类", "状态", "排序", "说明"])
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.table.setColumnWidth(1, 290)
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.table.setColumnWidth(1, 280)
+        self.table.setColumnWidth(2, 160)
+        self.table.setColumnWidth(3, 80)
+        self.table.setColumnWidth(4, 70)
         self.table.cellDoubleClicked.connect(lambda *_: self.edit())
         self.layout.addWidget(self.table, 1)
+        footer = QHBoxLayout()
+        self.selection_state = label("未选择项目", "muted")
+        footer.addWidget(self.selection_state, 1)
+        footer.addWidget(label("双击项目可直接编辑", "muted"))
+        self.layout.addLayout(footer)
         self.rows = []
         self.table.itemSelectionChanged.connect(self.update_actions)
         self.update_actions()
@@ -36,6 +51,8 @@ class DefectsPage(Page):
     def refresh(self, *_):
         self.table.clearSelection()
         self.rows = self.ctx.defects.list(self.search.text())
+        enabled_count = sum(row["enabled"] for row in self.rows)
+        self.count.setText(f"共 {len(self.rows)} 项 · 启用 {enabled_count} 项")
         populate(
             self.table,
             [
@@ -56,6 +73,9 @@ class DefectsPage(Page):
         item = self.selected() if self.table.selectedItems() else None
         self.edit_button.setEnabled(item is not None)
         self.disable_button.setEnabled(bool(item and item["enabled"]))
+        self.selection_state.setText(
+            f"已选择：{item['code']} · {item['name']}" if item else "未选择项目"
+        )
 
     def selected(self):
         row = self.table.currentRow()
