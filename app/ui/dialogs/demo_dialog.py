@@ -15,6 +15,7 @@ from app.ui.common import (
     dialog_layout,
     form_grid,
     form_group,
+    form_row,
     friendly_error,
     label,
     native_group,
@@ -71,8 +72,8 @@ class DemoDialog(QDialog):
             ("返工率目标", self.rework),
             ("不良率目标", self.defect),
         ]:
-            range_form.addRow(title, widget)
-        range_form.addRow("判定参考", self.pass_rate)
+            form_row(range_form, title, widget)
+        form_row(range_form, "判定参考", self.pass_rate)
         layout.addWidget(range_group)
 
         team_group, team_layout = native_group("参与组别")
