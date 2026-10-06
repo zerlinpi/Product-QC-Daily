@@ -3,13 +3,11 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
     QDialogButtonBox,
-    QFormLayout,
     QLineEdit,
     QSpinBox,
-    QVBoxLayout,
 )
 
-from app.ui.common import friendly_error, label
+from app.ui.common import dialog_layout, form_layout, friendly_error, label
 
 
 class DefectDialog(QDialog):
@@ -19,12 +17,9 @@ class DefectDialog(QDialog):
         self.setWindowTitle("编辑不良项目" if item else "新增不良项目")
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.setMinimumWidth(460)
-        layout = QVBoxLayout(self)
+        layout = dialog_layout(self)
         layout.addWidget(label("编码和名称为必填项；排序数值越小，显示越靠前。", "muted", True))
-        form = QFormLayout()
-        form.setSpacing(10)
-        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        form = form_layout()
         self.fields = {}
         placeholders = {
             "code": "例如 A01",
