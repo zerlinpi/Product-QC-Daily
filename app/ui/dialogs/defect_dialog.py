@@ -22,7 +22,16 @@ class DefectDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.addWidget(label("编码和名称为必填项；排序数值越小，显示越靠前。", "muted", True))
         form = QFormLayout()
+        form.setSpacing(10)
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         self.fields = {}
+        placeholders = {
+            "code": "例如 A01",
+            "name": "请输入不良项目名称",
+            "category": "选填，例如外观、装配",
+            "description": "选填，补充识别或判定说明",
+        }
         for key, title in [
             ("code", "编码 *"),
             ("name", "名称 *"),
@@ -30,9 +39,10 @@ class DefectDialog(QDialog):
             ("description", "说明"),
         ]:
             widget = QLineEdit(str((item or {}).get(key, "")))
+            widget.setPlaceholderText(placeholders[key])
             self.fields[key] = widget
             form.addRow(title, widget)
-        self.enabled = QCheckBox("启用")
+        self.enabled = QCheckBox("启用此项目")
         self.enabled.setChecked((item or {}).get("enabled", True))
         self.order = QSpinBox()
         self.order.setRange(0, 10000)
@@ -47,6 +57,7 @@ class DefectDialog(QDialog):
         buttons.accepted.connect(self.save)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+        self.fields["code"].setFocus()
 
     def save(self):
         try:
