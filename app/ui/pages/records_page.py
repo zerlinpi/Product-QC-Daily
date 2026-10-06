@@ -397,7 +397,7 @@ class RecordsPage(Page):
             + (" · 可调整条件或重置筛选" if not total else "")
         )
         self.count.setText(self.result_summary)
-        set_label_kind(self.count, "muted")
+        set_label_kind(self.count, "summary")
         self.total = total
         self.filters_dirty = False
         self.previous_button.setEnabled(self.page > 1)
