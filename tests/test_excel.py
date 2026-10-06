@@ -511,6 +511,15 @@ def test_multi_year_monthly_charts_reduce_axis_label_density():
     wb.close()
 
 
+def test_wrapped_row_height_respects_explicit_line_breaks():
+    from app.services.excel_export import wrapped_row_height
+
+    single = wrapped_row_height(("第一行", 40))
+    multiline = wrapped_row_height(("第一行\n第二行\n第三行", 40))
+    assert single == 22
+    assert multiline >= 51
+
+
 def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_path):
     from app.core.schemas import InspectionInput, RecordFilter
 
