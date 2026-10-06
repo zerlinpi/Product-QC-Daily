@@ -316,8 +316,25 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert window.pages[4].count.objectName() == "summary"
     assert window.pages[5].import_status.objectName() == "summary"
     assert window.pages[6].team_count.objectName() == "summary"
+    assert defects.add_button.objectName() == "primary"
+    assert defects.disable_button.objectName() == "danger"
+    assert defects.toolbar.indexOf(defects.edit_button) < defects.toolbar.indexOf(
+        defects.disable_button
+    ) < defects.toolbar.indexOf(defects.add_button)
+    assert settings.add_team_button.objectName() == "primary"
+    assert settings.team_toolbar.indexOf(settings.edit_team_button) < settings.team_toolbar.indexOf(
+        settings.add_team_button
+    )
+    assert settings.team_selection_state.objectName() == "summary"
+    assert settings.teams.rowCount() > 0
+    settings.teams.selectRow(0)
+    assert settings.edit_team_button.isEnabled()
+    assert settings.team_selection_state.text().startswith("已选择：")
+    defects.search.setText("__self_test_no_match__")
+    assert defects.count.objectName() == "empty"
+    defects.search.clear()
     assert window.pages[1].defects.total.objectName() == "summary"
-    assert window.pages[2].count.objectName() == "summary"
+    assert window.pages[2].count.objectName() == "empty"
     assert window.pages[0].charts[0].empty.objectName() == "empty"
     assert (
         window.pages[2].table.horizontalHeaderItem(4).textAlignment()
@@ -361,6 +378,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     records.refresh()
     assert not records.filters_dirty
     assert records.applied_filters.source == "demo"
+    assert records.count.objectName() == "summary"
 
     assert header_footer_text("A" * 63 + "&TRAILING", 64).endswith("&&")
 
@@ -431,6 +449,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "component_ui_consistency": True,
         "full_ui_style_consistency": True,
         "dialog_ui_consistency": True,
+        "interaction_ui_consistency": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)

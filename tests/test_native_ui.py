@@ -459,11 +459,14 @@ def test_table_headers_follow_numeric_and_status_alignment(ctx, qtbot):
     assert settings.horizontalHeaderItem(1).textAlignment() & Qt.AlignmentFlag.AlignHCenter
 
 
-def test_normal_summary_and_empty_states_use_distinct_visual_roles(ctx, qtbot):
+def test_normal_summary_and_empty_states_use_distinct_visual_roles(ctx, payload, qtbot):
     window = MainWindow(ctx)
     qtbot.addWidget(window)
 
     records = window.pages[2]
+    records.refresh()
+    assert records.count.objectName() == "empty"
+    ctx.inspections.save(payload)
     records.refresh()
     assert records.count.objectName() == "summary"
 
@@ -749,3 +752,50 @@ def test_adaptive_pages_share_one_breakpoint(ctx, qtbot):
         elif hasattr(page, "_reflow_layout"):
             page._reflow_layout()
         assert getattr(page, attr) == "wide"
+
+
+def test_management_actions_and_selection_feedback_share_one_hierarchy(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    defects = window.pages[4]
+    settings = window.pages[6]
+
+    assert defects.add_button.objectName() == "primary"
+    assert defects.disable_button.objectName() == "danger"
+    assert defects.toolbar.indexOf(defects.edit_button) < defects.toolbar.indexOf(
+        defects.disable_button
+    ) < defects.toolbar.indexOf(defects.add_button)
+
+    assert settings.add_team_button.objectName() == "primary"
+    assert settings.team_toolbar.indexOf(settings.edit_team_button) < settings.team_toolbar.indexOf(
+        settings.add_team_button
+    )
+
+    defects.refresh()
+    assert defects.table.rowCount() > 0
+    defects.table.selectRow(0)
+    assert defects.selection_state.text().startswith("已选择：")
+
+    settings.refresh()
+    assert settings.teams.rowCount() > 0
+    settings.teams.selectRow(0)
+    assert settings.edit_team_button.isEnabled()
+    assert settings.team_selection_state.text().startswith("已选择：")
+
+
+def test_empty_search_results_use_shared_empty_semantics(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    records = window.pages[2]
+    defects = window.pages[4]
+
+    records.search.setText("__no_matching_record__")
+    records.refresh()
+    assert records.total == 0
+    assert records.count.objectName() == "empty"
+
+    defects.search.setText("__no_matching_defect__")
+    assert defects.table.rowCount() == 0
+    assert defects.count.text() == "未找到匹配项目"
+    assert defects.count.objectName() == "empty"
+

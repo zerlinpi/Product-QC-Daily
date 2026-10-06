@@ -34,6 +34,7 @@ from app.ui.common import (
     native_group,
     page_scroll,
     populate,
+    set_label_kind,
     show_information,
     stack_layout,
     table,
@@ -122,20 +123,20 @@ class SettingsPage(Page):
         layout.addLayout(save_row)
         body.addWidget(frame)
         frame, layout = native_group("组别管理")
-        toolbar = toolbar_layout()
+        self.team_toolbar = toolbar_layout()
+        toolbar = self.team_toolbar
         self.team_count = label("", "summary")
         toolbar.addWidget(self.team_count)
         toolbar.addStretch()
-        toolbar.addWidget(button("新增组别", lambda: self.edit_team(False)))
         self.edit_team_button = button("编辑所选组别", lambda: self.edit_team(True))
         self.edit_team_button.setEnabled(False)
+        self.add_team_button = button("新增组别", lambda: self.edit_team(False), primary=True)
         toolbar.addWidget(self.edit_team_button)
+        toolbar.addWidget(self.add_team_button)
         layout.addLayout(toolbar)
         self.teams = table(["名称", "状态", "排序"])
         self.teams.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
-        self.teams.itemSelectionChanged.connect(
-            lambda: self.edit_team_button.setEnabled(bool(self.teams.selectedItems()))
-        )
+        self.teams.itemSelectionChanged.connect(self.update_team_actions)
         table_minimum_rows(self.teams, 7)
         self.teams.horizontalHeader().setStretchLastSection(False)
         self.teams.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -144,6 +145,11 @@ class SettingsPage(Page):
         align_table_columns(self.teams, right=(2,), center=(1,))
         self.teams.cellDoubleClicked.connect(lambda *_: self.edit_team(True))
         layout.addWidget(self.teams)
+        team_footer = toolbar_layout()
+        self.team_selection_state = label("未选择组别", "summary")
+        team_footer.addWidget(self.team_selection_state, 1)
+        team_footer.addWidget(label("双击组别可直接编辑", "muted"))
+        layout.addLayout(team_footer)
         body.addWidget(frame)
         frame, layout = native_group("数据维护")
         self.location = label("本地数据位置：" + str(ctx.paths.root), "muted", True)
@@ -207,15 +213,31 @@ class SettingsPage(Page):
         self.theme.setCurrentIndex(["light", "dark", "system"].index(values["theme"]))
         self.auto_backup.setChecked(values["auto_backup"])
         self.retention.setValue(values["backup_retention_days"])
+        self.teams.clearSelection()
         self.team_rows = self.ctx.settings.teams()
         enabled_count = sum(row["enabled"] for row in self.team_rows)
-        self.team_count.setText(f"共 {len(self.team_rows)} 个组别 · 启用 {enabled_count} 个")
+        self.team_count.setText(
+            f"共 {len(self.team_rows)} 个组别 · 启用 {enabled_count} 个"
+            if self.team_rows
+            else "暂无组别"
+        )
+        set_label_kind(self.team_count, "summary" if self.team_rows else "empty")
         populate(
             self.teams,
             [
                 [r["name"], "启用" if r["enabled"] else "停用", r["sort_order"]]
                 for r in self.team_rows
             ],
+        )
+        self.update_team_actions()
+
+    def update_team_actions(self):
+        rows = getattr(self, "team_rows", [])
+        row = self.teams.currentRow()
+        item = rows[row] if self.teams.selectedItems() and 0 <= row < len(rows) else None
+        self.edit_team_button.setEnabled(item is not None)
+        self.team_selection_state.setText(
+            f"已选择：{item['name']}" if item else "未选择组别"
         )
 
     @guarded
