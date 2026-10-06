@@ -561,6 +561,10 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert records["I2"].font.bold
     assert records.freeze_panes == "C2"
     assert records.sheet_view.zoomScale == 85
+    assert records.print_options.horizontalCentered
+    assert records.page_margins.header == 0.2
+    assert records["A2"].alignment.wrap_text
+    assert records["D2"].alignment.wrap_text
     assert records["E2"].number_format == "#,##0"
     assert records.row_dimensions[2].height > 22
     assert records.print_area
@@ -568,9 +572,12 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     detail = wb["不良明细"]
     assert detail.row_dimensions[2].height > 22
     assert detail.print_area
+    assert detail.freeze_panes == "C2"
+    assert detail["A2"].alignment.wrap_text
 
     dictionary = wb["不良项目"]
     assert dictionary.print_area
+    assert dictionary.freeze_panes == "B2"
 
     summary = wb["统计摘要"]
     assert summary.page_setup.orientation == "portrait"
@@ -579,6 +586,7 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert summary.sheet_view.zoomScale == 100
     assert summary["B2"].number_format == "#,##0"
     assert summary.print_area
+    assert summary.freeze_panes == "A2"
     note_rows = {
         summary.cell(row, 1).value: row for row in range(2, summary.max_row + 1)
     }
@@ -593,6 +601,7 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert len(monthly.conditional_formatting) == 7
     assert monthly.auto_filter.ref == f"A1:H{monthly.max_row - 1}"
     assert monthly.sheet_view.zoomScale == 85
+    assert monthly.freeze_panes == "B2"
     assert monthly["B2"].number_format == "#,##0"
     assert monthly["G2"].number_format == "#,##0"
     assert monthly.print_area
