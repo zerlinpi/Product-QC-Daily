@@ -12,10 +12,12 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGridLayout,
     QHBoxLayout,
+    QHeaderView,
     QLineEdit,
     QMessageBox,
     QScrollArea,
     QSpinBox,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -23,11 +25,11 @@ from PySide6.QtWidgets import (
 from app.ui.common import (
     Page,
     button,
-    card,
     confirm,
     friendly_error,
     guarded,
     label,
+    native_group,
     populate,
     table,
 )
@@ -45,10 +47,11 @@ class SettingsPage(Page):
         body = QVBoxLayout(content)
         body.setContentsMargins(0, 0, 0, 0)
         body.setSpacing(10)
-        frame, layout = card()
-        layout.addWidget(label("基础设置", "section"))
+        frame, layout = native_group("基础设置")
         form = QFormLayout()
         form.setSpacing(12)
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
         self.fields = {}
         for key, title in [
             ("company", "公司名称"),
@@ -80,12 +83,12 @@ class SettingsPage(Page):
             )
             self.fields[key] = field
             row.addWidget(field, 1)
-            row.addWidget(
-                button(
-                    "选择文件" if key == "template_path" else "选择文件夹",
-                    lambda _, k=key: self.choose_path(k),
-                )
+            browse = button(
+                "选择文件" if key == "template_path" else "选择文件夹",
+                lambda _, k=key: self.choose_path(k),
             )
+            browse.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
+            row.addWidget(browse)
             form.addRow(title, row)
         self.auto_backup = QCheckBox("每天第一次启动自动备份")
         form.addRow("自动备份", self.auto_backup)
@@ -102,13 +105,19 @@ class SettingsPage(Page):
             )
         )
         save_row = QHBoxLayout()
-        save_row.addWidget(button("保存设置", self.save, primary=True))
         save_row.addStretch()
+        self.save_button = button("保存设置", self.save, primary=True)
+        self.save_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
+        )
+        save_row.addWidget(self.save_button)
         layout.addLayout(save_row)
         body.addWidget(frame)
-        frame, layout = card()
+        frame, layout = native_group("组别管理")
         toolbar = QHBoxLayout()
-        toolbar.addWidget(label("组别管理", "section"), 1)
+        self.team_count = label("", "muted")
+        toolbar.addWidget(self.team_count)
+        toolbar.addStretch()
         toolbar.addWidget(button("新增组别", lambda: self.edit_team(False)))
         self.edit_team_button = button("编辑所选组别", lambda: self.edit_team(True))
         self.edit_team_button.setEnabled(False)
@@ -120,30 +129,50 @@ class SettingsPage(Page):
             lambda: self.edit_team_button.setEnabled(bool(self.teams.selectedItems()))
         )
         self.teams.setMinimumHeight(220)
+        self.teams.horizontalHeader().setStretchLastSection(False)
+        self.teams.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.teams.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.teams.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
         self.teams.cellDoubleClicked.connect(lambda *_: self.edit_team(True))
         layout.addWidget(self.teams)
         body.addWidget(frame)
-        frame, layout = card()
-        layout.addWidget(label("数据维护", "section"))
-        self.location = label(str(ctx.paths.root), "muted", True)
+        frame, layout = native_group("数据维护")
+        self.location = label("本地数据位置：" + str(ctx.paths.root), "muted", True)
+        self.location.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.location.setToolTip(str(ctx.paths.root))
         layout.addWidget(self.location)
         maintenance = QGridLayout()
-        maintenance.setHorizontalSpacing(8)
+        maintenance.setHorizontalSpacing(12)
         maintenance.setVerticalSpacing(8)
-        actions = [
-            ("立即备份全部数据", self.backup),
-            ("恢复备份", self.restore),
-            ("检查数据是否正常", self.health),
-            ("打开数据文件夹", self.open_folder),
-            ("前往报表导入", lambda: self.window.navigate(5)),
-            ("生成演示数据", self.demo),
-            ("删除全部演示数据", self.clear_demo),
-        ]
-        for index, (title, action) in enumerate(actions):
-            control = button(title, action, danger=title.startswith("删除"))
-            maintenance.addWidget(control, index // 4, index % 4)
-        for column in range(4):
-            maintenance.setColumnStretch(column, 1)
+
+        backup_actions = QHBoxLayout()
+        backup_button = button("立即备份全部数据", self.backup)
+        backup_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+        restore_button = button("恢复备份", self.restore)
+        restore_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
+        backup_actions.addWidget(backup_button)
+        backup_actions.addWidget(restore_button)
+        backup_actions.addStretch()
+        maintenance.addWidget(label("备份与恢复", "fieldLabel"), 0, 0)
+        maintenance.addLayout(backup_actions, 0, 1)
+
+        local_actions = QHBoxLayout()
+        local_actions.addWidget(button("检查数据是否正常", self.health))
+        folder_button = button("打开数据文件夹", self.open_folder)
+        folder_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        local_actions.addWidget(folder_button)
+        local_actions.addWidget(button("前往报表导入", lambda: self.window.navigate(5)))
+        local_actions.addStretch()
+        maintenance.addWidget(label("本地数据", "fieldLabel"), 1, 0)
+        maintenance.addLayout(local_actions, 1, 1)
+
+        demo_actions = QHBoxLayout()
+        demo_actions.addWidget(button("生成演示数据", self.demo))
+        demo_actions.addWidget(button("删除全部演示数据", self.clear_demo, danger=True))
+        demo_actions.addStretch()
+        maintenance.addWidget(label("演示数据", "fieldLabel"), 2, 0)
+        maintenance.addLayout(demo_actions, 2, 1)
+        maintenance.setColumnStretch(1, 1)
         layout.addLayout(maintenance)
         body.addWidget(frame)
         scroll.setWidget(content)
@@ -163,6 +192,8 @@ class SettingsPage(Page):
         self.auto_backup.setChecked(values["auto_backup"])
         self.retention.setValue(values["backup_retention_days"])
         self.team_rows = self.ctx.settings.teams()
+        enabled_count = sum(row["enabled"] for row in self.team_rows)
+        self.team_count.setText(f"共 {len(self.team_rows)} 个组别 · 启用 {enabled_count} 个")
         populate(
             self.teams,
             [
@@ -223,8 +254,11 @@ class SettingsPage(Page):
         dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         dialog.setMinimumWidth(380)
         layout, form = QVBoxLayout(dialog), QFormLayout()
+        form.setSpacing(10)
+        form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         name = QLineEdit(item["name"] if item else "")
-        enabled = QCheckBox("启用")
+        name.setPlaceholderText("请输入组别名称")
+        enabled = QCheckBox("启用此组别")
         enabled.setChecked(item["enabled"] if item else True)
         order = QSpinBox()
         order.setRange(0, 10000)

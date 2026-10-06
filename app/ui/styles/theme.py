@@ -55,6 +55,7 @@ def apply_theme(mode="light"):
             "#444444",
             "#252525",
         )
+        disabled = "#808080"
     else:
         bg, panel, text, muted, border, sidebar = (
             "#f3f3f3",
@@ -64,6 +65,7 @@ def apply_theme(mode="light"):
             "#d6d6d6",
             "#f3f3f3",
         )
+        disabled = "#8a8a8a"
     accent = "#0067c0"
 
     palette = QPalette()
@@ -80,8 +82,16 @@ def apply_theme(mode="light"):
         (QPalette.ColorRole.Highlight, accent),
         (QPalette.ColorRole.HighlightedText, "#ffffff"),
         (QPalette.ColorRole.PlaceholderText, muted),
+        (QPalette.ColorRole.Link, accent),
+        (QPalette.ColorRole.Mid, border),
     ]:
         palette.setColor(role, QColor(color))
+    for role in (
+        QPalette.ColorRole.WindowText,
+        QPalette.ColorRole.Text,
+        QPalette.ColorRole.ButtonText,
+    ):
+        palette.setColor(QPalette.ColorGroup.Disabled, role, QColor(disabled))
     app.setPalette(palette)
 
     # Standard controls intentionally stay out of QSS. On Windows this lets
@@ -90,11 +100,12 @@ def apply_theme(mode="light"):
     app.setStyleSheet(
         f"""
         QMainWindow, QWidget#page {{ background: {bg}; }}
-        QLabel#title {{ font-size: 12pt; font-weight: 600; }}
+        QLabel#title {{ font-size: 14pt; font-weight: 600; }}
         QLabel#subtitle, QLabel#muted {{ color: {muted}; }}
-        QLabel#section {{ font-size: 9.5pt; font-weight: 600; }}
+        QLabel#section {{ font-size: 10pt; font-weight: 600; }}
+        QLabel#status {{ font-weight: 600; }}
         QLabel#fieldLabel {{ color: {muted}; font-weight: 600; }}
-        QLabel#metric {{ font-size: 17pt; font-weight: 600; }}
+        QLabel#metric {{ font-size: 18pt; font-weight: 600; }}
 
         QFrame#qcSidebar {{
             background: {sidebar};
@@ -102,7 +113,7 @@ def apply_theme(mode="light"):
             border-right: 1px solid {border};
         }}
         QFrame#qcSidebar QLabel#muted {{ color: {muted}; }}
-        QLabel#brand {{ font-size: 10.5pt; font-weight: 600; }}
+        QLabel#brand {{ font-size: 11pt; font-weight: 600; }}
         QFrame#topbar {{
             background: {panel};
             border: none;

@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QVBoxLayout
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QHBoxLayout, QStyle, QVBoxLayout
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
 from app.ui.common import button, guarded, label, populate, table
@@ -20,14 +21,13 @@ class ImportDialog(QDialog):
         layout.setContentsMargins(14, 12, 14, 12)
         layout.addWidget(label("检查导入内容", "title"))
         layout.addWidget(label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "muted"))
-        layout.addWidget(
-            label(
-                "   ".join(
-                    f"{import_status_label(key)} {value}" for key, value in preview.counts.items()
-                ),
-                "section",
-            )
+        self.summary = label(
+            "   ".join(
+                f"{import_status_label(key)} {value}" for key, value in preview.counts.items()
+            ),
+            "status",
         )
+        layout.addWidget(self.summary)
         layout.addWidget(
             label(
                 "检查完成后再点击导入。只保存正常记录，重复与异常记录会跳过；原表未提供的逐项件数保持未知。",
@@ -35,12 +35,20 @@ class ImportDialog(QDialog):
                 True,
             )
         )
+        filter_row = QHBoxLayout()
+        filter_row.addWidget(label("显示", "fieldLabel"))
         self.filter = QComboBox()
+        self.filter.setAccessibleName("导入状态筛选")
+        self.filter.setMinimumWidth(150)
         self.filter.addItem("全部状态", "")
         for key, value in IMPORT_STATUS_LABELS.items():
             self.filter.addItem(value, key)
         self.filter.currentIndexChanged.connect(self.reset_page)
-        layout.addWidget(self.filter)
+        filter_row.addWidget(self.filter)
+        self.visible_status = label("", "muted")
+        filter_row.addWidget(self.visible_status)
+        filter_row.addStretch()
+        layout.addLayout(filter_row)
         self.table = table(["表格行号", "记录编号", "状态", "说明 / 异常原因"])
         self.table.setColumnWidth(0, 80)
         self.table.setColumnWidth(1, 245)
@@ -56,6 +64,7 @@ class ImportDialog(QDialog):
         layout.addLayout(pagination)
         actions = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
         report_button = button("导出异常报告", self.report)
+        report_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         report_button.setEnabled(any(row.status != "valid" or row.message for row in preview.rows))
         report_button.setToolTip("将重复、冲突、异常和签名警告另存为表格，便于核对")
         actions.addButton(report_button, QDialogButtonBox.ButtonRole.ActionRole)
@@ -84,6 +93,7 @@ class ImportDialog(QDialog):
 
     def refresh(self):
         rows = self.filtered()
+        page_rows = rows[(self.page - 1) * 200 : self.page * 200]
         populate(
             self.table,
             [
@@ -93,10 +103,22 @@ class ImportDialog(QDialog):
                     import_status_label(r.status),
                     r.message or "可导入；逐项件数以原表提供内容为准",
                 ]
-                for r in rows[(self.page - 1) * 200 : self.page * 200]
+                for r in page_rows
             ],
         )
+        status_colors = {
+            "valid": "#107c10",
+            "duplicate": "#ca5010",
+            "conflict": "#ca5010",
+            "invalid": "#c42b1c",
+            "unrecognized": "#c42b1c",
+        }
+        for index, row in enumerate(page_rows):
+            status_item = self.table.item(index, 2)
+            status_item.setForeground(QColor(status_colors.get(row.status, "#616161")))
+            status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         pages = max(1, (len(rows) + 199) // 200)
+        self.visible_status.setText(f"当前显示 {len(rows)} 条")
         self.count.setText(f"共 {len(rows)} 条 · 第 {self.page} / {pages} 页 · 每页 200 条")
         self.previous_button.setEnabled(self.page > 1)
         self.next_button.setEnabled(self.page < pages)

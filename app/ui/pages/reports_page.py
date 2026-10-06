@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from PySide6.QtCore import QDate
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
@@ -8,13 +8,14 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QStyle,
     QVBoxLayout,
 )
 
 from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
-from app.ui.common import Page, button, guarded, label
+from app.ui.common import Page, button, grid_place, guarded, label
 from app.ui.dialogs import file_dialogs
 from app.ui.dialogs.import_dialog import ImportDialog
 
@@ -35,18 +36,22 @@ class ReportsPage(Page):
             )
         )
         import_actions = QHBoxLayout()
-        import_actions.addWidget(button("选择表格并预览", self.import_file, primary=True))
+        self.import_button = button("选择表格并预览", self.import_file, primary=True)
+        self.import_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
+        import_actions.addWidget(self.import_button)
         import_actions.addStretch()
         layout.addLayout(import_actions)
         self.import_status = label("尚未选择文件", "muted", True)
+        self.import_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.import_status)
         self.layout.addWidget(panel)
         panel = QGroupBox("导出质量报表")
         layout = QVBoxLayout(panel)
         layout.setSpacing(7)
-        filters = QGridLayout()
-        filters.setHorizontalSpacing(12)
-        filters.setVerticalSpacing(6)
+        self.filters_grid = QGridLayout()
+        self.filters_grid.setHorizontalSpacing(12)
+        self.filters_grid.setVerticalSpacing(6)
+        self._layout_mode = None
         self.preset, self.source = QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)
         self.preset.setCurrentText("本月")
@@ -61,11 +66,14 @@ class ReportsPage(Page):
             ("结束日期", self.end),
             ("数据范围", self.source),
         ]
+        self.filter_controls = []
         for col, (title, widget) in enumerate(controls):
-            filters.addWidget(label(title, "fieldLabel"), 0, col)
-            filters.addWidget(widget, 1, col)
-        layout.addLayout(filters)
-        self.export_scope = label("", "muted", True)
+            caption = label(title, "fieldLabel")
+            self.filter_controls.append((caption, widget))
+            self.filters_grid.addWidget(caption, 0, col)
+            self.filters_grid.addWidget(widget, 1, col)
+        layout.addLayout(self.filters_grid)
+        self.export_scope = label("", "status", True)
         layout.addWidget(self.export_scope)
         self.preset.currentTextChanged.connect(self.set_range)
         self.source.currentIndexChanged.connect(self.update_scope_text)
@@ -81,12 +89,14 @@ class ReportsPage(Page):
         )
         export_actions = QHBoxLayout()
         self.original_export = button("按原表导出", lambda: self.export(True), primary=True)
+        self.original_export.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         self.original_export.setToolTip("保留原始表格、公式和 6 张图表布局")
         self.detailed_export = button("导出明细报表", lambda: self.export(False))
+        self.detailed_export.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         self.detailed_export.setToolTip("适合年度分析：月份筛选、统计摘要、月度统计和趋势图")
-        export_actions.addWidget(self.original_export)
-        export_actions.addWidget(self.detailed_export)
         export_actions.addStretch()
+        export_actions.addWidget(self.detailed_export)
+        export_actions.addWidget(self.original_export)
         layout.addLayout(export_actions)
         layout.addWidget(
             label(
@@ -98,6 +108,32 @@ class ReportsPage(Page):
         self.layout.addWidget(panel)
         self.update_scope_text()
         self.layout.addStretch()
+        self._reflow_filters()
+
+    def _reflow_filters(self):
+        mode = "wide" if self.width() >= 1000 else "narrow"
+        if mode == self._layout_mode:
+            return
+        self._layout_mode = mode
+        if mode == "wide":
+            for col, (caption, widget) in enumerate(self.filter_controls):
+                grid_place(self.filters_grid, caption, 0, col)
+                grid_place(self.filters_grid, widget, 1, col)
+            for col in range(4):
+                self.filters_grid.setColumnStretch(col, 1)
+        else:
+            for index, (caption, widget) in enumerate(self.filter_controls):
+                block, col = divmod(index, 2)
+                row = block * 2
+                grid_place(self.filters_grid, caption, row, col)
+                grid_place(self.filters_grid, widget, row + 1, col)
+            for col in range(4):
+                self.filters_grid.setColumnStretch(col, 1 if col < 2 else 0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "filters_grid"):
+            self._reflow_filters()
 
     def sync_preset_range(self):
         name = self.preset.currentText()
@@ -136,7 +172,8 @@ class ReportsPage(Page):
     def import_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "选择成品日检表", "", "电子表格 (*.xlsx)")
         if path:
-            self.import_status.setText(path)
+            self.import_status.setText(f"当前文件：{path}")
+            self.import_status.setToolTip(path)
             self.window.run_job(
                 "读取表格并检查内容", lambda: self.ctx.excel.preview(Path(path)), self.show_preview
             )

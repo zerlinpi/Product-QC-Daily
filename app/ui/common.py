@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QFrame,
+    QGroupBox,
     QHeaderView,
     QLabel,
     QMessageBox,
@@ -98,6 +99,13 @@ def card():
     return frame, layout
 
 
+def native_group(title):
+    """Native Windows-style titled section used for settings and utility pages."""
+    group = QGroupBox(title)
+    layout = QVBoxLayout(group)
+    layout.setContentsMargins(10, 12, 10, 10)
+    layout.setSpacing(8)
+    return group, layout
 
 
 def grid_place(layout, widget, row, column, row_span=1, column_span=1):
@@ -117,11 +125,14 @@ def table(headers):
     widget.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     widget.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
     widget.setWordWrap(False)
+    widget.setTextElideMode(Qt.TextElideMode.ElideRight)
     widget.setMouseTracking(True)
+    widget.setCornerButtonEnabled(False)
     widget.setVerticalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
     widget.setHorizontalScrollMode(QAbstractItemView.ScrollMode.ScrollPerPixel)
     widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     widget.horizontalHeader().setHighlightSections(False)
+    widget.horizontalHeader().setMinimumSectionSize(55)
     widget.horizontalHeader().setDefaultAlignment(
         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
     )
@@ -135,10 +146,13 @@ def populate(widget, rows):
         for col, value in enumerate(values):
             item = QTableWidgetItem(str(value if value is not None else "—"))
             item.setToolTip(item.text())
-            if value in ("合格", "返工", "演示数据"):
-                item.setForeground(QColor("#107c10" if value == "合格" else "#ca5010"))
+            if value in ("合格", "启用"):
+                item.setForeground(QColor("#107c10"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            elif value in ("正式数据", "启用", "停用"):
+            elif value in ("返工", "演示数据", "停用"):
+                item.setForeground(QColor("#ca5010"))
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            elif value == "正式数据":
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
             elif (
                 isinstance(value, (int, float))

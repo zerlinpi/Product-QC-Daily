@@ -204,3 +204,63 @@ def test_core_pages_reflow_at_minimum_and_wide_desktop_widths(ctx, qtbot):
     assert records.filters_grid.count() == 13
     assert analytics.filters_grid.count() == 11
     assert analytics.grid.count() == 10
+
+
+
+def test_reports_settings_and_defects_keep_native_utility_hierarchy(ctx, qtbot):
+    from PySide6.QtWidgets import QGroupBox, QHeaderView
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.show()
+
+    def position(layout, widget):
+        index = layout.indexOf(widget)
+        assert index >= 0
+        return layout.getItemPosition(index)
+
+    window.resize(1080, 720)
+    window.navigate(5)
+    reports = window.pages[5]
+    qtbot.waitUntil(lambda: reports._layout_mode == "narrow")
+    assert position(reports.filters_grid, reports.preset) == (1, 0, 1, 1)
+    assert position(reports.filters_grid, reports.source) == (3, 1, 1, 1)
+    assert reports.import_status.textInteractionFlags() & Qt.TextInteractionFlag.TextSelectableByMouse
+
+    window.resize(1440, 920)
+    qtbot.waitUntil(lambda: reports._layout_mode == "wide")
+    assert position(reports.filters_grid, reports.source) == (1, 3, 1, 1)
+
+    window.navigate(6)
+    settings = window.pages[6]
+    groups = {group.title() for group in settings.findChildren(QGroupBox)}
+    assert {"基础设置", "组别管理", "数据维护"}.issubset(groups)
+    assert settings.team_count.text().startswith("共 ")
+    assert settings.location.textInteractionFlags() & Qt.TextInteractionFlag.TextSelectableByMouse
+    header = settings.teams.horizontalHeader()
+    assert header.sectionResizeMode(0) == QHeaderView.ResizeMode.Stretch
+    assert header.sectionResizeMode(1) == QHeaderView.ResizeMode.ResizeToContents
+    assert header.sectionResizeMode(2) == QHeaderView.ResizeMode.ResizeToContents
+
+    window.navigate(4)
+    defects = window.pages[4]
+    assert defects.search.isClearButtonEnabled()
+    assert defects.count.text().startswith("共 ")
+    if defects.table.rowCount():
+        defects.table.selectRow(0)
+        assert defects.selection_state.text().startswith("已选择：")
+
+
+def test_progress_dialog_uses_readable_native_task_metrics(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    dialog = TaskProgressDialog(
+        window,
+        "正在导出质量报表",
+        message="正在生成文件并校验输出内容，请稍候…",
+    )
+    qtbot.addWidget(dialog)
+
+    assert dialog.minimumWidth() == 400
+    labels = dialog.findChildren(type(window.pages[0].title_label))
+    assert any(label.wordWrap() for label in labels if "正在生成文件" in label.text())
