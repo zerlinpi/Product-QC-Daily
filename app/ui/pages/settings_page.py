@@ -250,6 +250,9 @@ class SettingsPage(Page):
         dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         dialog.setMinimumWidth(380)
         layout, form = dialog_layout(dialog), form_layout()
+        layout.addWidget(
+            label("名称为必填项；停用组别后不会影响已有检验记录。", "muted", True)
+        )
         name = QLineEdit(item["name"] if item else "")
         name.setPlaceholderText("请输入组别名称")
         enabled = QCheckBox("启用此组别")
