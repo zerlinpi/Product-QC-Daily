@@ -1,9 +1,20 @@
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QComboBox, QDateEdit, QGridLayout, QScrollArea, QWidget
+from PySide6.QtWidgets import QComboBox, QDateEdit, QGridLayout, QWidget
 
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
-from app.ui.common import Page, button, card, grid_place, guarded, label, populate, table
+from app.ui.common import (
+    Page,
+    button,
+    card,
+    grid_place,
+    guarded,
+    label,
+    native_group,
+    page_scroll,
+    populate,
+    table,
+)
 from app.ui.widgets.chart_widget import ChartWidget
 from app.ui.widgets.pareto_widget import ParetoWidget
 from app.ui.widgets.stat_card import stat_card
@@ -17,8 +28,7 @@ class AnalyticsPage(Page):
             "质量分析",
             "选择日期后点击“开始分析”，查看不良趋势、重点项目和与上一周期的变化",
         )
-        filter_card, filter_box = card()
-        filter_box.addWidget(label("分析范围", "section"))
+        filter_card, filter_box = native_group("分析范围")
         self.filters_grid = QGridLayout()
         self.filters_grid.setHorizontalSpacing(12)
         self.filters_grid.setVerticalSpacing(6)
@@ -50,7 +60,7 @@ class AnalyticsPage(Page):
         self.analyze_button = button("开始分析", self.refresh, primary=True)
         self.filters_grid.addWidget(self.analyze_button, 1, len(controls))
         filter_box.addLayout(self.filters_grid)
-        self.scope = label("", "muted")
+        self.scope = label("", "status")
         filter_box.addWidget(self.scope)
         self.layout.addWidget(filter_card)
         self.preset.currentTextChanged.connect(self.set_range)
@@ -59,8 +69,7 @@ class AnalyticsPage(Page):
         self.start.dateChanged.connect(self.mark_stale)
         self.end.dateChanged.connect(self.mark_stale)
         self.set_range("本月")
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
+        scroll = page_scroll()
         content = QWidget()
         self.grid = QGridLayout(content)
         self.grid.setContentsMargins(0, 0, 0, 0)
