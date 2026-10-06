@@ -266,7 +266,7 @@ class RecordsPage(Page):
                 set_label_kind(self.count, "warning")
             else:
                 self.count.setText(self.result_summary)
-                set_label_kind(self.count, "muted")
+                set_label_kind(self.count, "summary")
         if hasattr(self, "previous_button"):
             self.previous_button.setEnabled(not self.filters_dirty and self.page > 1)
             pages = max(1, (getattr(self, "total", 0) + 49) // 50)
