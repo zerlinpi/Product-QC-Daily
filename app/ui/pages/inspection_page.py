@@ -42,10 +42,11 @@ class InspectionPage(Page):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         content = QWidget()
-        grid = QGridLayout(content)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setSpacing(12)
-        left, left_layout = card()
+        self.content_grid = QGridLayout(content)
+        self.content_grid.setContentsMargins(0, 0, 0, 0)
+        self.content_grid.setSpacing(12)
+        self._layout_mode = None
+        self.left_panel, left_layout = card()
         left_layout.addWidget(label("检验信息", "section"))
         fields = QGridLayout()
         fields.setHorizontalSpacing(18)
@@ -112,15 +113,15 @@ class InspectionPage(Page):
         signature_row.addWidget(button("选择签名图片", self.choose_signature))
         signature_row.addWidget(button("清除签名", self.clear_signature))
         left_layout.addLayout(signature_row)
-        right, right_layout = card()
+        self.right_panel, right_layout = card()
         right_layout.addWidget(label("不良项目", "section"))
         right_layout.addWidget(label("勾选发现的不良项目，再填写各项件数", "muted", True))
         self.defects = DefectSelector(ctx)
         right_layout.addWidget(self.defects, 1)
-        grid.addWidget(left, 0, 0)
-        grid.addWidget(right, 0, 1)
-        grid.setColumnStretch(0, 6)
-        grid.setColumnStretch(1, 5)
+        self.content_grid.addWidget(self.left_panel, 0, 0)
+        self.content_grid.addWidget(self.right_panel, 0, 1)
+        self.content_grid.setColumnStretch(0, 6)
+        self.content_grid.setColumnStretch(1, 5)
         scroll.setWidget(content)
         self.layout.addWidget(scroll, 1)
         keep_row = QHBoxLayout()
@@ -148,6 +149,7 @@ class InspectionPage(Page):
         footer.addWidget(save_button)
         footer.addWidget(button("保存并新建", lambda: self.save_record(new=True), primary=True))
         self.layout.addLayout(footer)
+        self._reflow_content()
         self.refresh()
         self.reset()
         for widget in [self.work_order, self.inspector]:
@@ -168,6 +170,27 @@ class InspectionPage(Page):
                 else "未发现不良，建议合格；最终判定由检验员确认。"
             )
         )
+
+    def _reflow_content(self):
+        mode = "wide" if self.width() >= 1100 else "narrow"
+        if mode == self._layout_mode:
+            return
+        self._layout_mode = mode
+        if mode == "wide":
+            self.content_grid.addWidget(self.left_panel, 0, 0)
+            self.content_grid.addWidget(self.right_panel, 0, 1)
+            self.content_grid.setColumnStretch(0, 6)
+            self.content_grid.setColumnStretch(1, 5)
+        else:
+            self.content_grid.addWidget(self.left_panel, 0, 0)
+            self.content_grid.addWidget(self.right_panel, 1, 0)
+            self.content_grid.setColumnStretch(0, 1)
+            self.content_grid.setColumnStretch(1, 0)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "content_grid"):
+            self._reflow_content()
 
     def eventFilter(self, watched, event):
         if event.type() == QEvent.Type.KeyPress and event.key() in (
