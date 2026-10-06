@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QStyle
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
 from app.ui.common import (
     FILTER_FIELD_MIN_WIDTH,
+    IMPORT_DIALOG_SIZE,
     align_table_columns,
     button,
     button_metrics,
@@ -28,7 +29,7 @@ class ImportDialog(QDialog):
         self.page = 1
         self.setWindowTitle("表格导入预览")
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
-        self.resize(1040, 680)
+        self.resize(*IMPORT_DIALOG_SIZE)
         layout = dialog_layout(self)
         layout.addWidget(
             label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "summary")

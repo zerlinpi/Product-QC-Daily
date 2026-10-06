@@ -641,3 +641,111 @@ def test_shared_button_icon_path_keeps_native_system_icons(qtbot):
     )
     qtbot.addWidget(control)
     assert not control.icon().isNull()
+
+
+
+def test_native_message_boxes_share_button_metrics(qtbot):
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QMessageBox
+
+    from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT, message_box
+
+    dialog = message_box(None, "提示", "操作已完成")
+    qtbot.addWidget(dialog)
+    assert not bool(dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint)
+    ok = dialog.button(QMessageBox.StandardButton.Ok)
+    assert ok.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert ok.minimumWidth() == BUTTON_MIN_WIDTH
+    assert ok.isDefault()
+    assert ok.autoDefault()
+
+
+def test_content_sized_widgets_use_shared_ui_tokens(ctx, qtbot):
+    from app.ui.common import (
+        PROGRESS_DIALOG_MIN_WIDTH,
+        REMARK_MAX_HEIGHT,
+        SIGNATURE_PREVIEW_MIN_HEIGHT,
+        STATUS_PROGRESS_MAX_WIDTH,
+    )
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window, before_close_func=lambda w: setattr(w.pages[1], "dirty", False))
+    entry = window.pages[1]
+
+    assert window.progress.maximumWidth() == STATUS_PROGRESS_MAX_WIDTH
+    assert entry.remark.maximumHeight() == REMARK_MAX_HEIGHT
+    assert entry.signature_label.minimumHeight() == SIGNATURE_PREVIEW_MIN_HEIGHT
+
+    dialog = TaskProgressDialog(window, "正在处理")
+    qtbot.addWidget(dialog)
+    assert dialog.minimumWidth() == PROGRESS_DIALOG_MIN_WIDTH
+
+
+def test_single_field_dialogs_use_native_form_metrics(ctx, qtbot, monkeypatch):
+    from PySide6.QtWidgets import QComboBox, QDialog, QLineEdit
+
+    from app.ui.common import (
+        CONTROL_MIN_HEIGHT,
+        FORM_DIALOG_MIN_WIDTH,
+        choice_input_dialog,
+        text_input_dialog,
+    )
+
+    observed = []
+
+    def inspect(dialog):
+        fields = dialog.findChildren(QLineEdit) + dialog.findChildren(QComboBox)
+        field = next(widget for widget in fields if widget.accessibleName() in {"检验员", "组别"})
+        observed.append(
+            (
+                dialog.minimumWidth(),
+                field.minimumHeight(),
+                field.accessibleName(),
+            )
+        )
+        return QDialog.DialogCode.Rejected
+
+    monkeypatch.setattr(QDialog, "exec", inspect)
+    text_input_dialog(None, "批量修改", "修改 2 条记录", "检验员")
+    choice_input_dialog(None, "批量修改", "修改 2 条记录", "组别", ["U1", "U2"])
+
+    assert observed == [
+        (FORM_DIALOG_MIN_WIDTH, CONTROL_MIN_HEIGHT, "检验员"),
+        (FORM_DIALOG_MIN_WIDTH, CONTROL_MIN_HEIGHT, "组别"),
+    ]
+
+
+def test_adaptive_pages_share_one_breakpoint(ctx, qtbot):
+    from app.ui.common import WIDE_LAYOUT_BREAKPOINT
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window, before_close_func=lambda w: setattr(w.pages[1], "dirty", False))
+    window.show()
+
+    adaptive = [window.pages[index] for index in (0, 1, 2, 3, 5)]
+    mode_attrs = [
+        "_layout_mode",
+        "_layout_mode",
+        "_filter_layout_mode",
+        "_layout_mode",
+        "_layout_mode",
+    ]
+
+    for page, attr in zip(adaptive, mode_attrs):
+        page.resize(WIDE_LAYOUT_BREAKPOINT - 1, 720)
+        if hasattr(page, "_reflow_content"):
+            page._reflow_content()
+        elif hasattr(page, "_reflow_filters"):
+            page._reflow_filters()
+        elif hasattr(page, "_reflow_layout"):
+            page._reflow_layout()
+        assert getattr(page, attr) == "narrow"
+
+        page.resize(WIDE_LAYOUT_BREAKPOINT, 720)
+        if hasattr(page, "_reflow_content"):
+            page._reflow_content()
+        elif hasattr(page, "_reflow_filters"):
+            page._reflow_filters()
+        elif hasattr(page, "_reflow_layout"):
+            page._reflow_layout()
+        assert getattr(page, attr) == "wide"

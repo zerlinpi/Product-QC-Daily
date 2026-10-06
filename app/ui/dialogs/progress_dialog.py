@@ -1,7 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialog, QProgressBar
 
-from app.ui.common import dialog_layout, label
+from app.ui.common import PROGRESS_DIALOG_MIN_WIDTH, dialog_layout, label
 
 
 class TaskProgressDialog(QDialog):
@@ -13,7 +13,7 @@ class TaskProgressDialog(QDialog):
         self.setModal(True)
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(PROGRESS_DIALOG_MIN_WIDTH)
         layout = dialog_layout(self)
         layout.addWidget(label(title, "status"))
         layout.addWidget(label(message, "muted", True))

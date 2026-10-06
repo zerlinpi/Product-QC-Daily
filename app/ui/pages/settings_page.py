@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHeaderView,
     QLineEdit,
-    QMessageBox,
     QSpinBox,
     QStyle,
     QWidget,
@@ -35,6 +34,7 @@ from app.ui.common import (
     native_group,
     page_scroll,
     populate,
+    show_information,
     stack_layout,
     table,
     table_minimum_rows,
@@ -309,7 +309,7 @@ class SettingsPage(Page):
         self.window.run_job(
             "备份数据库与签名",
             self.ctx.backup.backup,
-            lambda path: QMessageBox.information(self, "备份完成", f"完整备份已保存：\n{path}"),
+            lambda path: show_information(self, "备份完成", f"完整备份已保存：\n{path}"),
         )
 
     def restore(self):
@@ -333,13 +333,13 @@ class SettingsPage(Page):
         self.refresh()
         self.window.refresh_theme()
         self.window.update_company()
-        QMessageBox.information(self, "恢复完成", f"数据库已恢复。恢复前备份：\n{before}")
+        show_information(self, "恢复完成", f"数据库已恢复。恢复前备份：\n{before}")
 
     def health(self):
         self.window.run_job(
             "检查数据库",
             self.ctx.db.health_check,
-            lambda _: QMessageBox.information(
+            lambda _: show_information(
                 self, "检查完成", "数据检查通过，记录与关联信息正常。"
             ),
         )

@@ -138,8 +138,7 @@ def test_editor_preserves_per_defect_remarks(ctx, payload, qtbot):
 
 
 def test_required_popup_names_every_missing_field_in_chinese(ctx, qtbot, monkeypatch):
-    from PySide6.QtWidgets import QMessageBox
-
+    import app.ui.common as common
     from app.core.schemas import RecordFilter
     from app.ui.main_window import MainWindow
 
@@ -147,7 +146,18 @@ def test_required_popup_names_every_missing_field_in_chinese(ctx, qtbot, monkeyp
     qtbot.addWidget(window, before_close_func=lambda w: setattr(w.pages[1], "dirty", False))
     window.navigate(1)
     messages = []
-    monkeypatch.setattr(QMessageBox, "warning", lambda parent, title, text: messages.append(text))
+
+    class FakeMessageBox:
+        def exec(self):
+            return None
+
+    monkeypatch.setattr(
+        common,
+        "message_box",
+        lambda parent, title, text, **kwargs: (
+            messages.append(text) or FakeMessageBox()
+        ),
+    )
     entry = window.pages[1]
     entry.team.setCurrentIndex(-1)
     entry.work_order.setText("  ")

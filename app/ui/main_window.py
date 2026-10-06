@@ -10,7 +10,6 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
-    QMessageBox,
     QProgressBar,
     QStackedWidget,
     QStyle,
@@ -26,11 +25,13 @@ from app.ui.common import (
     CONTROL_MIN_HEIGHT,
     SIDEBAR_MARGINS,
     SIDEBAR_WIDTH,
+    STATUS_PROGRESS_MAX_WIDTH,
     TOPBAR_MARGINS,
     TOPBAR_MIN_HEIGHT,
     friendly_error,
     guarded,
     label,
+    message_box,
     toolbar_layout,
 )
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
@@ -133,7 +134,7 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(page)
         self.progress = QProgressBar()
         self.progress.setRange(0, 0)
-        self.progress.setMaximumWidth(150)
+        self.progress.setMaximumWidth(STATUS_PROGRESS_MAX_WIDTH)
         self.progress.hide()
         self.statusBar().setSizeGripEnabled(True)
         self.statusBar().addPermanentWidget(self.progress)
@@ -251,13 +252,13 @@ class MainWindow(QMainWindow):
         self.notify("导出完成")
         if self._export_message is not None:
             self._export_message.close()
-        box = QMessageBox(self)
+        box = message_box(
+            self,
+            "导出完成",
+            "导出完成",
+            informative_text=f"文件已成功保存到：\n{result}",
+        )
         box.setObjectName("exportCompleteDialog")
-        box.setIcon(QMessageBox.Icon.Information)
-        box.setWindowTitle("导出完成")
-        box.setText("导出完成")
-        box.setInformativeText(f"文件已成功保存到：\n{result}")
-        box.setStandardButtons(QMessageBox.StandardButton.Ok)
         box.setWindowModality(Qt.WindowModality.WindowModal)
         box.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         box.finished.connect(lambda *_: setattr(self, "_export_message", None))
