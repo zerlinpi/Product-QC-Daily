@@ -45,7 +45,7 @@ class ReportsPage(Page):
         import_actions.addWidget(self.import_button)
         import_actions.addStretch()
         layout.addLayout(import_actions)
-        self.import_status = label("尚未选择文件", "muted", True)
+        self.import_status = label("尚未选择文件", "summary", True)
         self.import_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.import_status)
         self.layout.addWidget(panel)
