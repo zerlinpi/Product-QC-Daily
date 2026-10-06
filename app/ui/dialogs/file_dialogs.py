@@ -6,6 +6,8 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QApplication, QDialog, QFileDialog, QListView, QSplitter
 
+from app.ui.common import FILE_DIALOG_MAX_SIZE, FILE_DIALOG_SIDEBAR_MIN_WIDTH
+
 
 def _use_native_windows_dialog() -> bool:
     """Use the real Windows file picker in normal desktop runs.
@@ -33,12 +35,13 @@ class ExcelSaveDialog(QFileDialog):
         self.selectFile(destination.name)
         screen = parent.screen() if parent else QApplication.primaryScreen()
         available = screen.availableGeometry()
-        width, height = min(840, available.width() - 40), min(540, available.height() - 40)
+        width = min(FILE_DIALOG_MAX_SIZE[0], available.width() - 40)
+        height = min(FILE_DIALOG_MAX_SIZE[1], available.height() - 40)
         self.resize(width, height)
         if not native_windows:
             sidebar = self.findChild(QListView, "sidebar")
             if sidebar:
-                sidebar.setMinimumWidth(128)
+                sidebar.setMinimumWidth(FILE_DIALOG_SIDEBAR_MIN_WIDTH)
             splitter = self.findChild(QSplitter, "splitter")
             if splitter:
                 splitter.setSizes([160, max(320, width - 190)])
