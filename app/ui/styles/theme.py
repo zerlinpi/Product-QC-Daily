@@ -55,6 +55,7 @@ def apply_theme(mode="light"):
             "#444444",
             "#252525",
         )
+        disabled = "#808080"
     else:
         bg, panel, text, muted, border, sidebar = (
             "#f3f3f3",
@@ -64,6 +65,7 @@ def apply_theme(mode="light"):
             "#d6d6d6",
             "#f3f3f3",
         )
+        disabled = "#8a8a8a"
     accent = "#0067c0"
 
     palette = QPalette()
@@ -80,8 +82,16 @@ def apply_theme(mode="light"):
         (QPalette.ColorRole.Highlight, accent),
         (QPalette.ColorRole.HighlightedText, "#ffffff"),
         (QPalette.ColorRole.PlaceholderText, muted),
+        (QPalette.ColorRole.Link, accent),
+        (QPalette.ColorRole.Mid, border),
     ]:
         palette.setColor(role, QColor(color))
+    for role in (
+        QPalette.ColorRole.WindowText,
+        QPalette.ColorRole.Text,
+        QPalette.ColorRole.ButtonText,
+    ):
+        palette.setColor(QPalette.ColorGroup.Disabled, role, QColor(disabled))
     app.setPalette(palette)
 
     # Standard controls intentionally stay out of QSS. On Windows this lets
@@ -93,6 +103,7 @@ def apply_theme(mode="light"):
         QLabel#title {{ font-size: 12pt; font-weight: 600; }}
         QLabel#subtitle, QLabel#muted {{ color: {muted}; }}
         QLabel#section {{ font-size: 9.5pt; font-weight: 600; }}
+        QLabel#status {{ font-weight: 600; }}
         QLabel#fieldLabel {{ color: {muted}; font-weight: 600; }}
         QLabel#metric {{ font-size: 17pt; font-weight: 600; }}
 
