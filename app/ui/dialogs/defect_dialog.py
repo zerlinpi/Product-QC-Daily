@@ -16,7 +16,7 @@ class DefectDialog(QDialog):
         self.ctx, self.item = ctx, item
         self.setWindowTitle("编辑不良项目" if item else "新增不良项目")
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
-        self.setMinimumWidth(460)
+        self.setMinimumWidth(FORM_DIALOG_MIN_WIDTH)
         layout = dialog_layout(self)
         layout.addWidget(label("编码和名称为必填项；排序数值越小，显示越靠前。", "muted", True))
         form = form_layout()
@@ -36,12 +36,14 @@ class DefectDialog(QDialog):
             widget = QLineEdit(str((item or {}).get(key, "")))
             widget.setPlaceholderText(placeholders[key])
             self.fields[key] = widget
+            control_metrics(widget)
             form.addRow(title, widget)
         self.enabled = QCheckBox("启用此项目")
         self.enabled.setChecked((item or {}).get("enabled", True))
         self.order = QSpinBox()
         self.order.setRange(0, 10000)
         self.order.setValue((item or {}).get("sort_order", 25))
+        control_metrics(self.order)
         form.addRow("排序", self.order)
         form.addRow("状态", self.enabled)
         layout.addLayout(form)
