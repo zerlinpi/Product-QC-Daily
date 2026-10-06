@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.schemas import InspectionInput, RecordFilter
-from app.ui.common import Page, button, card, confirm, guarded, label
+from app.ui.common import Page, button, card, confirm, grid_place, guarded, label
 from app.ui.widgets.defect_selector import DefectSelector
 
 
@@ -177,13 +177,13 @@ class InspectionPage(Page):
             return
         self._layout_mode = mode
         if mode == "wide":
-            self.content_grid.addWidget(self.left_panel, 0, 0)
-            self.content_grid.addWidget(self.right_panel, 0, 1)
+            grid_place(self.content_grid, self.left_panel, 0, 0)
+            grid_place(self.content_grid, self.right_panel, 0, 1)
             self.content_grid.setColumnStretch(0, 6)
             self.content_grid.setColumnStretch(1, 5)
         else:
-            self.content_grid.addWidget(self.left_panel, 0, 0)
-            self.content_grid.addWidget(self.right_panel, 1, 0)
+            grid_place(self.content_grid, self.left_panel, 0, 0)
+            grid_place(self.content_grid, self.right_panel, 1, 0)
             self.content_grid.setColumnStretch(0, 1)
             self.content_grid.setColumnStretch(1, 0)
 
