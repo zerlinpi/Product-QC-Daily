@@ -17,6 +17,7 @@ from app.ui.common import (
     Page,
     button,
     control_metrics,
+    field_label,
     form_grid,
     grid_place,
     guarded,
@@ -72,7 +73,7 @@ class ReportsPage(Page):
         control_metrics(*[widget for _, widget in controls], min_width=FILTER_FIELD_MIN_WIDTH)
         self.filter_controls = []
         for col, (title, widget) in enumerate(controls):
-            caption = label(title, "fieldLabel")
+            caption = field_label(title, widget)
             self.filter_controls.append((caption, widget))
             self.filters_grid.addWidget(caption, 0, col)
             self.filters_grid.addWidget(widget, 1, col)
