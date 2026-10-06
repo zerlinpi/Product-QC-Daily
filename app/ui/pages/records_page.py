@@ -20,6 +20,7 @@ from app.ui.common import (
     align_table_columns,
     button,
     confirm,
+    control_metrics,
     form_grid,
     grid_place,
     guarded,
@@ -86,6 +87,18 @@ class RecordsPage(Page):
             widget.setPlaceholderText(placeholder)
             widget.setClearButtonEnabled(True)
             widget.returnPressed.connect(self.search_records)
+        control_metrics(
+            self.start,
+            self.end,
+            self.team,
+            self.judgment,
+            self.source,
+            self.defect,
+            self.has_defects,
+            self.search,
+            self.work_order,
+            self.inspector,
+        )
         self.trash = QCheckBox("查看回收站")
 
         def field(title, widget, accessible_name=None):
