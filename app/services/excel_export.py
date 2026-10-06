@@ -245,6 +245,9 @@ def style_table(ws):
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         for row in range(2, last_row + 1):
             ws.cell(row, 1).alignment = Alignment(vertical="center", wrap_text=True)
+            ws.cell(row, 2).alignment = Alignment(horizontal="center", vertical="center")
+            ws.cell(row, 4).alignment = Alignment(horizontal="right", vertical="center")
+            ws.cell(row, 4).number_format = "#,##0"
             ws.cell(row, 5).alignment = Alignment(vertical="top", wrap_text=True)
             ws.row_dimensions[row].height = max(
                 ws.row_dimensions[row].height or 22,
@@ -260,6 +263,10 @@ def style_table(ws):
     elif ws.title == "不良项目":
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         for row in range(2, last_row + 1):
+            ws.cell(row, 1).alignment = Alignment(horizontal="center", vertical="center")
+            ws.cell(row, 4).alignment = Alignment(horizontal="center", vertical="center")
+            ws.cell(row, 5).alignment = Alignment(horizontal="right", vertical="center")
+            ws.cell(row, 5).number_format = "#,##0"
             ws.cell(row, 6).alignment = Alignment(vertical="top", wrap_text=True)
             ws.row_dimensions[row].height = max(
                 ws.row_dimensions[row].height or 22,
@@ -284,6 +291,7 @@ def style_table(ws):
                 label_cell.fill = PatternFill("solid", fgColor="F2F2F2")
                 value.fill = PatternFill("solid", fgColor="F2F2F2")
                 value.font = Font(name="Microsoft YaHei", size=9, color="595959")
+                value.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
                 ws.row_dimensions[row].height = max(
                     ws.row_dimensions[row].height or 22,
                     wrapped_row_height(
