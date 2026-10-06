@@ -19,9 +19,9 @@ class AnalyticsPage(Page):
         )
         filter_card, filter_box = card()
         filter_box.addWidget(label("分析范围", "section"))
-        filters = QGridLayout()
-        filters.setHorizontalSpacing(12)
-        filters.setVerticalSpacing(6)
+        self.filters_grid = QGridLayout()
+        self.filters_grid.setHorizontalSpacing(12)
+        self.filters_grid.setVerticalSpacing(6)
         self.preset, self.source, self.metric_choice = QComboBox(), QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)
         self.preset.setCurrentText("本月")
@@ -41,12 +41,15 @@ class AnalyticsPage(Page):
             ("数据范围", self.source),
             ("排行口径", self.metric_choice),
         ]
+        self.filter_controls = []
         for col, (title, widget) in enumerate(controls):
-            filters.addWidget(label(title, "fieldLabel"), 0, col)
-            filters.addWidget(widget, 1, col)
+            caption = label(title, "fieldLabel")
+            self.filter_controls.append((caption, widget))
+            self.filters_grid.addWidget(caption, 0, col)
+            self.filters_grid.addWidget(widget, 1, col)
         self.analyze_button = button("开始分析", self.refresh, primary=True)
-        filters.addWidget(self.analyze_button, 1, len(controls))
-        filter_box.addLayout(filters)
+        self.filters_grid.addWidget(self.analyze_button, 1, len(controls))
+        filter_box.addLayout(self.filters_grid)
         self.scope = label("", "muted")
         filter_box.addWidget(self.scope)
         self.layout.addWidget(filter_card)
@@ -59,10 +62,11 @@ class AnalyticsPage(Page):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         content = QWidget()
-        grid = QGridLayout(content)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setSpacing(9)
+        self.grid = QGridLayout(content)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setSpacing(9)
         self.metrics = []
+        self._layout_mode = None
         definitions = [
             ("检验数量", "inspection_quantity"),
             ("抽检数量", "sampling_quantity"),
@@ -72,35 +76,77 @@ class AnalyticsPage(Page):
         ]
         for i, (title, key) in enumerate(definitions):
             widget = stat_card(title)
-            grid.addWidget(widget, 0, i * 2, 1, 2)
+            self.grid.addWidget(widget, 0, i * 2, 1, 2)
             self.metrics.append((widget, key))
-        frame, layout = card()
+        self.pareto_frame, layout = card()
         self.pareto = ParetoWidget()
         layout.addWidget(self.pareto)
         self.top80 = label("暂无数据", "muted", True)
         layout.addWidget(self.top80)
-        grid.addWidget(frame, 1, 0, 1, 10)
-        frame, layout = card()
+        self.grid.addWidget(self.pareto_frame, 1, 0, 1, 10)
+        self.trend_frame, layout = card()
         self.trend = ChartWidget("不良率趋势")
         layout.addWidget(self.trend)
-        grid.addWidget(frame, 2, 0, 1, 5)
-        frame, layout = card()
+        self.grid.addWidget(self.trend_frame, 2, 0, 1, 5)
+        self.team_frame, layout = card()
         self.team_chart = ChartWidget("组别不良率")
         layout.addWidget(self.team_chart)
-        grid.addWidget(frame, 2, 5, 1, 5)
+        self.grid.addWidget(self.team_frame, 2, 5, 1, 5)
         self.ranking = table(
             ["编码", "不良项目", "出现批次", "已填件数", "未填件数批次", "累计占比"]
         )
         self.ranking.setMinimumHeight(300)
         self.ranking.setColumnWidth(1, 240)
-        grid.addWidget(self.ranking, 3, 0, 1, 10)
+        self.grid.addWidget(self.ranking, 3, 0, 1, 10)
         self.teams_table = table(
             ["组别", "检验数", "抽检数", "不良数", "不良率", "合格批次", "返工批次", "返工率"]
         )
         self.teams_table.setMinimumHeight(260)
-        grid.addWidget(self.teams_table, 4, 0, 1, 10)
+        self.grid.addWidget(self.teams_table, 4, 0, 1, 10)
         scroll.setWidget(content)
         self.layout.addWidget(scroll, 1)
+        self._reflow_layout()
+
+    def _reflow_layout(self):
+        mode = "wide" if self.width() >= 1100 else "narrow"
+        if mode == self._layout_mode:
+            return
+        self._layout_mode = mode
+        if mode == "wide":
+            for col, (caption, widget) in enumerate(self.filter_controls):
+                self.filters_grid.addWidget(caption, 0, col)
+                self.filters_grid.addWidget(widget, 1, col)
+            self.filters_grid.addWidget(self.analyze_button, 1, 5)
+            for col in range(6):
+                self.filters_grid.setColumnStretch(col, 1 if col < 5 else 0)
+            for i, (widget, _key) in enumerate(self.metrics):
+                self.grid.addWidget(widget, 0, i * 2, 1, 2)
+            self.grid.addWidget(self.pareto_frame, 1, 0, 1, 10)
+            self.grid.addWidget(self.trend_frame, 2, 0, 1, 5)
+            self.grid.addWidget(self.team_frame, 2, 5, 1, 5)
+            self.grid.addWidget(self.ranking, 3, 0, 1, 10)
+            self.grid.addWidget(self.teams_table, 4, 0, 1, 10)
+        else:
+            for index, (caption, widget) in enumerate(self.filter_controls):
+                block, col = divmod(index, 3)
+                row = block * 2
+                self.filters_grid.addWidget(caption, row, col)
+                self.filters_grid.addWidget(widget, row + 1, col)
+            self.filters_grid.addWidget(self.analyze_button, 3, 2)
+            for col in range(6):
+                self.filters_grid.setColumnStretch(col, 1 if col < 3 else 0)
+            for i, (widget, _key) in enumerate(self.metrics):
+                self.grid.addWidget(widget, i // 2, (i % 2) * 5, 1, 5)
+            self.grid.addWidget(self.pareto_frame, 3, 0, 1, 10)
+            self.grid.addWidget(self.trend_frame, 4, 0, 1, 10)
+            self.grid.addWidget(self.team_frame, 5, 0, 1, 10)
+            self.grid.addWidget(self.ranking, 6, 0, 1, 10)
+            self.grid.addWidget(self.teams_table, 7, 0, 1, 10)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "grid"):
+            self._reflow_layout()
 
     def sync_preset_range(self):
         preset = self.preset.currentText()
