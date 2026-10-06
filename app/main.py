@@ -34,6 +34,7 @@ from app.ui.common import (
     CONTROL_MIN_HEIGHT,
     LAYOUT_SPACING,
     PAGE_MARGINS,
+    TABLE_ROW_HEIGHT,
     button,
     dialog_button_box,
     friendly_error,
@@ -195,6 +196,23 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     }
     assert settings_labels.keys() == settings_field_titles
     assert all(kind == "fieldLabel" for kind in settings_labels.values())
+    company_label = next(
+        item
+        for item in settings.findChildren(type(settings.title_label))
+        if item.text() == "公司名称"
+    )
+    assert company_label.buddy() is settings.fields["company"]
+    assert settings.fields["company"].accessibleName() == "公司名称"
+
+    density_tables = [
+        (analytics.ranking, 10),
+        (analytics.teams_table, 8),
+        (settings.teams, 7),
+        (entry.defects.table, 9),
+    ]
+    for widget, rows in density_tables:
+        expected = CONTROL_MIN_HEIGHT + TABLE_ROW_HEIGHT * rows + widget.frameWidth() * 2
+        assert widget.minimumHeight() == expected
 
     primary_probe = button("主要操作", primary=True)
     danger_probe = button("危险操作", danger=True)
