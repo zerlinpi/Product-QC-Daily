@@ -26,7 +26,6 @@ from PySide6.QtWidgets import (
 
 from app.core.validation import validation_message
 
-
 PAGE_MARGINS = (14, 12, 14, 12)
 DIALOG_MARGINS = (14, 12, 14, 12)
 SECTION_MARGINS = (10, 12, 10, 10)
