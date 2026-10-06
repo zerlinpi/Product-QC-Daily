@@ -6,7 +6,7 @@ v1.1.31 继续完成 Windows 原生桌面 UI 的交互一致性收口，重点�
 - 检验记录在查询结果为 0 时使用统一 empty 语义；有结果时恢复 summary，筛选未应用与日期错误仍分别保持 warning / error。
 - 不良项目搜索无匹配项时显示“未找到匹配项目”，无项目时显示“暂无不良项目”，并统一使用 empty 语义。
 - 导入预览的状态筛选为 0 条时显示“当前筛选无记录”，不再用普通 summary 表达空结果。
-- 新增管理页主操作顺序、选择反馈与空结果语义回归；完整 pytest 预期 178 项。
+- 新增管理页主操作顺序、选择反馈与空结果语义回归；完整 pytest：178 项。
 - 实际打包 Product-QC-Daily.exe --self-test 同步验证管理页操作层级、组别选择反馈和 empty 状态。
 
 下载 `Product-QC-Daily-windows-x64.zip`，完整解压后运行 `Product-QC-Daily.exe`。
