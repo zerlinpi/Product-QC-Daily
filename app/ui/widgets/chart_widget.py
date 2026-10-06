@@ -1,7 +1,7 @@
 import pyqtgraph as pg
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from app.ui.common import label
+from app.ui.common import LAYOUT_SPACING, label
 
 
 class ChartWidget(QWidget):
@@ -9,6 +9,7 @@ class ChartWidget(QWidget):
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(LAYOUT_SPACING)
         layout.addWidget(label(title, "section"))
         self.plot = pg.PlotWidget()
         self.plot.setBackground(None)
