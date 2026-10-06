@@ -204,6 +204,15 @@ def form_layout(parent=None):
     return layout
 
 
+def form_row(layout, title, field):
+    """Add a form row using the same field-label semantics as grid-based forms."""
+    caption = label(title, "fieldLabel")
+    if isinstance(field, QWidget):
+        caption.setBuddy(field)
+    layout.addRow(caption, field)
+    return caption
+
+
 def form_grid(parent=None):
     layout = QGridLayout(parent) if parent is not None else QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
