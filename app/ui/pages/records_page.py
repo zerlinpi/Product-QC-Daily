@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDateEdit,
-    QGridLayout,
     QInputDialog,
     QLineEdit,
     QMenu,
@@ -20,6 +19,7 @@ from app.ui.common import (
     Page,
     button,
     confirm,
+    form_grid,
     grid_place,
     guarded,
     label,
@@ -58,9 +58,7 @@ class RecordsPage(Page):
         self.filters_dirty = False
         self.result_summary = "暂无记录"
         filters, box = native_group("筛选条件")
-        self.filters_grid = QGridLayout()
-        self.filters_grid.setHorizontalSpacing(12)
-        self.filters_grid.setVerticalSpacing(8)
+        self.filters_grid = form_grid()
         self._filter_layout_mode = None
         self.range_enabled = QCheckBox("按日期筛选")
         self.start, self.end = (
