@@ -23,6 +23,7 @@ from app.ui.common import (
     Page,
     button,
     confirm,
+    dialog_button_box,
     dialog_layout,
     form_layout,
     friendly_error,
@@ -261,10 +262,10 @@ class SettingsPage(Page):
         for title, widget in [("名称", name), ("状态", enabled), ("排序", order)]:
             form.addRow(title, widget)
         layout.addLayout(form)
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        buttons = dialog_button_box(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+            default=QDialogButtonBox.StandardButton.Save,
         )
-        buttons.button(QDialogButtonBox.StandardButton.Save).setDefault(True)
         layout.addWidget(buttons)
         buttons.rejected.connect(dialog.reject)
 
