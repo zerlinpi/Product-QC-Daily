@@ -8,6 +8,7 @@ from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import (
     FILTER_FIELD_MIN_WIDTH,
+    WIDE_LAYOUT_BREAKPOINT,
     Page,
     button,
     control_metrics,
@@ -121,7 +122,7 @@ class ReportsPage(Page):
         self._reflow_filters()
 
     def _reflow_filters(self):
-        mode = "wide" if self.width() >= 1000 else "narrow"
+        mode = "wide" if self.width() >= WIDE_LAYOUT_BREAKPOINT else "narrow"
         if mode == self._layout_mode:
             return
         self._layout_mode = mode
