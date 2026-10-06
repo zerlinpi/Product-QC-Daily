@@ -31,12 +31,12 @@ from app.services.excel_export import header_footer_text
 from app.ui.common import (
     BUTTON_MIN_WIDTH,
     CONTROL_MIN_HEIGHT,
+    LAYOUT_SPACING,
+    PAGE_MARGINS,
     PROGRESS_DIALOG_MIN_WIDTH,
     REMARK_MAX_HEIGHT,
     SIGNATURE_PREVIEW_MIN_HEIGHT,
     STATUS_PROGRESS_MAX_WIDTH,
-    LAYOUT_SPACING,
-    PAGE_MARGINS,
     TABLE_ROW_HEIGHT,
     button,
     dialog_button_box,
@@ -46,6 +46,7 @@ from app.ui.common import (
     stack_layout,
 )
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
+from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.main_window import MainWindow
 from app.ui.styles.theme import configure_platform_style, preferred_style_name
@@ -101,7 +102,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert controls.button(QDialogButtonBox.StandardButton.Save).minimumWidth() == BUTTON_MIN_WIDTH
     assert controls.button(QDialogButtonBox.StandardButton.Cancel).minimumWidth() == BUTTON_MIN_WIDTH
     info_probe = message_box(window, "提示", "自检消息")
-    ok_probe = info_probe.button(QDialogButtonBox.StandardButton.Ok)
+    ok_probe = info_probe.defaultButton()
     assert ok_probe.minimumHeight() == CONTROL_MIN_HEIGHT
     assert ok_probe.minimumWidth() == BUTTON_MIN_WIDTH
     info_probe.deleteLater()
