@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QComboBox, QGridLayout, QHBoxLayout, QScrollArea, 
 
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import date_range
-from app.ui.common import Page, button, card, guarded, label
+from app.ui.common import Page, button, card, grid_place, guarded, label
 from app.ui.widgets.chart_widget import ChartWidget
 from app.ui.widgets.stat_card import stat_card
 
@@ -80,16 +80,16 @@ class DashboardPage(Page):
         self._layout_mode = mode
         if mode == "wide":
             for i, (widget, *_rest) in enumerate(self.cards):
-                self.grid.addWidget(widget, i // 5, (i % 5) * 2, 1, 2)
+                grid_place(self.grid, widget, i // 5, (i % 5) * 2, 1, 2)
             chart_start = 2
             for i, frame in enumerate(self.chart_frames):
-                self.grid.addWidget(frame, chart_start + i // 2, (i % 2) * 5, 1, 5)
+                grid_place(self.grid, frame, chart_start + i // 2, (i % 2) * 5, 1, 5)
         else:
             for i, (widget, *_rest) in enumerate(self.cards):
-                self.grid.addWidget(widget, i // 2, (i % 2) * 5, 1, 5)
+                grid_place(self.grid, widget, i // 2, (i % 2) * 5, 1, 5)
             chart_start = 5
             for i, frame in enumerate(self.chart_frames):
-                self.grid.addWidget(frame, chart_start + i, 0, 1, 10)
+                grid_place(self.grid, frame, chart_start + i, 0, 1, 10)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
