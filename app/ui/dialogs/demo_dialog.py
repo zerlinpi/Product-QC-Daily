@@ -82,6 +82,7 @@ class DemoDialog(QDialog):
         for i, team in enumerate(ctx.settings.teams(True)):
             checkbox = QCheckBox(team["name"])
             checkbox.setChecked(True)
+            control_metrics(checkbox)
             self.teams.append(checkbox)
             team_grid.addWidget(checkbox, i // 6, i % 6)
         layout.addWidget(team_group)
