@@ -16,6 +16,7 @@ from app.ui.common import (
     guarded,
     label,
     populate,
+    set_label_kind,
     table,
     toolbar_layout,
 )
@@ -125,7 +126,10 @@ class ImportDialog(QDialog):
             ],
         )
         pages = max(1, (len(rows) + 199) // 200)
-        self.visible_status.setText(f"当前显示 {len(rows)} 条")
+        self.visible_status.setText(
+            f"当前显示 {len(rows)} 条" if rows else "当前筛选无记录"
+        )
+        set_label_kind(self.visible_status, "summary" if rows else "empty")
         self.count.setText(f"共 {len(rows)} 条 · 第 {self.page} / {pages} 页 · 每页 200 条")
         self.previous_button.setEnabled(self.page > 1)
         self.next_button.setEnabled(self.page < pages)
