@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QDoubleSpinBox,
     QSpinBox,
+    QTableWidgetItem,
 )
 
 from app.ui.common import (
@@ -100,9 +101,9 @@ class DemoDialog(QDialog):
         defects = ctx.defects.list(enabled_only=True)
         self.table.setRowCount(len(defects))
         for row, item in enumerate(defects):
-            name = label(item["name"])
+            name = QTableWidgetItem(item["name"])
             name.setToolTip(f"{item['code']} · {item['category']}")
-            self.table.setCellWidget(row, 0, name)
+            self.table.setItem(row, 0, name)
             value = QSpinBox()
             value.setRange(0, 1000)
             value.setValue(4 if item["code"] in ("d", "e", "g") else 1)
