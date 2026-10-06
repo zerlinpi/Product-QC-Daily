@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QFrame,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -160,6 +161,21 @@ def form_layout(parent=None):
     layout.setVerticalSpacing(8)
     layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
     layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+    return layout
+
+
+def form_grid(parent=None):
+    layout = QGridLayout(parent) if parent is not None else QGridLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(12)
+    layout.setVerticalSpacing(LAYOUT_SPACING)
+    return layout
+
+
+def content_grid(parent=None):
+    layout = QGridLayout(parent) if parent is not None else QGridLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(LAYOUT_SPACING)
     return layout
 
 
