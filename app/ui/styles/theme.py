@@ -100,12 +100,12 @@ def apply_theme(mode="light"):
     app.setStyleSheet(
         f"""
         QMainWindow, QWidget#page {{ background: {bg}; }}
-        QLabel#title {{ font-size: 12pt; font-weight: 600; }}
+        QLabel#title {{ font-size: 14pt; font-weight: 600; }}
         QLabel#subtitle, QLabel#muted {{ color: {muted}; }}
-        QLabel#section {{ font-size: 9.5pt; font-weight: 600; }}
+        QLabel#section {{ font-size: 10pt; font-weight: 600; }}
         QLabel#status {{ font-weight: 600; }}
         QLabel#fieldLabel {{ color: {muted}; font-weight: 600; }}
-        QLabel#metric {{ font-size: 17pt; font-weight: 600; }}
+        QLabel#metric {{ font-size: 18pt; font-weight: 600; }}
 
         QFrame#qcSidebar {{
             background: {sidebar};
@@ -113,7 +113,7 @@ def apply_theme(mode="light"):
             border-right: 1px solid {border};
         }}
         QFrame#qcSidebar QLabel#muted {{ color: {muted}; }}
-        QLabel#brand {{ font-size: 10.5pt; font-weight: 600; }}
+        QLabel#brand {{ font-size: 11pt; font-weight: 600; }}
         QFrame#topbar {{
             background: {panel};
             border: none;
