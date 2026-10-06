@@ -451,6 +451,8 @@ def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_p
     assert len(monthly._charts) == 2
 
     volume, rates = monthly._charts
+    assert volume.x_axis.tickLblSkip == 1
+    assert rates.x_axis.tickLblSkip == 1
     assert volume.series[0].cat.strRef is not None
     assert [point.v for point in volume.series[0].cat.strRef.strCache.pt] == [
         f"2026-{month:02d}" for month in range(1, 13)
