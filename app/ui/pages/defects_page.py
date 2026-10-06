@@ -30,6 +30,7 @@ class DefectsPage(Page):
         self.search = QLineEdit()
         self.search.setPlaceholderText("搜索项目名称或编码")
         self.search.setClearButtonEnabled(True)
+        self.search.setAccessibleName("搜索不良项目")
         control_metrics(self.search, min_width=SEARCH_FIELD_MIN_WIDTH)
         self.search.textChanged.connect(self.refresh)
         toolbar.addWidget(self.search, 1)
