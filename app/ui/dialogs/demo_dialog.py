@@ -11,8 +11,8 @@ from PySide6.QtWidgets import (
 from app.ui.common import (
     dialog_button_box,
     dialog_layout,
-    form_group,
     form_grid,
+    form_group,
     friendly_error,
     label,
     native_group,
