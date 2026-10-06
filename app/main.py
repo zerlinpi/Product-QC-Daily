@@ -17,7 +17,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFrame,
     QGroupBox,
-    QMessageBox,
     QScrollArea,
     QStyleFactory,
 )
@@ -38,6 +37,7 @@ from app.ui.common import (
     button,
     dialog_button_box,
     friendly_error,
+    show_information,
     stack_layout,
 )
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
@@ -439,7 +439,7 @@ def main() -> int:
         if not lock.tryLock(100):
             if args.self_test:
                 raise ValueError("同一数据目录已有正在运行的软件实例")
-            QMessageBox.information(
+            show_information(
                 None, "软件已运行", "此数据目录已有日检软件在运行，请返回已打开的窗口。"
             )
             return 1
