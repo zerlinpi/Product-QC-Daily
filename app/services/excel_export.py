@@ -611,6 +611,13 @@ def improve_legacy_sheet_display(ws):
     ws.page_setup.fitToHeight = 0
     ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_margins.left = 0.25
+    ws.page_margins.right = 0.25
+    ws.page_margins.top = 0.5
+    ws.page_margins.bottom = 0.5
+    ws.page_margins.header = 0.2
+    ws.page_margins.footer = 0.2
+    ws.print_options.horizontalCentered = True
     ws.print_title_rows = "1:1"
     widths = {
         "B": 26,
@@ -664,6 +671,21 @@ def improve_chart_labels(chart):
 
 
 def improve_analysis_display(ws):
+    ws.sheet_view.showGridLines = False
+    ws.sheet_view.zoomScale = 85
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
+    ws.page_margins.left = 0.25
+    ws.page_margins.right = 0.25
+    ws.page_margins.top = 0.5
+    ws.page_margins.bottom = 0.5
+    ws.page_margins.header = 0.2
+    ws.page_margins.footer = 0.2
+    ws.print_options.horizontalCentered = True
+    ws.print_area = "A1:M61"
     for column, width in {
         "A": 22,
         "B": 18,
