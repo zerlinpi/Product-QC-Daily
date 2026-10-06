@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QScrollArea,
     QSpinBox,
+    QStyle,
     QVBoxLayout,
     QWidget,
 )
@@ -82,12 +83,12 @@ class SettingsPage(Page):
             )
             self.fields[key] = field
             row.addWidget(field, 1)
-            row.addWidget(
-                button(
-                    "选择文件" if key == "template_path" else "选择文件夹",
-                    lambda _, k=key: self.choose_path(k),
-                )
+            browse = button(
+                "选择文件" if key == "template_path" else "选择文件夹",
+                lambda _, k=key: self.choose_path(k),
             )
+            browse.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
+            row.addWidget(browse)
             form.addRow(title, row)
         self.auto_backup = QCheckBox("每天第一次启动自动备份")
         form.addRow("自动备份", self.auto_backup)
@@ -106,6 +107,9 @@ class SettingsPage(Page):
         save_row = QHBoxLayout()
         save_row.addStretch()
         self.save_button = button("保存设置", self.save, primary=True)
+        self.save_button.setIcon(
+            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
+        )
         save_row.addWidget(self.save_button)
         layout.addLayout(save_row)
         body.addWidget(frame)
@@ -142,15 +146,21 @@ class SettingsPage(Page):
         maintenance.setVerticalSpacing(8)
 
         backup_actions = QHBoxLayout()
-        backup_actions.addWidget(button("立即备份全部数据", self.backup))
-        backup_actions.addWidget(button("恢复备份", self.restore))
+        backup_button = button("立即备份全部数据", self.backup)
+        backup_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+        restore_button = button("恢复备份", self.restore)
+        restore_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
+        backup_actions.addWidget(backup_button)
+        backup_actions.addWidget(restore_button)
         backup_actions.addStretch()
         maintenance.addWidget(label("备份与恢复", "fieldLabel"), 0, 0)
         maintenance.addLayout(backup_actions, 0, 1)
 
         local_actions = QHBoxLayout()
         local_actions.addWidget(button("检查数据是否正常", self.health))
-        local_actions.addWidget(button("打开数据文件夹", self.open_folder))
+        folder_button = button("打开数据文件夹", self.open_folder)
+        folder_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        local_actions.addWidget(folder_button)
         local_actions.addWidget(button("前往报表导入", lambda: self.window.navigate(5)))
         local_actions.addStretch()
         maintenance.addWidget(label("本地数据", "fieldLabel"), 1, 0)
