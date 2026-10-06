@@ -637,3 +637,63 @@ def test_message_boxes_share_native_button_metrics(qtbot):
     assert ok.isDefault()
     assert ok.autoDefault()
     assert dialog.icon() == QMessageBox.Icon.Information
+
+
+
+def test_single_field_dialogs_share_form_and_button_metrics(qtbot, monkeypatch):
+    from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QLineEdit
+
+    from app.ui.common import (
+        BUTTON_MIN_WIDTH,
+        CONTROL_MIN_HEIGHT,
+        FORM_DIALOG_MIN_WIDTH,
+        choice_input_dialog,
+        text_input_dialog,
+    )
+
+    observed = []
+
+    def inspect(dialog):
+        field = dialog.findChild(QComboBox) or dialog.findChild(QLineEdit)
+        labels = [widget for widget in dialog.findChildren(QLabel) if widget.objectName() == "fieldLabel"]
+        buttons = dialog.findChild(QDialogButtonBox)
+        observed.append(
+            {
+                "width": dialog.minimumWidth(),
+                "field_height": field.minimumHeight(),
+                "labels": [widget.text() for widget in labels],
+                "button_sizes": {
+                    (button.minimumWidth(), button.minimumHeight()) for button in buttons.buttons()
+                },
+            }
+        )
+        return QDialog.DialogCode.Accepted
+
+    monkeypatch.setattr(QDialog, "exec", inspect)
+
+    value, accepted = choice_input_dialog(
+        None,
+        "批量修改组别",
+        "将修改所选记录。",
+        "组别",
+        ["U1", "U2"],
+    )
+    assert accepted and value == "U1"
+
+    value, accepted = text_input_dialog(
+        None,
+        "批量修改检验员",
+        "将修改所选记录。",
+        "检验员",
+        initial="张工",
+    )
+    assert accepted and value == "张工"
+
+    assert len(observed) == 2
+    assert all(item["width"] == FORM_DIALOG_MIN_WIDTH for item in observed)
+    assert all(item["field_height"] == CONTROL_MIN_HEIGHT for item in observed)
+    assert observed[0]["labels"] == ["组别"]
+    assert observed[1]["labels"] == ["检验员"]
+    assert all(
+        item["button_sizes"] == {(BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT)} for item in observed
+    )
