@@ -1,10 +1,10 @@
 from datetime import date, datetime, timedelta
 
-from PySide6.QtWidgets import QComboBox, QGridLayout, QHBoxLayout, QScrollArea, QWidget
+from PySide6.QtWidgets import QComboBox, QGridLayout, QWidget
 
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import date_range
-from app.ui.common import Page, button, card, grid_place, guarded, label
+from app.ui.common import Page, button, card, grid_place, guarded, label, page_scroll, toolbar_layout
 from app.ui.widgets.chart_widget import ChartWidget
 from app.ui.widgets.stat_card import stat_card
 
@@ -12,7 +12,7 @@ from app.ui.widgets.stat_card import stat_card
 class DashboardPage(Page):
     def __init__(self, ctx, window):
         super().__init__(ctx, window, "质量总览", "查看今日与本月检验情况，及时发现质量变化")
-        toolbar = QHBoxLayout()
+        toolbar = toolbar_layout()
         self.today_label = label(date.today().strftime("%Y 年 %m 月 %d 日"), "muted")
         toolbar.addWidget(self.today_label)
         toolbar.addStretch()
@@ -27,8 +27,7 @@ class DashboardPage(Page):
         toolbar.addWidget(button("刷新", self.refresh))
         toolbar.addWidget(button("新建检验", self.window.new_inspection, primary=True))
         self.layout.addLayout(toolbar)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
+        scroll = page_scroll()
         content = QWidget()
         self.grid = QGridLayout(content)
         self.grid.setContentsMargins(0, 0, 0, 0)
