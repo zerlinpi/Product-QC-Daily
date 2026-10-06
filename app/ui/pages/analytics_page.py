@@ -90,7 +90,7 @@ class AnalyticsPage(Page):
         self.pareto_frame, layout = card()
         self.pareto = ParetoWidget()
         layout.addWidget(self.pareto)
-        self.top80 = label("暂无数据", "muted", True)
+        self.top80 = label("暂无数据", "empty", True)
         layout.addWidget(self.top80)
         self.grid.addWidget(self.pareto_frame, 1, 0, 1, 10)
         self.trend_frame, layout = card()
@@ -236,6 +236,7 @@ class AnalyticsPage(Page):
         self.top80.setText(
             "累计达到 80% 的项目：" + "、".join(important) if important else "暂无数据"
         )
+        set_label_kind(self.top80, "summary" if important else "empty")
         if self.metric_choice.currentIndex():
             self.top80.setText(
                 self.top80.text()
