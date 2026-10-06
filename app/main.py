@@ -102,7 +102,10 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert controls.button(QDialogButtonBox.StandardButton.Save).minimumWidth() == BUTTON_MIN_WIDTH
     assert controls.button(QDialogButtonBox.StandardButton.Cancel).minimumWidth() == BUTTON_MIN_WIDTH
     info_probe = message_box(window, "提示", "自检消息")
-    ok_probe = info_probe.defaultButton()
+    ok_probe = info_probe.button(QMessageBox.StandardButton.Ok)
+    assert ok_probe is not None
+    assert info_probe.defaultButton() == ok_probe
+    assert info_probe.escapeButton() == ok_probe
     assert ok_probe.minimumHeight() == CONTROL_MIN_HEIGHT
     assert ok_probe.minimumWidth() == BUTTON_MIN_WIDTH
     info_probe.deleteLater()
