@@ -93,12 +93,21 @@ def guarded(function):
     return wrapped
 
 
+def button_metrics(*widgets):
+    """Apply the shared Windows desktop button footprint."""
+    for widget in widgets:
+        widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+        widget.setMinimumWidth(BUTTON_MIN_WIDTH)
+    if len(widgets) == 1:
+        return widgets[0]
+    return widgets
+
+
 def button(text, callback=None, primary=False, danger=False):
     widget = QPushButton(text)
     widget.setObjectName("primary" if primary else "danger" if danger else "")
     widget.setAutoDefault(False)
-    widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
-    widget.setMinimumWidth(BUTTON_MIN_WIDTH)
+    button_metrics(widget)
     if primary:
         font = widget.font()
         font.setBold(True)
@@ -213,8 +222,7 @@ def dialog_button_box(buttons, default=None):
     """Create a native dialog button box with the same control metrics everywhere."""
     box = QDialogButtonBox(buttons)
     for control in box.buttons():
-        control.setMinimumHeight(CONTROL_MIN_HEIGHT)
-        control.setMinimumWidth(BUTTON_MIN_WIDTH)
+        button_metrics(control)
         control.setAutoDefault(False)
     if default is not None:
         control = box.button(default)
