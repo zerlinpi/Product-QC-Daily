@@ -3,7 +3,7 @@ from PySide6.QtWidgets import QComboBox, QDateEdit, QGridLayout, QScrollArea, QW
 
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
-from app.ui.common import Page, button, card, guarded, label, populate, table
+from app.ui.common import Page, button, card, grid_place, guarded, label, populate, table
 from app.ui.widgets.chart_widget import ChartWidget
 from app.ui.widgets.pareto_widget import ParetoWidget
 from app.ui.widgets.stat_card import stat_card
@@ -114,34 +114,34 @@ class AnalyticsPage(Page):
         self._layout_mode = mode
         if mode == "wide":
             for col, (caption, widget) in enumerate(self.filter_controls):
-                self.filters_grid.addWidget(caption, 0, col)
-                self.filters_grid.addWidget(widget, 1, col)
-            self.filters_grid.addWidget(self.analyze_button, 1, 5)
+                grid_place(self.filters_grid, caption, 0, col)
+                grid_place(self.filters_grid, widget, 1, col)
+            grid_place(self.filters_grid, self.analyze_button, 1, 5)
             for col in range(6):
                 self.filters_grid.setColumnStretch(col, 1 if col < 5 else 0)
             for i, (widget, _key) in enumerate(self.metrics):
-                self.grid.addWidget(widget, 0, i * 2, 1, 2)
-            self.grid.addWidget(self.pareto_frame, 1, 0, 1, 10)
-            self.grid.addWidget(self.trend_frame, 2, 0, 1, 5)
-            self.grid.addWidget(self.team_frame, 2, 5, 1, 5)
-            self.grid.addWidget(self.ranking, 3, 0, 1, 10)
-            self.grid.addWidget(self.teams_table, 4, 0, 1, 10)
+                grid_place(self.grid, widget, 0, i * 2, 1, 2)
+            grid_place(self.grid, self.pareto_frame, 1, 0, 1, 10)
+            grid_place(self.grid, self.trend_frame, 2, 0, 1, 5)
+            grid_place(self.grid, self.team_frame, 2, 5, 1, 5)
+            grid_place(self.grid, self.ranking, 3, 0, 1, 10)
+            grid_place(self.grid, self.teams_table, 4, 0, 1, 10)
         else:
             for index, (caption, widget) in enumerate(self.filter_controls):
                 block, col = divmod(index, 3)
                 row = block * 2
-                self.filters_grid.addWidget(caption, row, col)
-                self.filters_grid.addWidget(widget, row + 1, col)
-            self.filters_grid.addWidget(self.analyze_button, 3, 2)
+                grid_place(self.filters_grid, caption, row, col)
+                grid_place(self.filters_grid, widget, row + 1, col)
+            grid_place(self.filters_grid, self.analyze_button, 3, 2)
             for col in range(6):
                 self.filters_grid.setColumnStretch(col, 1 if col < 3 else 0)
             for i, (widget, _key) in enumerate(self.metrics):
-                self.grid.addWidget(widget, i // 2, (i % 2) * 5, 1, 5)
-            self.grid.addWidget(self.pareto_frame, 3, 0, 1, 10)
-            self.grid.addWidget(self.trend_frame, 4, 0, 1, 10)
-            self.grid.addWidget(self.team_frame, 5, 0, 1, 10)
-            self.grid.addWidget(self.ranking, 6, 0, 1, 10)
-            self.grid.addWidget(self.teams_table, 7, 0, 1, 10)
+                grid_place(self.grid, widget, i // 2, (i % 2) * 5, 1, 5)
+            grid_place(self.grid, self.pareto_frame, 3, 0, 1, 10)
+            grid_place(self.grid, self.trend_frame, 4, 0, 1, 10)
+            grid_place(self.grid, self.team_frame, 5, 0, 1, 10)
+            grid_place(self.grid, self.ranking, 6, 0, 1, 10)
+            grid_place(self.grid, self.teams_table, 7, 0, 1, 10)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
