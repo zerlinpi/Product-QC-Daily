@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 
 from app.ui.common import (
     FORM_DIALOG_MIN_WIDTH,
+    TABLE_COMPACT_MIN_HEIGHT,
     Page,
     align_table_columns,
     button,
@@ -133,7 +134,7 @@ class SettingsPage(Page):
         self.teams.itemSelectionChanged.connect(
             lambda: self.edit_team_button.setEnabled(bool(self.teams.selectedItems()))
         )
-        self.teams.setMinimumHeight(220)
+        self.teams.setMinimumHeight(TABLE_COMPACT_MIN_HEIGHT)
         self.teams.horizontalHeader().setStretchLastSection(False)
         self.teams.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.teams.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
