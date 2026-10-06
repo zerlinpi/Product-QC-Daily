@@ -34,6 +34,7 @@ from app.ui.common import (
     native_group,
     page_scroll,
     populate,
+    show_information,
     stack_layout,
     table,
     table_minimum_rows,
