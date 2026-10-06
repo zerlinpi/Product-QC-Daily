@@ -90,8 +90,8 @@ class SettingsPage(Page):
             browse = button(
                 "选择文件" if key == "template_path" else "选择文件夹",
                 lambda _, k=key: self.choose_path(k),
+                icon=QStyle.StandardPixmap.SP_DialogOpenButton,
             )
-            browse.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
             row.addWidget(browse)
             form_row(form, title, row, buddy=field)
         self.auto_backup = QCheckBox("每天第一次启动自动备份")
@@ -112,9 +112,11 @@ class SettingsPage(Page):
         )
         save_row = toolbar_layout()
         save_row.addStretch()
-        self.save_button = button("保存设置", self.save, primary=True)
-        self.save_button.setIcon(
-            self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton)
+        self.save_button = button(
+            "保存设置",
+            self.save,
+            primary=True,
+            icon=QStyle.StandardPixmap.SP_DialogSaveButton,
         )
         save_row.addWidget(self.save_button)
         layout.addLayout(save_row)
@@ -151,10 +153,16 @@ class SettingsPage(Page):
         maintenance = form_grid()
 
         backup_actions = toolbar_layout()
-        backup_button = button("立即备份全部数据", self.backup)
-        backup_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
-        restore_button = button("恢复备份", self.restore)
-        restore_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
+        backup_button = button(
+            "立即备份全部数据",
+            self.backup,
+            icon=QStyle.StandardPixmap.SP_DialogSaveButton,
+        )
+        restore_button = button(
+            "恢复备份",
+            self.restore,
+            icon=QStyle.StandardPixmap.SP_DialogOpenButton,
+        )
         backup_actions.addWidget(backup_button)
         backup_actions.addWidget(restore_button)
         backup_actions.addStretch()
@@ -163,8 +171,11 @@ class SettingsPage(Page):
 
         local_actions = toolbar_layout()
         local_actions.addWidget(button("检查数据是否正常", self.health))
-        folder_button = button("打开数据文件夹", self.open_folder)
-        folder_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon))
+        folder_button = button(
+            "打开数据文件夹",
+            self.open_folder,
+            icon=QStyle.StandardPixmap.SP_DirOpenIcon,
+        )
         local_actions.addWidget(folder_button)
         local_actions.addWidget(button("前往报表导入", lambda: self.window.navigate(5)))
         local_actions.addStretch()
