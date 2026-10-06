@@ -31,7 +31,7 @@ class DashboardPage(Page):
         self.source.setMinimumWidth(110)
         self.source.currentIndexChanged.connect(self.refresh)
         toolbar.addWidget(self.source)
-        self.refreshed = label("", "muted")
+        self.refreshed = label("", "summary")
         toolbar.addWidget(self.refreshed)
         toolbar.addWidget(button("刷新", self.refresh))
         toolbar.addWidget(button("新建检验", self.window.new_inspection, primary=True))
