@@ -8,8 +8,8 @@ from app.ui.common import (
     FILTER_FIELD_MIN_WIDTH,
     IMPORT_DIALOG_SIZE,
     align_table_columns,
+    apply_button_role,
     button,
-    button_metrics,
     control_metrics,
     dialog_button_box,
     dialog_layout,
@@ -90,7 +90,8 @@ class ImportDialog(QDialog):
             QDialogButtonBox.ButtonRole.AcceptRole,
         )
         accept.setEnabled(preview.counts["valid"] > 0)
-        button_metrics(accept)
+        apply_button_role(accept, primary=True)
+        accept.setAutoDefault(True)
         accept.setDefault(True)
         actions.accepted.connect(self.accept)
         actions.rejected.connect(self.reject)
