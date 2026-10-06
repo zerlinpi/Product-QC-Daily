@@ -150,6 +150,8 @@ def test_import_preview_pagination_matches_available_rows(ctx, qtbot, tmp_path):
     assert not dialog.next_button.isEnabled()
     dialog.filter.setCurrentText("异常")
     assert dialog.table.rowCount() == 0
+    assert dialog.visible_status.text() == "当前筛选无记录"
+    assert dialog.visible_status.objectName() == "empty"
     assert not dialog.previous_button.isEnabled()
     assert not dialog.next_button.isEnabled()
 
