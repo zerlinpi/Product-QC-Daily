@@ -19,6 +19,7 @@ def test_non_windows_keeps_stable_fusion_fallback():
 
 
 def test_main_navigation_uses_native_list_and_compact_desktop_metrics(ctx, qtbot):
+    from app.ui.common import CONTROL_MIN_HEIGHT, SIDEBAR_WIDTH, TABLE_ROW_HEIGHT
     window = MainWindow(ctx)
     qtbot.addWidget(window)
     navigation = window.findChild(QListWidget, "navigation")
@@ -33,13 +34,16 @@ def test_main_navigation_uses_native_list_and_compact_desktop_metrics(ctx, qtbot
         "系统设置",
     ]
     assert all(not navigation.item(i).icon().isNull() for i in range(navigation.count()))
-    assert all(navigation.item(i).sizeHint().height() == 28 for i in range(navigation.count()))
+    assert all(
+        navigation.item(i).sizeHint().height() == CONTROL_MIN_HEIGHT
+        for i in range(navigation.count())
+    )
     sidebar = window.findChild(QFrame, "qcSidebar")
-    assert sidebar is not None and sidebar.width() == 176
+    assert sidebar is not None and sidebar.width() == SIDEBAR_WIDTH
     navigation.setCurrentRow(3)
     assert window.stack.currentIndex() == 3
     records = window.pages[2].table
-    assert records.verticalHeader().defaultSectionSize() == 28
+    assert records.verticalHeader().defaultSectionSize() == TABLE_ROW_HEIGHT
     assert records.showGrid()
 
 
@@ -252,6 +256,7 @@ def test_reports_settings_and_defects_keep_native_utility_hierarchy(ctx, qtbot):
 
 
 def test_progress_dialog_uses_readable_native_task_metrics(ctx, qtbot):
+    from app.ui.common import PROGRESS_DIALOG_MIN_WIDTH
     window = MainWindow(ctx)
     qtbot.addWidget(window)
     dialog = TaskProgressDialog(
@@ -261,7 +266,7 @@ def test_progress_dialog_uses_readable_native_task_metrics(ctx, qtbot):
     )
     qtbot.addWidget(dialog)
 
-    assert dialog.minimumWidth() == 400
+    assert dialog.minimumWidth() == PROGRESS_DIALOG_MIN_WIDTH
     labels = dialog.findChildren(type(window.pages[0].title_label))
     assert any(label.wordWrap() for label in labels if "正在生成文件" in label.text())
 
@@ -576,3 +581,41 @@ def test_form_layouts_share_the_same_field_label_role(ctx, qtbot):
     for title in {"生成数量", "开始日期", "结束日期", "返工率目标", "不良率目标", "判定参考"}:
         label_widget = next(widget for widget in demo.findChildren(QLabel) if widget.text() == title)
         assert label_widget.objectName() == "fieldLabel"
+
+
+
+def test_content_sized_widgets_use_shared_tokens(ctx, qtbot):
+    from app.ui.common import (
+        DEMO_DIALOG_MIN_SIZE,
+        DEMO_DIALOG_SIZE,
+        IMPORT_DIALOG_SIZE,
+        REMARK_MAX_HEIGHT,
+        SELECTOR_TABLE_MIN_HEIGHT,
+        SIGNATURE_PREVIEW_MIN_HEIGHT,
+        TABLE_COMPACT_MIN_HEIGHT,
+        TABLE_LARGE_MIN_HEIGHT,
+        TABLE_MEDIUM_MIN_HEIGHT,
+    )
+    from app.ui.dialogs.demo_dialog import DemoDialog
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    entry = window.pages[1]
+    analytics = window.pages[3]
+    settings = window.pages[6]
+
+    assert entry.remark.maximumHeight() == REMARK_MAX_HEIGHT
+    assert entry.signature_label.minimumHeight() == SIGNATURE_PREVIEW_MIN_HEIGHT
+    assert entry.defects.table.minimumHeight() == SELECTOR_TABLE_MIN_HEIGHT
+    assert analytics.ranking.minimumHeight() == TABLE_LARGE_MIN_HEIGHT
+    assert analytics.teams_table.minimumHeight() == TABLE_MEDIUM_MIN_HEIGHT
+    assert settings.teams.minimumHeight() == TABLE_COMPACT_MIN_HEIGHT
+
+    demo = DemoDialog(ctx, window)
+    qtbot.addWidget(demo)
+    assert (demo.width(), demo.height()) == DEMO_DIALOG_SIZE
+    assert (demo.minimumWidth(), demo.minimumHeight()) == DEMO_DIALOG_MIN_SIZE
+
+    assert IMPORT_DIALOG_SIZE[0] > DEMO_DIALOG_SIZE[0]
+    assert IMPORT_DIALOG_SIZE[1] > 0
