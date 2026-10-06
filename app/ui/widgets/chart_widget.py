@@ -17,8 +17,8 @@ class ChartWidget(QWidget):
         self.plot.setMenuEnabled(False)
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.getPlotItem().hideButtons()
-        self.plot.getAxis("left").setPen("#9aaac1")
-        self.plot.getAxis("bottom").setPen("#9aaac1")
+        self.plot.getAxis("left").setPen("#8a8a8a")
+        self.plot.getAxis("bottom").setPen("#8a8a8a")
         layout.addWidget(self.plot)
         self.empty = label("暂无数据", "muted")
         layout.addWidget(self.empty)
@@ -31,23 +31,23 @@ class ChartWidget(QWidget):
         xs = list(range(len(values)))
         if bars:
             self.plot.addItem(
-                pg.BarGraphItem(x=xs, height=values, width=0.62, brush="#5475df", pen=None)
+                pg.BarGraphItem(x=xs, height=values, width=0.62, brush="#0067c0", pen=None)
             )
         else:
             self.plot.plot(
                 xs,
                 values,
-                pen=pg.mkPen("#5475df", width=2.5),
+                pen=pg.mkPen("#0067c0", width=2.5),
                 symbol="o",
                 symbolSize=4,
-                symbolBrush="#5475df",
+                symbolBrush="#0067c0",
                 fillLevel=0,
-                brush=pg.mkBrush(84, 117, 223, 20),
+                brush=pg.mkBrush(0, 103, 192, 20),
             )
         if cumulative is not None:
             # Separate percentage chart is drawn by the parent; avoid misleading dual scales.
             self.plot.plot(
-                xs, cumulative, pen=pg.mkPen("#efae55", width=2), symbol="o", symbolSize=4
+                xs, cumulative, pen=pg.mkPen("#ca5010", width=2), symbol="o", symbolSize=4
             )
         step = max(1, len(labels) // 7)
         self.plot.getAxis("bottom").setTicks(
