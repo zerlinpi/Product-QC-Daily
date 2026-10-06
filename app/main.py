@@ -37,6 +37,7 @@ from app.ui.common import (
     button,
     dialog_button_box,
     friendly_error,
+    message_box,
     stack_layout,
 )
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
@@ -101,6 +102,13 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert "位置" in picker.labelText(QFileDialog.DialogLabel.LookIn)
     assert Path(picker.directory().absolutePath()) == picker_directory
     assert picker.defaultSuffix() == "xlsx"
+    info = message_box(window, "自检提示", "消息弹窗尺寸检查")
+    ok = info.button(QMessageBox.StandardButton.Ok)
+    assert ok is not None
+    assert ok.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert ok.minimumWidth() == BUTTON_MIN_WIDTH
+    assert ok.isDefault()
+    info.deleteLater()
     controls.deleteLater()
     picker.deleteLater()
     window.show()
