@@ -107,6 +107,7 @@ def test_confirmation_defaults_to_cancel_and_requires_explicit_acceptance(qtbot,
     def choose():
         dialog = QApplication.activeModalWidget()
         seen["default"] = dialog.defaultButton().text()
+        seen["help"] = bool(dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint)
         seen["button_sizes"] = {
             (button.minimumWidth(), button.minimumHeight()) for button in dialog.buttons()
         }
@@ -123,6 +124,7 @@ def test_confirmation_defaults_to_cancel_and_requires_explicit_acceptance(qtbot,
     from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT
 
     assert seen["default"] == "取消"
+    assert not seen["help"]
     assert seen["button_sizes"] == {(BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT)}
 
 
