@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
+    QDialogButtonBox,
     QFormLayout,
     QFrame,
     QGroupBox,
@@ -16,7 +17,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
-    QDialogButtonBox,
     QScrollArea,
     QStyle,
     QTableWidget,
