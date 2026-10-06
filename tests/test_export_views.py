@@ -34,20 +34,31 @@ def assert_clean_views(wb, active_title, legacy):
             assert [(s.pane, s.activeCell, s.sqref) for s in view.selection] == [
                 (None, "A1", "A1")
             ]
-        elif ws.title == active_title:
-            assert ws.freeze_panes == "C2"
-            assert (view.pane.xSplit, view.pane.ySplit) == (2, 1)
-            assert view.pane.activePane == "bottomRight"
-            assert [(s.pane, s.activeCell, s.sqref) for s in view.selection] == [
-                ("topRight", "C1", "C1"),
-                ("bottomLeft", "A2", "A2"),
-                ("bottomRight", "C2", "C2"),
-            ]
         else:
-            assert ws.freeze_panes == "A2"
-            assert [(s.pane, s.activeCell, s.sqref) for s in view.selection] == [
-                ("bottomLeft", "A2", "A2")
-            ]
+            expected = {
+                "检验记录": (2, "C2", "C1"),
+                "不良明细": (2, "C2", "C1"),
+                "不良项目": (1, "B2", "B1"),
+                "统计摘要": (0, "A2", None),
+                "月度统计": (1, "B2", "B1"),
+            }[ws.title]
+            x_split, top_left, top_right = expected
+            assert ws.freeze_panes == top_left
+            assert view.pane.ySplit == 1
+            if x_split:
+                assert view.pane.xSplit == x_split
+                assert view.pane.activePane == "bottomRight"
+                assert [(s.pane, s.activeCell, s.sqref) for s in view.selection] == [
+                    ("topRight", top_right, top_right),
+                    ("bottomLeft", "A2", "A2"),
+                    ("bottomRight", top_left, top_left),
+                ]
+            else:
+                assert view.pane.xSplit in (None, 0)
+                assert view.pane.activePane == "bottomLeft"
+                assert [(s.pane, s.activeCell, s.sqref) for s in view.selection] == [
+                    ("bottomLeft", "A2", "A2")
+                ]
 
 
 @pytest.mark.parametrize("legacy", [True, False])
