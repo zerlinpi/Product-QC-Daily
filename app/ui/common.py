@@ -75,7 +75,8 @@ def message_box(parent, title, text, icon=QMessageBox.Icon.Information, informat
     if ok is not None:
         button_metrics(ok)
         ok.setAutoDefault(True)
-        ok.setDefault(True)
+        dialog.setDefaultButton(ok)
+        dialog.setEscapeButton(ok)
     return dialog
 
 
