@@ -619,3 +619,21 @@ def test_content_sized_widgets_use_shared_tokens(ctx, qtbot):
 
     assert IMPORT_DIALOG_SIZE[0] > DEMO_DIALOG_SIZE[0]
     assert IMPORT_DIALOG_SIZE[1] > 0
+
+
+
+def test_message_boxes_share_native_button_metrics(qtbot):
+    from PySide6.QtWidgets import QDialogButtonBox, QMessageBox
+
+    from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT, message_box
+
+    dialog = message_box(None, "提示", "操作已完成")
+    qtbot.addWidget(dialog)
+    ok = dialog.button(QMessageBox.StandardButton.Ok)
+
+    assert ok is not None
+    assert ok.minimumWidth() == BUTTON_MIN_WIDTH
+    assert ok.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert ok.isDefault()
+    assert ok.autoDefault()
+    assert dialog.icon() == QMessageBox.Icon.Information
