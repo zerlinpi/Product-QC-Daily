@@ -11,6 +11,7 @@ from app.ui.common import (
     label,
     native_group,
     populate,
+    set_label_kind,
     table,
     toolbar_layout,
 )
@@ -26,7 +27,8 @@ class DefectsPage(Page):
             "维护录入时可选的不良项目；停用后不再用于新记录，历史记录仍保留",
         )
         group, group_layout = native_group("项目列表")
-        toolbar = toolbar_layout()
+        self.toolbar = toolbar_layout()
+        toolbar = self.toolbar
         self.search = QLineEdit()
         self.search.setPlaceholderText("搜索项目名称或编码")
         self.search.setClearButtonEnabled(True)
@@ -37,11 +39,12 @@ class DefectsPage(Page):
         self.count = label("", "summary")
         toolbar.addWidget(self.count)
         toolbar.addStretch()
-        toolbar.addWidget(button("新增项目", self.add, primary=True))
         self.edit_button = button("编辑项目", self.edit)
         self.disable_button = button("停用项目", self.disable, danger=True)
+        self.add_button = button("新增项目", self.add, primary=True)
         toolbar.addWidget(self.edit_button)
         toolbar.addWidget(self.disable_button)
+        toolbar.addWidget(self.add_button)
         group_layout.addLayout(toolbar)
         self.table = table(["编码", "名称", "分类", "状态", "排序", "说明"])
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
@@ -69,7 +72,12 @@ class DefectsPage(Page):
         self.table.clearSelection()
         self.rows = self.ctx.defects.list(self.search.text())
         enabled_count = sum(row["enabled"] for row in self.rows)
-        self.count.setText(f"共 {len(self.rows)} 项 · 启用 {enabled_count} 项")
+        if self.rows:
+            self.count.setText(f"共 {len(self.rows)} 项 · 启用 {enabled_count} 项")
+            set_label_kind(self.count, "summary")
+        else:
+            self.count.setText("未找到匹配项目" if self.search.text().strip() else "暂无不良项目")
+            set_label_kind(self.count, "empty")
         populate(
             self.table,
             [
