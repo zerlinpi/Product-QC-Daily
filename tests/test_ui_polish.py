@@ -207,6 +207,9 @@ def test_defect_dialog_uses_desktop_window_flags_and_default_save(ctx, qtbot):
     assert not bool(dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint)
     buttons = dialog.findChild(QDialogButtonBox)
     assert buttons.button(QDialogButtonBox.StandardButton.Save).isDefault()
+    assert dialog.fields["code"].placeholderText() == "例如 A01"
+    assert dialog.fields["name"].placeholderText() == "请输入不良项目名称"
+    assert dialog.enabled.text() == "启用此项目"
 
 
 def test_team_dialog_uses_desktop_window_flags_and_default_save(ctx, qtbot, monkeypatch):
@@ -264,6 +267,9 @@ def test_import_preview_uses_native_dialog_button_box(ctx, qtbot, tmp_path):
     )
     assert accept.isDefault()
     assert buttons.button(QDialogButtonBox.StandardButton.Cancel) is not None
+    assert dialog.visible_status.text() == "当前显示 1 条"
+    assert dialog.table.item(0, 2).foreground().color().name() == "#107c10"
+    assert dialog.filter.accessibleName() == "导入状态筛选"
 
 
 
