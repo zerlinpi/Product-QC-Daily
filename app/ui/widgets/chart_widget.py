@@ -1,16 +1,14 @@
 import pyqtgraph as pg
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QWidget
 
-from app.ui.common import LAYOUT_SPACING, chart_palette, label
+from app.ui.common import chart_palette, label, stack_layout
 
 
 class ChartWidget(QWidget):
     def __init__(self, title):
         super().__init__()
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(LAYOUT_SPACING)
+        layout = stack_layout(self)
         layout.addWidget(label(title, "section"))
         self.plot = pg.PlotWidget()
         self.plot.setBackground(None)
@@ -20,7 +18,7 @@ class ChartWidget(QWidget):
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.getPlotItem().hideButtons()
         layout.addWidget(self.plot)
-        self.empty = label("暂无数据", "muted")
+        self.empty = label("暂无数据", "empty")
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.empty)
         self._last_draw = None
