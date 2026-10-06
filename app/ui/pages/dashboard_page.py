@@ -30,10 +30,11 @@ class DashboardPage(Page):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         content = QWidget()
-        grid = QGridLayout(content)
-        grid.setContentsMargins(0, 0, 0, 0)
-        grid.setSpacing(9)
+        self.grid = QGridLayout(content)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setSpacing(9)
         self.cards = []
+        self._layout_mode = None
         definitions = [
             ("今日检验批次", "batches", False),
             ("今日检验数量", "inspection_quantity", False),
@@ -48,7 +49,7 @@ class DashboardPage(Page):
         ]
         for i, (title, key, monthly) in enumerate(definitions):
             widget = stat_card(title)
-            grid.addWidget(widget, i // 5, i % 5 * 2, 1, 2)
+            self.grid.addWidget(widget, i // 5, i % 5 * 2, 1, 2)
             self.cards.append((widget, key, monthly))
         self.charts = []
         for i, title in enumerate(
@@ -64,10 +65,36 @@ class DashboardPage(Page):
             frame, layout = card()
             chart = ChartWidget(title)
             layout.addWidget(chart)
-            grid.addWidget(frame, 2 + i // 2, i % 2 * 5, 1, 5)
+            self.grid.addWidget(frame, 2 + i // 2, i % 2 * 5, 1, 5)
             self.charts.append(chart)
         scroll.setWidget(content)
         self.layout.addWidget(scroll, 1)
+        self._reflow_content()
+
+    def _reflow_content(self):
+        mode = "wide" if self.width() >= 1100 else "narrow"
+        if mode == self._layout_mode:
+            return
+        self._layout_mode = mode
+        if mode == "wide":
+            for i, (widget, *_rest) in enumerate(self.cards):
+                self.grid.addWidget(widget, i // 5, (i % 5) * 2, 1, 2)
+            chart_start = 2
+            for i, chart in enumerate(self.charts):
+                frame = chart.parentWidget()
+                self.grid.addWidget(frame, chart_start + i // 2, (i % 2) * 5, 1, 5)
+        else:
+            for i, (widget, *_rest) in enumerate(self.cards):
+                self.grid.addWidget(widget, i // 2, (i % 2) * 5, 1, 5)
+            chart_start = 5
+            for i, chart in enumerate(self.charts):
+                frame = chart.parentWidget()
+                self.grid.addWidget(frame, chart_start + i, 0, 1, 10)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "grid"):
+            self._reflow_content()
 
     @guarded
     def refresh(self, *_):
