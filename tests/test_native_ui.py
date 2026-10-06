@@ -459,11 +459,14 @@ def test_table_headers_follow_numeric_and_status_alignment(ctx, qtbot):
     assert settings.horizontalHeaderItem(1).textAlignment() & Qt.AlignmentFlag.AlignHCenter
 
 
-def test_normal_summary_and_empty_states_use_distinct_visual_roles(ctx, qtbot):
+def test_normal_summary_and_empty_states_use_distinct_visual_roles(ctx, payload, qtbot):
     window = MainWindow(ctx)
     qtbot.addWidget(window)
 
     records = window.pages[2]
+    records.refresh()
+    assert records.count.objectName() == "empty"
+    ctx.inspections.save(payload)
     records.refresh()
     assert records.count.objectName() == "summary"
 
