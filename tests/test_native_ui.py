@@ -252,6 +252,7 @@ def test_reports_settings_and_defects_keep_native_utility_hierarchy(ctx, qtbot):
 
 
 def test_progress_dialog_uses_readable_native_task_metrics(ctx, qtbot):
+    from app.ui.common import PROGRESS_DIALOG_MIN_WIDTH
     window = MainWindow(ctx)
     qtbot.addWidget(window)
     dialog = TaskProgressDialog(
@@ -261,7 +262,7 @@ def test_progress_dialog_uses_readable_native_task_metrics(ctx, qtbot):
     )
     qtbot.addWidget(dialog)
 
-    assert dialog.minimumWidth() == 400
+    assert dialog.minimumWidth() == PROGRESS_DIALOG_MIN_WIDTH
     labels = dialog.findChildren(type(window.pages[0].title_label))
     assert any(label.wordWrap() for label in labels if "正在生成文件" in label.text())
 
@@ -641,3 +642,107 @@ def test_shared_button_icon_path_keeps_native_system_icons(qtbot):
     )
     qtbot.addWidget(control)
     assert not control.icon().isNull()
+
+
+
+def test_message_boxes_share_native_button_and_titlebar_metrics(qtbot):
+    from PySide6.QtWidgets import QMessageBox
+
+    from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT, message_box
+
+    dialog = message_box(None, "提示", "操作已完成")
+    qtbot.addWidget(dialog)
+    ok = dialog.button(QMessageBox.StandardButton.Ok)
+
+    assert ok is not None
+    assert ok.minimumWidth() == BUTTON_MIN_WIDTH
+    assert ok.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert ok.isDefault()
+    assert ok.autoDefault()
+    assert dialog.icon() == QMessageBox.Icon.Information
+    assert not bool(dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint)
+
+
+def test_single_field_dialogs_share_form_and_button_metrics(qtbot, monkeypatch):
+    from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QLineEdit
+
+    from app.ui.common import (
+        BUTTON_MIN_WIDTH,
+        CONTROL_MIN_HEIGHT,
+        FORM_DIALOG_MIN_WIDTH,
+        choice_input_dialog,
+        text_input_dialog,
+    )
+
+    observed = []
+
+    def inspect(dialog):
+        field = dialog.findChild(QComboBox) or dialog.findChild(QLineEdit)
+        labels = [widget for widget in dialog.findChildren(QLabel) if widget.objectName() == "fieldLabel"]
+        buttons = dialog.findChild(QDialogButtonBox)
+        observed.append(
+            {
+                "width": dialog.minimumWidth(),
+                "field_height": field.minimumHeight(),
+                "labels": [widget.text() for widget in labels],
+                "button_sizes": {
+                    (button.minimumWidth(), button.minimumHeight()) for button in buttons.buttons()
+                },
+            }
+        )
+        return QDialog.DialogCode.Accepted
+
+    monkeypatch.setattr(QDialog, "exec", inspect)
+
+    value, accepted = choice_input_dialog(
+        None,
+        "批量修改组别",
+        "将修改所选记录。",
+        "组别",
+        ["U1", "U2"],
+    )
+    assert accepted and value == "U1"
+
+    value, accepted = text_input_dialog(
+        None,
+        "批量修改检验员",
+        "将修改所选记录。",
+        "检验员",
+        initial="张工",
+    )
+    assert accepted and value == "张工"
+
+    assert len(observed) == 2
+    assert all(item["width"] == FORM_DIALOG_MIN_WIDTH for item in observed)
+    assert all(item["field_height"] == CONTROL_MIN_HEIGHT for item in observed)
+    assert observed[0]["labels"] == ["组别"]
+    assert observed[1]["labels"] == ["检验员"]
+    assert all(
+        item["button_sizes"] == {(BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT)} for item in observed
+    )
+
+
+def test_content_dialog_and_entry_sizes_use_shared_tokens(ctx, qtbot):
+    from app.ui.common import (
+        DEMO_DIALOG_MIN_SIZE,
+        DEMO_DIALOG_SIZE,
+        IMPORT_DIALOG_SIZE,
+        REMARK_MAX_HEIGHT,
+        SIGNATURE_PREVIEW_MIN_HEIGHT,
+    )
+    from app.ui.dialogs.demo_dialog import DemoDialog
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    entry = window.pages[1]
+
+    assert entry.remark.maximumHeight() == REMARK_MAX_HEIGHT
+    assert entry.signature_label.minimumHeight() == SIGNATURE_PREVIEW_MIN_HEIGHT
+
+    demo = DemoDialog(ctx, window)
+    qtbot.addWidget(demo)
+    assert (demo.width(), demo.height()) == DEMO_DIALOG_SIZE
+    assert (demo.minimumWidth(), demo.minimumHeight()) == DEMO_DIALOG_MIN_SIZE
+
+    assert IMPORT_DIALOG_SIZE[0] > DEMO_DIALOG_SIZE[0]
+    assert IMPORT_DIALOG_SIZE[1] > 0
