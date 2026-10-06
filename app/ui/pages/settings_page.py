@@ -113,7 +113,7 @@ class SettingsPage(Page):
         body.addWidget(frame)
         frame, layout = native_group("组别管理")
         toolbar = toolbar_layout()
-        self.team_count = label("", "muted")
+        self.team_count = label("", "summary")
         toolbar.addWidget(self.team_count)
         toolbar.addStretch()
         toolbar.addWidget(button("新增组别", lambda: self.edit_team(False)))
