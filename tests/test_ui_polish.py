@@ -111,6 +111,12 @@ def test_confirmation_defaults_to_cancel_and_requires_explicit_acceptance(qtbot,
         seen["button_sizes"] = {
             (button.minimumWidth(), button.minimumHeight()) for button in dialog.buttons()
         }
+        accept_button = next(
+            button
+            for button in dialog.buttons()
+            if dialog.buttonRole(button) == QMessageBox.ButtonRole.AcceptRole
+        )
+        seen["accept_bold"] = accept_button.font().bold()
         chosen = next(
             b
             for b in dialog.buttons()
@@ -126,6 +132,7 @@ def test_confirmation_defaults_to_cancel_and_requires_explicit_acceptance(qtbot,
     assert seen["default"] == "取消"
     assert not seen["help"]
     assert seen["button_sizes"] == {(BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT)}
+    assert seen["accept_bold"]
 
 
 def test_import_preview_pagination_matches_available_rows(ctx, qtbot, tmp_path):
