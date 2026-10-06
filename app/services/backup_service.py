@@ -6,6 +6,7 @@ import shutil
 import sqlite3
 from contextlib import closing
 from datetime import date, datetime, timedelta
+from io import TextIOWrapper
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
@@ -15,6 +16,33 @@ from app.database.migrations import SCHEMA_VERSION
 from app.database.models import Base
 
 log = logging.getLogger("qc.backup")
+
+CHUNK_SIZE = 1024 * 1024
+MAX_BACKUP_SIZE = 2_000_000_000
+MAX_MANIFEST_SIZE = 1_000_000
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as stream:
+        for chunk in iter(lambda: stream.read(CHUNK_SIZE), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def extract_checked(archive: ZipFile, info, target: Path, checksum: str) -> None:
+    digest = hashlib.sha256()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with archive.open(info) as source, target.open("wb") as output:
+            for chunk in iter(lambda: source.read(CHUNK_SIZE), b""):
+                output.write(chunk)
+                digest.update(chunk)
+        if digest.hexdigest() != checksum:
+            raise ValueError("备份校验失败，文件可能损坏")
+    except Exception:
+        target.unlink(missing_ok=True)
+        raise
 
 
 def verify_database(path: Path) -> list[str]:
@@ -95,9 +123,8 @@ class BackupService:
                     if manifest["missing_signatures"] and not allow_missing:
                         raise ValueError("部分签名文件丢失，请补充签名后重试完整备份")
                     for name, path in files.items():
-                        data = path.read_bytes()
-                        manifest["files"][name] = hashlib.sha256(data).hexdigest()
-                        archive.writestr(name, data)
+                        manifest["files"][name] = file_sha256(path)
+                        archive.write(path, arcname=name)
                     archive.writestr("manifest.json", json.dumps(manifest, ensure_ascii=False))
                 temp.replace(target)
             log.info("备份 %s", target)
@@ -135,9 +162,18 @@ class BackupService:
                         raise ValueError("该数据库引用签名，请使用包含签名的 ZIP 完整备份恢复")
                 else:
                     with ZipFile(source) as archive:
-                        if sum(i.file_size for i in archive.infolist()) > 2_000_000_000:
+                        infos = archive.infolist()
+                        if sum(info.file_size for info in infos) > MAX_BACKUP_SIZE:
                             raise ValueError("备份文件过大")
-                        manifest = json.loads(archive.read("manifest.json"))
+                        if len({info.filename for info in infos}) != len(infos):
+                            raise ValueError("备份文件包含重复条目")
+                        entries = {info.filename: info for info in infos}
+                        manifest_info = entries.get("manifest.json")
+                        if manifest_info is None or manifest_info.file_size > MAX_MANIFEST_SIZE:
+                            raise ValueError("备份清单无效")
+                        with archive.open(manifest_info) as raw:
+                            with TextIOWrapper(raw, encoding="utf-8") as stream:
+                                manifest = json.load(stream)
                         if manifest.get("format") != 1 or "product_qc.db" not in manifest.get(
                             "files", {}
                         ):
@@ -150,12 +186,10 @@ class BackupService:
                             )
                             if not valid:
                                 raise ValueError("备份含不安全文件路径")
-                            data = archive.read(name)
-                            if hashlib.sha256(data).hexdigest() != checksum:
-                                raise ValueError("备份校验失败，文件可能损坏")
-                            path = stage / name
-                            path.parent.mkdir(exist_ok=True)
-                            path.write_bytes(data)
+                            info = entries.get(name)
+                            if info is None or info.is_dir():
+                                raise KeyError(name)
+                            extract_checked(archive, info, stage / name, checksum)
                     names = verify_database(target_db)
                     if any(not (stage / "signatures" / name).is_file() for name in names):
                         raise ValueError("备份缺少签名文件，当前数据库保持不变")
@@ -173,7 +207,7 @@ class BackupService:
                     target = self.ctx.paths.signatures / name
                     incoming = stage / "signatures" / name
                     if target.exists():
-                        if target.read_bytes() != incoming.read_bytes():
+                        if file_sha256(target) != file_sha256(incoming):
                             raise ValueError("签名文件同名但内容不同，取消恢复")
                     else:
                         shutil.copy2(incoming, target)
