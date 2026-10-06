@@ -37,7 +37,7 @@ class DefectDialog(QDialog):
             widget.setPlaceholderText(placeholders[key])
             self.fields[key] = widget
             control_metrics(widget)
-            form.addRow(title, widget)
+            form_row(form, title, widget)
         self.enabled = QCheckBox("启用此项目")
         self.enabled.setChecked((item or {}).get("enabled", True))
         control_metrics(self.enabled)
@@ -45,8 +45,8 @@ class DefectDialog(QDialog):
         self.order.setRange(0, 10000)
         self.order.setValue((item or {}).get("sort_order", 25))
         control_metrics(self.order)
-        form.addRow("排序", self.order)
-        form.addRow("状态", self.enabled)
+        form_row(form, "排序", self.order)
+        form_row(form, "状态", self.enabled)
         layout.addLayout(form)
         buttons = dialog_button_box(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
