@@ -9,7 +9,7 @@ from datetime import date
 from pathlib import Path
 
 from openpyxl import load_workbook
-from PySide6.QtCore import QDate, QLockFile, QTimer
+from PySide6.QtCore import QDate, QLockFile, Qt, QTimer
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -29,7 +29,14 @@ from app.core.paths import AppPaths, resource_path
 from app.core.schemas import InspectionInput, RecordFilter
 from app.services.excel_common import file_sha256
 from app.services.excel_export import header_footer_text
-from app.ui.common import CONTROL_MIN_HEIGHT, LAYOUT_SPACING, PAGE_MARGINS, button, friendly_error
+from app.ui.common import (
+    CONTROL_MIN_HEIGHT,
+    LAYOUT_SPACING,
+    PAGE_MARGINS,
+    button,
+    dialog_button_box,
+    friendly_error,
+)
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.main_window import MainWindow
@@ -74,11 +81,15 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "QMessageBox {",
     ):
         assert selector not in stylesheet
-    controls = QDialogButtonBox(
-        QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel, window
+    controls = dialog_button_box(
+        QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+        default=QDialogButtonBox.StandardButton.Save,
     )
+    controls.setParent(window)
     assert "保存" in controls.button(QDialogButtonBox.StandardButton.Save).text()
     assert "取消" in controls.button(QDialogButtonBox.StandardButton.Cancel).text()
+    assert controls.button(QDialogButtonBox.StandardButton.Save).minimumHeight() == CONTROL_MIN_HEIGHT
+    assert controls.button(QDialogButtonBox.StandardButton.Cancel).minimumHeight() == CONTROL_MIN_HEIGHT
     picker_directory = ctx.paths.exports / "自检导出目录"
     picker = ExcelSaveDialog(
         window, "导出报表", picker_directory / "日检报告.xlsx", "电子表格 (*.xlsx)"
@@ -104,6 +115,10 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     ]
     assert embedded_scrolls
     assert all(scroll.frameShape() == QFrame.Shape.NoFrame for scroll in embedded_scrolls)
+    assert all(
+        scroll.horizontalScrollBarPolicy() == Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        for scroll in embedded_scrolls
+    )
     expected_groups = {
         1: {"检验信息", "不良项目"},
         2: {"筛选条件"},
@@ -184,6 +199,13 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window.navigate(6)
     app.processEvents()
     assert window.pages[6].team_count.text().startswith("共 ")
+    assert window.pages[0].refreshed.objectName() == "summary"
+    assert window.pages[2].selection_count.objectName() == "summary"
+    assert window.pages[4].count.objectName() == "summary"
+    assert window.pages[5].import_status.objectName() == "summary"
+    assert window.pages[6].team_count.objectName() == "summary"
+    assert window.pages[1].defects.total.objectName() == "summary"
+    window.refresh_theme()
 
     reports = window.pages[5]
     reports.preset.setCurrentText("自定义")
@@ -284,6 +306,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "adaptive_native_layout": True,
         "native_utility_pages": True,
         "unified_native_ui": True,
+        "component_ui_consistency": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)

@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
 )
 
-from app.ui.common import dialog_layout, form_layout, friendly_error, label
+from app.ui.common import dialog_button_box, dialog_layout, form_layout, friendly_error, label
 
 
 class DefectDialog(QDialog):
@@ -45,10 +45,10 @@ class DefectDialog(QDialog):
         form.addRow("排序", self.order)
         form.addRow("状态", self.enabled)
         layout.addLayout(form)
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        buttons = dialog_button_box(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+            default=QDialogButtonBox.StandardButton.Save,
         )
-        buttons.button(QDialogButtonBox.StandardButton.Save).setDefault(True)
         buttons.accepted.connect(self.save)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)

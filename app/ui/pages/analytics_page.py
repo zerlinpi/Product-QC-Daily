@@ -1,5 +1,5 @@
 from PySide6.QtCore import QDate
-from PySide6.QtWidgets import QComboBox, QDateEdit, QGridLayout, QWidget
+from PySide6.QtWidgets import QComboBox, QDateEdit, QWidget
 
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
@@ -7,6 +7,8 @@ from app.ui.common import (
     Page,
     button,
     card,
+    content_grid,
+    form_grid,
     grid_place,
     guarded,
     label,
@@ -30,9 +32,7 @@ class AnalyticsPage(Page):
             "选择日期后点击“开始分析”，查看不良趋势、重点项目和与上一周期的变化",
         )
         filter_card, filter_box = native_group("分析范围")
-        self.filters_grid = QGridLayout()
-        self.filters_grid.setHorizontalSpacing(12)
-        self.filters_grid.setVerticalSpacing(8)
+        self.filters_grid = form_grid()
         self.preset, self.source, self.metric_choice = QComboBox(), QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)
         self.preset.setCurrentText("本月")
@@ -72,9 +72,7 @@ class AnalyticsPage(Page):
         self.set_range("本月")
         scroll = page_scroll()
         content = QWidget()
-        self.grid = QGridLayout(content)
-        self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.setSpacing(8)
+        self.grid = content_grid(content)
         self.metrics = []
         self._layout_mode = None
         definitions = [

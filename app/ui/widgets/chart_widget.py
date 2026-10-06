@@ -1,7 +1,8 @@
 import pyqtgraph as pg
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from app.ui.common import LAYOUT_SPACING, label
+from app.ui.common import LAYOUT_SPACING, chart_palette, label
 
 
 class ChartWidget(QWidget):
@@ -18,13 +19,33 @@ class ChartWidget(QWidget):
         self.plot.setMenuEnabled(False)
         self.plot.setMouseEnabled(x=False, y=False)
         self.plot.getPlotItem().hideButtons()
-        self.plot.getAxis("left").setPen("#8a8a8a")
-        self.plot.getAxis("bottom").setPen("#8a8a8a")
         layout.addWidget(self.plot)
         self.empty = label("暂无数据", "muted")
+        self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.empty)
+        self._last_draw = None
+        self._apply_theme()
+
+    def _apply_theme(self):
+        colors = chart_palette()
+        for name in ("left", "bottom"):
+            axis = self.plot.getAxis(name)
+            axis.setPen(colors["axis"])
+            axis.setTextPen(colors["text"])
+        return colors
+
+    def refresh_theme(self):
+        self._apply_theme()
+        if self._last_draw is not None:
+            labels, values, bars, percent, cumulative = self._last_draw
+            self.draw(labels, values, bars=bars, percent=percent, cumulative=cumulative)
 
     def draw(self, labels, values, bars=False, percent=False, cumulative=None):
+        labels = list(labels)
+        values = list(values)
+        cumulative = list(cumulative) if cumulative is not None else None
+        self._last_draw = (labels, values, bars, percent, cumulative)
+        colors = self._apply_theme()
         self.plot.clear()
         self.empty.setVisible(not any(values))
         if not values:
@@ -32,23 +53,29 @@ class ChartWidget(QWidget):
         xs = list(range(len(values)))
         if bars:
             self.plot.addItem(
-                pg.BarGraphItem(x=xs, height=values, width=0.62, brush="#0067c0", pen=None)
+                pg.BarGraphItem(
+                    x=xs, height=values, width=0.62, brush=colors["accent"], pen=None
+                )
             )
         else:
             self.plot.plot(
                 xs,
                 values,
-                pen=pg.mkPen("#0067c0", width=2.5),
+                pen=pg.mkPen(colors["accent"], width=2.5),
                 symbol="o",
                 symbolSize=4,
-                symbolBrush="#0067c0",
+                symbolBrush=colors["accent"],
                 fillLevel=0,
-                brush=pg.mkBrush(0, 103, 192, 20),
+                brush=pg.mkBrush(colors["fill"]),
             )
         if cumulative is not None:
             # Separate percentage chart is drawn by the parent; avoid misleading dual scales.
             self.plot.plot(
-                xs, cumulative, pen=pg.mkPen("#ca5010", width=2), symbol="o", symbolSize=4
+                xs,
+                cumulative,
+                pen=pg.mkPen(colors["warning"], width=2),
+                symbol="o",
+                symbolSize=4,
             )
         step = max(1, len(labels) // 7)
         self.plot.getAxis("bottom").setTicks(

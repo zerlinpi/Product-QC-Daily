@@ -5,7 +5,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDateEdit,
     QFileDialog,
-    QGridLayout,
     QStyle,
 )
 
@@ -15,6 +14,7 @@ from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import (
     Page,
     button,
+    form_grid,
     grid_place,
     guarded,
     label,
@@ -45,14 +45,12 @@ class ReportsPage(Page):
         import_actions.addWidget(self.import_button)
         import_actions.addStretch()
         layout.addLayout(import_actions)
-        self.import_status = label("尚未选择文件", "muted", True)
+        self.import_status = label("尚未选择文件", "summary", True)
         self.import_status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.import_status)
         self.layout.addWidget(panel)
         panel, layout = native_group("导出质量报表")
-        self.filters_grid = QGridLayout()
-        self.filters_grid.setHorizontalSpacing(12)
-        self.filters_grid.setVerticalSpacing(8)
+        self.filters_grid = form_grid()
         self._layout_mode = None
         self.preset, self.source = QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)

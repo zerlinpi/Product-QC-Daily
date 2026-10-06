@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFileDialog,
-    QGridLayout,
     QHeaderView,
     QLineEdit,
     QMessageBox,
@@ -23,7 +22,9 @@ from app.ui.common import (
     Page,
     button,
     confirm,
+    dialog_button_box,
     dialog_layout,
+    form_grid,
     form_layout,
     friendly_error,
     guarded,
@@ -112,7 +113,7 @@ class SettingsPage(Page):
         body.addWidget(frame)
         frame, layout = native_group("组别管理")
         toolbar = toolbar_layout()
-        self.team_count = label("", "muted")
+        self.team_count = label("", "summary")
         toolbar.addWidget(self.team_count)
         toolbar.addStretch()
         toolbar.addWidget(button("新增组别", lambda: self.edit_team(False)))
@@ -138,9 +139,7 @@ class SettingsPage(Page):
         self.location.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.location.setToolTip(str(ctx.paths.root))
         layout.addWidget(self.location)
-        maintenance = QGridLayout()
-        maintenance.setHorizontalSpacing(12)
-        maintenance.setVerticalSpacing(8)
+        maintenance = form_grid()
 
         backup_actions = toolbar_layout()
         backup_button = button("立即备份全部数据", self.backup)
@@ -261,10 +260,10 @@ class SettingsPage(Page):
         for title, widget in [("名称", name), ("状态", enabled), ("排序", order)]:
             form.addRow(title, widget)
         layout.addLayout(form)
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel
+        buttons = dialog_button_box(
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+            default=QDialogButtonBox.StandardButton.Save,
         )
-        buttons.button(QDialogButtonBox.StandardButton.Save).setDefault(True)
         layout.addWidget(buttons)
         buttons.rejected.connect(dialog.reject)
 

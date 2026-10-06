@@ -4,7 +4,16 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QStyle
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
-from app.ui.common import button, dialog_layout, guarded, label, populate, table, toolbar_layout
+from app.ui.common import (
+    button,
+    dialog_button_box,
+    dialog_layout,
+    guarded,
+    label,
+    populate,
+    table,
+    toolbar_layout,
+)
 from app.ui.dialogs import file_dialogs
 
 
@@ -43,7 +52,7 @@ class ImportDialog(QDialog):
             self.filter.addItem(value, key)
         self.filter.currentIndexChanged.connect(self.reset_page)
         filter_row.addWidget(self.filter)
-        self.visible_status = label("", "muted")
+        self.visible_status = label("", "summary")
         filter_row.addWidget(self.visible_status)
         filter_row.addStretch()
         layout.addLayout(filter_row)
@@ -53,14 +62,14 @@ class ImportDialog(QDialog):
         self.table.setColumnWidth(2, 100)
         layout.addWidget(self.table, 1)
         pagination = toolbar_layout()
-        self.count = label("", "muted")
+        self.count = label("", "summary")
         pagination.addWidget(self.count, 1)
         self.previous_button = button("上一页", lambda: self.turn(-1))
         self.next_button = button("下一页", lambda: self.turn(1))
         pagination.addWidget(self.previous_button)
         pagination.addWidget(self.next_button)
         layout.addLayout(pagination)
-        actions = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel)
+        actions = dialog_button_box(QDialogButtonBox.StandardButton.Cancel)
         report_button = button("导出异常报告", self.report)
         report_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
         report_button.setEnabled(any(row.status != "valid" or row.message for row in preview.rows))
@@ -71,6 +80,7 @@ class ImportDialog(QDialog):
             QDialogButtonBox.ButtonRole.AcceptRole,
         )
         accept.setEnabled(preview.counts["valid"] > 0)
+        accept.setMinimumHeight(28)
         accept.setDefault(True)
         actions.accepted.connect(self.accept)
         actions.rejected.connect(self.reject)

@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDateEdit,
-    QGridLayout,
     QInputDialog,
     QLineEdit,
     QMenu,
@@ -20,6 +19,7 @@ from app.ui.common import (
     Page,
     button,
     confirm,
+    form_grid,
     grid_place,
     guarded,
     label,
@@ -58,9 +58,7 @@ class RecordsPage(Page):
         self.filters_dirty = False
         self.result_summary = "暂无记录"
         filters, box = native_group("筛选条件")
-        self.filters_grid = QGridLayout()
-        self.filters_grid.setHorizontalSpacing(12)
-        self.filters_grid.setVerticalSpacing(8)
+        self.filters_grid = form_grid()
         self._filter_layout_mode = None
         self.range_enabled = QCheckBox("按日期筛选")
         self.start, self.end = (
@@ -145,7 +143,7 @@ class RecordsPage(Page):
             if key != "export":
                 actions.addWidget(control)
         actions.addStretch()
-        self.selection_count = label("未选择记录", "muted")
+        self.selection_count = label("未选择记录", "summary")
         actions.addWidget(self.selection_count)
         actions.addWidget(self.action_buttons["export"])
         self.layout.addLayout(actions)
@@ -174,7 +172,7 @@ class RecordsPage(Page):
         self.trash.toggled.connect(self.search_records)
         self.layout.addWidget(self.table, 1)
         footer = toolbar_layout()
-        self.count = label("暂无记录", "muted")
+        self.count = label("暂无记录", "summary")
         footer.addWidget(self.count, 1)
         self.previous_button = button("上一页", lambda: self.turn(-1))
         self.next_button = button("下一页", lambda: self.turn(1))

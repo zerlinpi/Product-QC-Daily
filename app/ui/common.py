@@ -8,8 +8,10 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
+    QDialogButtonBox,
     QFormLayout,
     QFrame,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
@@ -29,9 +31,12 @@ from app.core.validation import validation_message
 PAGE_MARGINS = (14, 12, 14, 12)
 DIALOG_MARGINS = (14, 12, 14, 12)
 SECTION_MARGINS = (10, 12, 10, 10)
+SIDEBAR_MARGINS = (8, 10, 8, 8)
+TOPBAR_MARGINS = (14, 4, 14, 4)
 LAYOUT_SPACING = 8
 TOOLBAR_SPACING = 6
 CONTROL_MIN_HEIGHT = 28
+TOPBAR_MIN_HEIGHT = 36
 
 
 def friendly_error(parent, error):
@@ -159,6 +164,21 @@ def form_layout(parent=None):
     return layout
 
 
+def form_grid(parent=None):
+    layout = QGridLayout(parent) if parent is not None else QGridLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setHorizontalSpacing(12)
+    layout.setVerticalSpacing(LAYOUT_SPACING)
+    return layout
+
+
+def content_grid(parent=None):
+    layout = QGridLayout(parent) if parent is not None else QGridLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(LAYOUT_SPACING)
+    return layout
+
+
 def dialog_layout(dialog):
     layout = QVBoxLayout(dialog)
     layout.setContentsMargins(*DIALOG_MARGINS)
@@ -166,10 +186,25 @@ def dialog_layout(dialog):
     return layout
 
 
+def dialog_button_box(buttons, default=None):
+    """Create a native dialog button box with the same control metrics everywhere."""
+    box = QDialogButtonBox(buttons)
+    for control in box.buttons():
+        control.setMinimumHeight(CONTROL_MIN_HEIGHT)
+        control.setAutoDefault(False)
+    if default is not None:
+        control = box.button(default)
+        if control is not None:
+            control.setAutoDefault(True)
+            control.setDefault(True)
+    return box
+
+
 def page_scroll():
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
     scroll.setFrameShape(QFrame.Shape.NoFrame)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     return scroll
 
 
@@ -198,11 +233,35 @@ def table(headers):
     widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     widget.horizontalHeader().setHighlightSections(False)
     widget.horizontalHeader().setMinimumSectionSize(55)
+    widget.horizontalHeader().setMinimumHeight(CONTROL_MIN_HEIGHT)
     widget.horizontalHeader().setDefaultAlignment(
         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
     )
     widget.horizontalHeader().setStretchLastSection(True)
     return widget
+
+
+def palette_color(role):
+    return QApplication.palette().color(role)
+
+
+def chart_palette():
+    """Theme-aware colors shared by every pyqtgraph widget."""
+    accent = palette_color(QPalette.ColorRole.Highlight)
+    axis = palette_color(QPalette.ColorRole.Mid)
+    text = palette_color(QPalette.ColorRole.WindowText)
+    fill = QColor(accent)
+    fill.setAlpha(28)
+    grid = QColor(axis)
+    grid.setAlpha(72)
+    return {
+        "accent": accent,
+        "axis": axis,
+        "text": text,
+        "fill": fill,
+        "grid": grid,
+        "warning": semantic_color("warning"),
+    }
 
 
 def semantic_color(kind):

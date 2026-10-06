@@ -19,7 +19,15 @@ from PySide6.QtWidgets import (
 )
 
 from app import __version__
-from app.ui.common import friendly_error, guarded, label, toolbar_layout
+from app.ui.common import (
+    SIDEBAR_MARGINS,
+    TOPBAR_MARGINS,
+    TOPBAR_MIN_HEIGHT,
+    friendly_error,
+    guarded,
+    label,
+    toolbar_layout,
+)
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.pages.analytics_page import AnalyticsPage
@@ -30,6 +38,7 @@ from app.ui.pages.records_page import RecordsPage
 from app.ui.pages.reports_page import ReportsPage
 from app.ui.pages.settings_page import SettingsPage
 from app.ui.styles.theme import apply_theme, sync_native_titlebar
+from app.ui.widgets.chart_widget import ChartWidget
 from app.ui.worker import Worker
 
 
@@ -52,7 +61,7 @@ class MainWindow(QMainWindow):
         sidebar.setObjectName("qcSidebar")
         sidebar.setFixedWidth(176)
         nav = QVBoxLayout(sidebar)
-        nav.setContentsMargins(7, 10, 7, 8)
+        nav.setContentsMargins(*SIDEBAR_MARGINS)
         nav.setSpacing(2)
         nav.addWidget(label("成品日检", "brand"))
         nav.addWidget(label("质量管理", "muted"))
@@ -92,8 +101,8 @@ class MainWindow(QMainWindow):
         top = QFrame()
         top.setObjectName("topbar")
         toolbar = toolbar_layout(top)
-        toolbar.setContentsMargins(12, 4, 12, 4)
-        top.setMinimumHeight(36)
+        toolbar.setContentsMargins(*TOPBAR_MARGINS)
+        top.setMinimumHeight(TOPBAR_MIN_HEIGHT)
         self.company = label("成品质量管理", "section")
         toolbar.addWidget(self.company)
         toolbar.addStretch()
@@ -168,6 +177,8 @@ class MainWindow(QMainWindow):
 
     def refresh_theme(self):
         self._dark_theme = apply_theme(self.ctx.settings.get("theme"))
+        for chart in self.findChildren(ChartWidget):
+            chart.refresh_theme()
         sync_native_titlebar(self, self._dark_theme)
 
     def _system_color_scheme_changed(self, *_):

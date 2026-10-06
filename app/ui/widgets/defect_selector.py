@@ -38,7 +38,7 @@ class DefectSelector(QWidget):
         self.table.setColumnWidth(2, 105)
         self.table.setMinimumHeight(280)
         layout.addWidget(self.table, 1)
-        self.total = label("已选 0 项 · 已知件数合计 0", "muted", True)
+        self.total = label("已选 0 项 · 已知件数合计 0", "summary", True)
         layout.addWidget(self.total)
         layout.addWidget(
             label(

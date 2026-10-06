@@ -5,11 +5,19 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QDoubleSpinBox,
-    QGridLayout,
     QSpinBox,
 )
 
-from app.ui.common import dialog_layout, form_group, friendly_error, label, native_group, table
+from app.ui.common import (
+    dialog_button_box,
+    dialog_layout,
+    form_grid,
+    form_group,
+    friendly_error,
+    label,
+    native_group,
+    table,
+)
 
 
 class DemoDialog(QDialog):
@@ -65,9 +73,7 @@ class DemoDialog(QDialog):
         layout.addWidget(range_group)
 
         team_group, team_layout = native_group("参与组别")
-        team_grid = QGridLayout()
-        team_grid.setHorizontalSpacing(12)
-        team_grid.setVerticalSpacing(8)
+        team_grid = form_grid()
         team_layout.addLayout(team_grid)
         self.teams = []
         for i, team in enumerate(ctx.settings.teams(True)):
@@ -97,11 +103,11 @@ class DemoDialog(QDialog):
         defect_layout.addWidget(self.table, 1)
         layout.addWidget(defect_group, 1)
 
-        buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        buttons = dialog_button_box(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+            default=QDialogButtonBox.StandardButton.Ok,
         )
         buttons.button(QDialogButtonBox.StandardButton.Ok).setText("生成并查看")
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setDefault(True)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)

@@ -6,7 +6,6 @@ from PySide6.QtWidgets import (
     QCompleter,
     QDateEdit,
     QFileDialog,
-    QGridLayout,
     QLineEdit,
     QSpinBox,
     QTextEdit,
@@ -19,6 +18,8 @@ from app.ui.common import (
     Page,
     button,
     confirm,
+    content_grid,
+    form_grid,
     grid_place,
     guarded,
     label,
@@ -50,14 +51,10 @@ class InspectionPage(Page):
         self.layout.addLayout(toolbar)
         scroll = page_scroll()
         content = QWidget()
-        self.content_grid = QGridLayout(content)
-        self.content_grid.setContentsMargins(0, 0, 0, 0)
-        self.content_grid.setSpacing(8)
+        self.content_grid = content_grid(content)
         self._layout_mode = None
         self.left_panel, left_layout = native_group("检验信息")
-        fields = QGridLayout()
-        fields.setHorizontalSpacing(12)
-        fields.setVerticalSpacing(8)
+        fields = form_grid()
         self.inspection_date = QDateEdit(QDate.currentDate())
         self.inspection_date.setCalendarPopup(True)
         self.inspection_date.setDisplayFormat("yyyy-MM-dd")
