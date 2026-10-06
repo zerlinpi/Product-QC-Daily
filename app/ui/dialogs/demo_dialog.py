@@ -5,7 +5,6 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QDoubleSpinBox,
-    QGridLayout,
     QSpinBox,
 )
 
@@ -13,6 +12,7 @@ from app.ui.common import (
     dialog_button_box,
     dialog_layout,
     form_group,
+    form_grid,
     friendly_error,
     label,
     native_group,
@@ -73,9 +73,7 @@ class DemoDialog(QDialog):
         layout.addWidget(range_group)
 
         team_group, team_layout = native_group("参与组别")
-        team_grid = QGridLayout()
-        team_grid.setHorizontalSpacing(12)
-        team_grid.setVerticalSpacing(8)
+        team_grid = form_grid()
         team_layout.addLayout(team_grid)
         self.teams = []
         for i, team in enumerate(ctx.settings.teams(True)):
