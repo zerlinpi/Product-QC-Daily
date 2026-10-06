@@ -246,6 +246,18 @@ def table(headers):
     return widget
 
 
+def align_table_columns(widget, right=(), center=()):
+    """Keep table headers aligned with the data they describe."""
+    for column in right:
+        item = widget.horizontalHeaderItem(column)
+        if item is not None:
+            item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    for column in center:
+        item = widget.horizontalHeaderItem(column)
+        if item is not None:
+            item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+
+
 def palette_color(role):
     return QApplication.palette().color(role)
 
