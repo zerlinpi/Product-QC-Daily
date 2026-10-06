@@ -26,6 +26,7 @@ from app.ui.common import (
     CONTROL_MIN_HEIGHT,
     SIDEBAR_MARGINS,
     SIDEBAR_WIDTH,
+    STATUS_PROGRESS_MAX_WIDTH,
     TOPBAR_MARGINS,
     TOPBAR_MIN_HEIGHT,
     friendly_error,
@@ -133,7 +134,7 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(page)
         self.progress = QProgressBar()
         self.progress.setRange(0, 0)
-        self.progress.setMaximumWidth(150)
+        self.progress.setMaximumWidth(STATUS_PROGRESS_MAX_WIDTH)
         self.progress.hide()
         self.statusBar().setSizeGripEnabled(True)
         self.statusBar().addPermanentWidget(self.progress)
