@@ -694,11 +694,8 @@ def test_single_field_dialogs_use_native_form_metrics(ctx, qtbot, monkeypatch):
     observed = []
 
     def inspect(dialog):
-        field = next(
-            widget
-            for widget in dialog.findChildren((QLineEdit, QComboBox))
-            if widget.parent() is not None
-        )
+        fields = dialog.findChildren(QLineEdit) + dialog.findChildren(QComboBox)
+        field = next(widget for widget in fields if widget.accessibleName() in {"检验员", "组别"})
         observed.append(
             (
                 dialog.minimumWidth(),
