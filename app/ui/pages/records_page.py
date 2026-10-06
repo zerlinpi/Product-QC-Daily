@@ -22,6 +22,7 @@ from app.ui.common import (
     choice_input_dialog,
     confirm,
     control_metrics,
+    field_label,
     form_grid,
     grid_place,
     guarded,
@@ -108,8 +109,7 @@ class RecordsPage(Page):
         def field(title, widget, accessible_name=None):
             container = QWidget()
             row = toolbar_layout(container)
-            caption = label(title, "fieldLabel")
-            caption.setBuddy(widget)
+            caption = field_label(title, widget)
             row.addWidget(caption)
             row.addWidget(widget, 1)
             widget.setAccessibleName(accessible_name or title)
