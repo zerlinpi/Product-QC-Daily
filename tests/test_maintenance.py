@@ -162,3 +162,28 @@ def test_backup_restore_streams_payload_files_without_path_read_bytes(
     assert before.is_file()
     assert (ctx.paths.signatures / saved["signature_path"]).is_file()
     assert ctx.db.health_check() == "ok"
+
+
+def test_restore_rejects_malformed_manifest_without_mutating_database(ctx, payload, tmp_path):
+    from app.core.schemas import RecordFilter
+
+    ctx.inspections.save(payload)
+    source = ctx.backup.backup()
+    cases = [
+        ("invalid-encoding.zip", b"\xff", "无法读取完整备份"),
+        ("invalid-shape.zip", b"[]", "备份清单无效"),
+    ]
+    for filename, manifest_data, message in cases:
+        damaged = tmp_path / filename
+        with ZipFile(source) as original, ZipFile(damaged, "w") as modified:
+            for info in original.infolist():
+                with original.open(info) as stream:
+                    data = stream.read()
+                modified.writestr(
+                    info,
+                    manifest_data if info.filename == "manifest.json" else data,
+                )
+        with pytest.raises(ValueError, match=message):
+            ctx.backup.restore(damaged)
+        assert ctx.inspections.query(RecordFilter())[1] == 1
+        assert ctx.db.health_check() == "ok"
