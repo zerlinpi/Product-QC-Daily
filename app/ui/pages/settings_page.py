@@ -28,6 +28,7 @@ from app.ui.common import (
     dialog_layout,
     form_grid,
     form_layout,
+    form_row,
     friendly_error,
     guarded,
     label,
@@ -67,11 +68,11 @@ class SettingsPage(Page):
                 )
             self.fields[key] = field
             control_metrics(field)
-            form.addRow(title, field)
+            form_row(form, title, field)
         self.theme = QComboBox()
         self.theme.addItems(["浅色", "深色", "跟随系统"])
         control_metrics(self.theme)
-        form.addRow("界面主题", self.theme)
+        form_row(form, "界面主题", self.theme)
         for key, title in [
             ("template_path", "原表模板"),
             ("export_directory", "导出目录"),
@@ -91,15 +92,15 @@ class SettingsPage(Page):
             )
             browse.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
             row.addWidget(browse)
-            form.addRow(title, row)
+            form_row(form, title, row)
         self.auto_backup = QCheckBox("每天第一次启动自动备份")
         control_metrics(self.auto_backup)
-        form.addRow("自动备份", self.auto_backup)
+        form_row(form, "自动备份", self.auto_backup)
         self.retention = QSpinBox()
         self.retention.setRange(1, 3650)
         self.retention.setSuffix(" 天")
         control_metrics(self.retention)
-        form.addRow("自动备份保留", self.retention)
+        form_row(form, "自动备份保留", self.retention)
         layout.addLayout(form)
         layout.addWidget(
             label(
@@ -270,7 +271,7 @@ class SettingsPage(Page):
         order.setValue(item["sort_order"] if item else 9)
         control_metrics(name, order)
         for title, widget in [("名称", name), ("状态", enabled), ("排序", order)]:
-            form.addRow(title, widget)
+            form_row(form, title, widget)
         layout.addLayout(form)
         buttons = dialog_button_box(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
