@@ -19,7 +19,15 @@ from PySide6.QtWidgets import (
 )
 
 from app import __version__
-from app.ui.common import friendly_error, guarded, label, toolbar_layout
+from app.ui.common import (
+    SIDEBAR_MARGINS,
+    TOPBAR_MARGINS,
+    TOPBAR_MIN_HEIGHT,
+    friendly_error,
+    guarded,
+    label,
+    toolbar_layout,
+)
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
 from app.ui.localization import configure_chinese_ui
 from app.ui.pages.analytics_page import AnalyticsPage
@@ -53,7 +61,7 @@ class MainWindow(QMainWindow):
         sidebar.setObjectName("qcSidebar")
         sidebar.setFixedWidth(176)
         nav = QVBoxLayout(sidebar)
-        nav.setContentsMargins(7, 10, 7, 8)
+        nav.setContentsMargins(*SIDEBAR_MARGINS)
         nav.setSpacing(2)
         nav.addWidget(label("成品日检", "brand"))
         nav.addWidget(label("质量管理", "muted"))
@@ -93,8 +101,8 @@ class MainWindow(QMainWindow):
         top = QFrame()
         top.setObjectName("topbar")
         toolbar = toolbar_layout(top)
-        toolbar.setContentsMargins(12, 4, 12, 4)
-        top.setMinimumHeight(36)
+        toolbar.setContentsMargins(*TOPBAR_MARGINS)
+        top.setMinimumHeight(TOPBAR_MIN_HEIGHT)
         self.company = label("成品质量管理", "section")
         toolbar.addWidget(self.company)
         toolbar.addStretch()
