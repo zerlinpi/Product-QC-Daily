@@ -6,9 +6,12 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QDoubleSpinBox,
     QSpinBox,
+    QTableWidgetItem,
 )
 
 from app.ui.common import (
+    DEMO_DIALOG_MIN_SIZE,
+    DEMO_DIALOG_SIZE,
     align_table_columns,
     control_metrics,
     dialog_button_box,
@@ -28,8 +31,8 @@ class DemoDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("生成演示数据")
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
-        self.resize(680, 700)
-        self.setMinimumSize(620, 560)
+        self.resize(*DEMO_DIALOG_SIZE)
+        self.setMinimumSize(*DEMO_DIALOG_MIN_SIZE)
 
         layout = dialog_layout(self)
         layout.addWidget(
@@ -98,9 +101,9 @@ class DemoDialog(QDialog):
         defects = ctx.defects.list(enabled_only=True)
         self.table.setRowCount(len(defects))
         for row, item in enumerate(defects):
-            name = label(item["name"])
+            name = QTableWidgetItem(item["name"])
             name.setToolTip(f"{item['code']} · {item['category']}")
-            self.table.setCellWidget(row, 0, name)
+            self.table.setItem(row, 0, name)
             value = QSpinBox()
             value.setRange(0, 1000)
             value.setValue(4 if item["code"] in ("d", "e", "g") else 1)
