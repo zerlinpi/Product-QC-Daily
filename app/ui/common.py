@@ -71,6 +71,7 @@ def message_box(parent, title, text, icon=QMessageBox.Icon.Information, informat
     """Build a native message box with the same button metrics as all other dialogs."""
     dialog = QMessageBox(parent)
     dialog.setWindowTitle(title)
+    dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
     dialog.setText(text)
     if informative_text:
         dialog.setInformativeText(informative_text)
@@ -120,6 +121,7 @@ def friendly_error(parent, error):
 def confirm(parent, title, message, action="确认", cancel="取消", danger=False):
     dialog = QMessageBox(parent)
     dialog.setWindowTitle(title)
+    dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
     dialog.setText(message)
     dialog.setIcon(QMessageBox.Icon.Warning if danger else QMessageBox.Icon.Question)
     accept = dialog.addButton(action, QMessageBox.ButtonRole.AcceptRole)
