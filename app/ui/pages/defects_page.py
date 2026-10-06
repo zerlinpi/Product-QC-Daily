@@ -1,6 +1,16 @@
-from PySide6.QtWidgets import QAbstractItemView, QHBoxLayout, QHeaderView, QLineEdit
+from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QLineEdit
 
-from app.ui.common import Page, button, confirm, guarded, label, populate, table
+from app.ui.common import (
+    Page,
+    button,
+    confirm,
+    guarded,
+    label,
+    native_group,
+    populate,
+    table,
+    toolbar_layout,
+)
 from app.ui.dialogs.defect_dialog import DefectDialog
 
 
@@ -12,7 +22,8 @@ class DefectsPage(Page):
             "不良项目",
             "维护录入时可选的不良项目；停用后不再用于新记录，历史记录仍保留",
         )
-        toolbar = QHBoxLayout()
+        group, group_layout = native_group("项目列表")
+        toolbar = toolbar_layout()
         self.search = QLineEdit()
         self.search.setPlaceholderText("搜索项目名称或编码")
         self.search.setClearButtonEnabled(True)
@@ -27,7 +38,7 @@ class DefectsPage(Page):
         self.disable_button = button("停用项目", self.disable, danger=True)
         toolbar.addWidget(self.edit_button)
         toolbar.addWidget(self.disable_button)
-        self.layout.addLayout(toolbar)
+        group_layout.addLayout(toolbar)
         self.table = table(["编码", "名称", "分类", "状态", "排序", "说明"])
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -37,12 +48,13 @@ class DefectsPage(Page):
         self.table.setColumnWidth(3, 80)
         self.table.setColumnWidth(4, 70)
         self.table.cellDoubleClicked.connect(lambda *_: self.edit())
-        self.layout.addWidget(self.table, 1)
-        footer = QHBoxLayout()
+        group_layout.addWidget(self.table, 1)
+        footer = toolbar_layout()
         self.selection_state = label("未选择项目", "muted")
         footer.addWidget(self.selection_state, 1)
         footer.addWidget(label("双击项目可直接编辑", "muted"))
-        self.layout.addLayout(footer)
+        group_layout.addLayout(footer)
+        self.layout.addWidget(group, 1)
         self.rows = []
         self.table.itemSelectionChanged.connect(self.update_actions)
         self.update_actions()
