@@ -52,7 +52,7 @@ class ReportsPage(Page):
         panel, layout = native_group("导出质量报表")
         self.filters_grid = QGridLayout()
         self.filters_grid.setHorizontalSpacing(12)
-        self.filters_grid.setVerticalSpacing(6)
+        self.filters_grid.setVerticalSpacing(8)
         self._layout_mode = None
         self.preset, self.source = QComboBox(), QComboBox()
         self.preset.addItems(PRESETS)
