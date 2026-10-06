@@ -8,6 +8,8 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
+    QComboBox,
+    QDialog,
     QDialogButtonBox,
     QFormLayout,
     QFrame,
@@ -16,6 +18,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -286,6 +289,46 @@ def dialog_button_box(buttons, default=None):
             control.setAutoDefault(True)
             control.setDefault(True)
     return box
+
+
+def _single_field_dialog(parent, title, message, field_title, field):
+    dialog = QDialog(parent)
+    dialog.setWindowTitle(title)
+    dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
+    dialog.setMinimumWidth(FORM_DIALOG_MIN_WIDTH)
+    layout = dialog_layout(dialog)
+    if message:
+        layout.addWidget(label(message, "muted", True))
+    form = form_layout()
+    control_metrics(field)
+    form_row(form, field_title, field)
+    layout.addLayout(form)
+    buttons = dialog_button_box(
+        QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+        default=QDialogButtonBox.StandardButton.Ok,
+    )
+    buttons.accepted.connect(dialog.accept)
+    buttons.rejected.connect(dialog.reject)
+    layout.addWidget(buttons)
+    field.setFocus()
+    return dialog
+
+
+def text_input_dialog(parent, title, message, field_title, initial=""):
+    field = QLineEdit(initial)
+    dialog = _single_field_dialog(parent, title, message, field_title, field)
+    accepted = dialog.exec() == QDialog.DialogCode.Accepted
+    return field.text(), accepted
+
+
+def choice_input_dialog(parent, title, message, field_title, items, current=0):
+    field = QComboBox()
+    field.addItems(list(items))
+    if field.count():
+        field.setCurrentIndex(min(max(current, 0), field.count() - 1))
+    dialog = _single_field_dialog(parent, title, message, field_title, field)
+    accepted = dialog.exec() == QDialog.DialogCode.Accepted
+    return field.currentText(), accepted
 
 
 def page_scroll():
