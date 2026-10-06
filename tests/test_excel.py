@@ -489,6 +489,28 @@ def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_p
 
 
 
+def test_multi_year_monthly_charts_reduce_axis_label_density():
+    from datetime import date
+
+    from openpyxl import Workbook
+
+    from app.services.excel_export import add_monthly_analysis
+
+    wb = Workbook()
+    wb.remove(wb.active)
+    monthly = add_monthly_analysis(
+        wb,
+        {},
+        date(2024, 1, 1),
+        date(2026, 12, 31),
+    )
+    volume, rates = monthly._charts
+    assert monthly.max_row == 38
+    assert volume.x_axis.tickLblSkip == 2
+    assert rates.x_axis.tickLblSkip == 2
+    wb.close()
+
+
 def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_path):
     from app.core.schemas import InspectionInput, RecordFilter
 
