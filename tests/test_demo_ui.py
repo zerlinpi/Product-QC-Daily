@@ -194,3 +194,15 @@ def test_same_month_demo_range_outside_today_opens_exact_analysis_range(
     assert analytics.start.date().toPython() == start
     assert analytics.end.date().toPython() == end
     assert f"{start} 至 {end}" in analytics.scope.text()
+
+
+
+def test_demo_defect_names_use_standard_table_items(ctx, qtbot):
+    from app.ui.dialogs.demo_dialog import DemoDialog
+
+    dialog = DemoDialog(ctx, None)
+    qtbot.addWidget(dialog)
+
+    assert dialog.table.rowCount() > 0
+    assert dialog.table.item(0, 0) is not None
+    assert dialog.table.cellWidget(0, 0) is None
