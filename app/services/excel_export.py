@@ -8,6 +8,7 @@ from tempfile import NamedTemporaryFile
 
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, LineChart, Reference
+from openpyxl.chart.data_source import AxDataSource, NumData, NumVal, StrData, StrRef, StrVal
 from openpyxl.chart.text import RichText
 from openpyxl.drawing.image import Image
 from openpyxl.drawing.spreadsheet_drawing import AnchorMarker, OneCellAnchor
@@ -284,6 +285,46 @@ def month_keys(start: date | None, end: date | None) -> list[str]:
     return result
 
 
+def embed_chart_data(chart, categories: list[str], series_values: list[list], titles: list[str], formats: list[str]):
+    """Embed chart caches so Excel/WPS can render data without recalculating first."""
+    if not (len(chart.series) == len(series_values) == len(titles) == len(formats)):
+        raise ValueError("图表系列数据不完整")
+    for series, values, title, number_format in zip(
+        chart.series, series_values, titles, formats, strict=True
+    ):
+        category_formula = None
+        if series.cat is not None:
+            for reference_name in ("strRef", "numRef"):
+                reference = getattr(series.cat, reference_name, None)
+                if reference is not None and reference.f:
+                    category_formula = reference.f
+                    break
+        if category_formula:
+            series.cat = AxDataSource(
+                strRef=StrRef(
+                    f=category_formula,
+                    strCache=StrData(
+                        ptCount=len(categories),
+                        pt=[StrVal(idx=index, v=str(value)) for index, value in enumerate(categories)],
+                    ),
+                )
+            )
+        if series.val is not None and series.val.numRef is not None:
+            series.val.numRef.numCache = NumData(
+                formatCode=number_format,
+                ptCount=len(values),
+                pt=[
+                    NumVal(idx=index, v=0 if value is None else value)
+                    for index, value in enumerate(values)
+                ],
+            )
+        if series.tx is not None and series.tx.strRef is not None:
+            series.tx.strRef.strCache = StrData(
+                ptCount=1,
+                pt=[StrVal(idx=0, v=title)],
+            )
+
+
 def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: date | None):
     ws = wb.create_sheet("月度统计")
     ws.append(
@@ -362,6 +403,13 @@ def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: 
             titles_from_data=True,
         )
         volume.set_categories(categories)
+        embed_chart_data(
+            volume,
+            months,
+            [[ws.cell(row, 2).value for row in range(2, month_last_row + 1)]],
+            ["检验批次"],
+            ["0"],
+        )
         ws.add_chart(volume, "J2")
 
         rates = LineChart()
@@ -382,6 +430,16 @@ def add_monthly_analysis(wb, monthly: dict[str, dict], start: date | None, end: 
         # Keep only 不良率 and 返工率; column G is a batch count, not a rate.
         del rates.series[1]
         rates.set_categories(categories)
+        embed_chart_data(
+            rates,
+            months,
+            [
+                [ws.cell(row, 6).value for row in range(2, month_last_row + 1)],
+                [ws.cell(row, 8).value for row in range(2, month_last_row + 1)],
+            ],
+            ["不良率", "返工率"],
+            ["0.00%", "0.00%"],
+        )
         ws.add_chart(rates, "J18")
     return ws
 
@@ -821,6 +879,13 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             filters.start or minimum,
             filters.end or maximum,
         )
+    wb.calculation = CalcProperties(
+        calcId=191029,
+        calcMode="auto",
+        fullCalcOnLoad=True,
+        calcOnSave=True,
+        forceFullCalc=True,
+    )
     # A full timestamp needs more room than the short date in the old template.
     # Apply this after standard table styling, which otherwise resets B to 15.
     ws.column_dimensions["B"].width = max(ws.column_dimensions["B"].width, 26)
