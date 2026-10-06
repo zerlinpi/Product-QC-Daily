@@ -7,12 +7,16 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
+    QFormLayout,
     QFrame,
     QGroupBox,
     QHeaderView,
+    QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
+    QStyle,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -20,6 +24,14 @@ from PySide6.QtWidgets import (
 )
 
 from app.core.validation import validation_message
+
+
+PAGE_MARGINS = (14, 12, 14, 12)
+DIALOG_MARGINS = (14, 12, 14, 12)
+SECTION_MARGINS = (10, 12, 10, 10)
+LAYOUT_SPACING = 8
+TOOLBAR_SPACING = 6
+CONTROL_MIN_HEIGHT = 28
 
 
 def friendly_error(parent, error):
@@ -74,6 +86,11 @@ def button(text, callback=None, primary=False, danger=False):
     widget = QPushButton(text)
     widget.setObjectName("primary" if primary else "danger" if danger else "")
     widget.setAutoDefault(False)
+    widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+    if danger:
+        style = QApplication.instance().style() if QApplication.instance() else None
+        if style:
+            widget.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning))
     if callback:
         widget.clicked.connect(callback)
     return widget
@@ -87,25 +104,48 @@ def label(text, kind="", wrap=False):
 
 
 def card():
-    """Compact native section panel; avoid web-style rounded card chrome."""
+    """Compact native panel for visualizations or untitled content."""
     frame = QFrame()
     frame.setObjectName("card")
     frame.setFrameShape(QFrame.Shape.StyledPanel)
     frame.setFrameShadow(QFrame.Shadow.Plain)
     frame.setLineWidth(1)
     layout = QVBoxLayout(frame)
-    layout.setContentsMargins(10, 8, 10, 8)
-    layout.setSpacing(8)
+    layout.setContentsMargins(*SECTION_MARGINS)
+    layout.setSpacing(LAYOUT_SPACING)
     return frame, layout
 
 
 def native_group(title):
-    """Native Windows-style titled section used for settings and utility pages."""
+    """Native Windows-style titled section for forms and utility workflows."""
     group = QGroupBox(title)
     layout = QVBoxLayout(group)
-    layout.setContentsMargins(10, 12, 10, 10)
-    layout.setSpacing(8)
+    layout.setContentsMargins(*SECTION_MARGINS)
+    layout.setSpacing(LAYOUT_SPACING)
     return group, layout
+
+
+def toolbar_layout(parent=None):
+    layout = QHBoxLayout(parent) if parent is not None else QHBoxLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(TOOLBAR_SPACING)
+    return layout
+
+
+def form_layout(parent=None):
+    layout = QFormLayout(parent) if parent is not None else QFormLayout()
+    layout.setHorizontalSpacing(12)
+    layout.setVerticalSpacing(8)
+    layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+    return layout
+
+
+def dialog_layout(dialog):
+    layout = QVBoxLayout(dialog)
+    layout.setContentsMargins(*DIALOG_MARGINS)
+    layout.setSpacing(LAYOUT_SPACING)
+    return layout
 
 
 def grid_place(layout, widget, row, column, row_span=1, column_span=1):
@@ -172,8 +212,8 @@ class Page(QWidget):
         self.ctx, self.window = ctx, window
         self.setObjectName("page")
         self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(12, 10, 12, 10)
-        self.layout.setSpacing(6)
+        self.layout.setContentsMargins(*PAGE_MARGINS)
+        self.layout.setSpacing(LAYOUT_SPACING)
         self.title_label = label(title, "title")
         self.subtitle_label = label(subtitle, "subtitle", True)
         self.layout.addWidget(self.title_label)
