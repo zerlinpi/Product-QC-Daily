@@ -37,6 +37,7 @@ from app.ui.common import (
     populate,
     stack_layout,
     table,
+    table_minimum_rows,
     toolbar_layout,
 )
 from app.ui.dialogs.demo_dialog import DemoDialog
@@ -92,7 +93,7 @@ class SettingsPage(Page):
             )
             browse.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
             row.addWidget(browse)
-            form_row(form, title, row)
+            form_row(form, title, row, buddy=field)
         self.auto_backup = QCheckBox("每天第一次启动自动备份")
         control_metrics(self.auto_backup)
         form_row(form, "自动备份", self.auto_backup)
@@ -133,7 +134,7 @@ class SettingsPage(Page):
         self.teams.itemSelectionChanged.connect(
             lambda: self.edit_team_button.setEnabled(bool(self.teams.selectedItems()))
         )
-        self.teams.setMinimumHeight(220)
+        table_minimum_rows(self.teams, 7)
         self.teams.horizontalHeader().setStretchLastSection(False)
         self.teams.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.teams.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
