@@ -81,6 +81,7 @@ class DefectSelector(QWidget):
         for row, item in enumerate(items):
             check = QCheckBox()
             check.setEnabled(item["enabled"])
+            control_metrics(check)
             qty = QSpinBox()
             qty.setRange(0, 100_000_000)
             qty.setSpecialValueText("未知")
