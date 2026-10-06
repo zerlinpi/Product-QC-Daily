@@ -52,7 +52,7 @@ class InspectionPage(Page):
         content = QWidget()
         self.content_grid = QGridLayout(content)
         self.content_grid.setContentsMargins(0, 0, 0, 0)
-        self.content_grid.setSpacing(12)
+        self.content_grid.setSpacing(8)
         self._layout_mode = None
         self.left_panel, left_layout = native_group("检验信息")
         fields = QGridLayout()
