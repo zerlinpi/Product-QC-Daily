@@ -491,8 +491,16 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
                 payload.model_dump()
                 | {
                     "work_order": "WO-LONG-QUALITY-REPORT-001",
-                    "remark": "返工原因：尺寸偏差，已复检并记录处理结果。",
+                    "remark": "返工原因：尺寸偏差，已复检并记录处理结果；该备注用于验证导出后长文本能够完整换行显示而不是被固定行高截断。",
                     "judgment": "返工",
+                    "defect_quantity": 2,
+                    "defects": [
+                        {
+                            "defect_id": 1,
+                            "quantity": 2,
+                            "remark": "不良位置较长，需要在导出明细中自动增加行高并保持完整可见。",
+                        }
+                    ],
                 }
             )
         )
@@ -516,6 +524,15 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert records.freeze_panes == "C2"
     assert records.sheet_view.zoomScale == 85
     assert records["E2"].number_format == "#,##0"
+    assert records.row_dimensions[2].height > 22
+    assert records.print_area
+
+    detail = wb["不良明细"]
+    assert detail.row_dimensions[2].height > 22
+    assert detail.print_area
+
+    dictionary = wb["不良项目"]
+    assert dictionary.print_area
 
     summary = wb["统计摘要"]
     assert summary.page_setup.orientation == "portrait"
@@ -523,6 +540,11 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert summary.column_dimensions["B"].width >= 48
     assert summary.sheet_view.zoomScale == 100
     assert summary["B2"].number_format == "#,##0"
+    assert summary.print_area
+    note_rows = {
+        summary.cell(row, 1).value: row for row in range(2, summary.max_row + 1)
+    }
+    assert summary.row_dimensions[note_rows["口径"]].height > 22
 
     monthly = wb["月度统计"]
     assert monthly["A2"].value
@@ -536,6 +558,7 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert monthly["B2"].number_format == "#,##0"
     assert monthly["G2"].number_format == "#,##0"
     assert monthly.print_area
+    assert monthly.row_dimensions[monthly.max_row].height >= 24
     wb.close()
 
 
