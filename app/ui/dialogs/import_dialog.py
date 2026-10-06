@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QStyle
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
 from app.ui.common import (
     FILTER_FIELD_MIN_WIDTH,
+    IMPORT_DIALOG_SIZE,
     align_table_columns,
     button,
     button_metrics,
