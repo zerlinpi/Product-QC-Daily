@@ -7,7 +7,16 @@ from PySide6.QtWidgets import (
     QSpinBox,
 )
 
-from app.ui.common import dialog_button_box, dialog_layout, form_layout, friendly_error, label
+from app.ui.common import (
+    FORM_DIALOG_MIN_WIDTH,
+    control_metrics,
+    dialog_button_box,
+    dialog_layout,
+    form_layout,
+    form_row,
+    friendly_error,
+    label,
+)
 
 
 class DefectDialog(QDialog):
