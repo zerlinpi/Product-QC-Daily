@@ -15,6 +15,8 @@ from PySide6.QtWidgets import (
 
 from app.core.schemas import InspectionInput, RecordFilter
 from app.ui.common import (
+    REMARK_MAX_HEIGHT,
+    SIGNATURE_PREVIEW_MIN_HEIGHT,
     Page,
     button,
     confirm,
@@ -111,11 +113,11 @@ class InspectionPage(Page):
         left_layout.addWidget(label("备注", "fieldLabel"))
         self.remark = QTextEdit()
         self.remark.setPlaceholderText("检验说明、异常原因或处理结果")
-        self.remark.setMaximumHeight(90)
+        self.remark.setMaximumHeight(REMARK_MAX_HEIGHT)
         left_layout.addWidget(self.remark)
         signature_row = toolbar_layout()
         self.signature_label = label("尚未选择签名", "muted")
-        self.signature_label.setMinimumHeight(44)
+        self.signature_label.setMinimumHeight(SIGNATURE_PREVIEW_MIN_HEIGHT)
         signature_row.addWidget(self.signature_label, 1)
         signature_row.addWidget(button("选择签名图片", self.choose_signature))
         signature_row.addWidget(button("清除签名", self.clear_signature))
