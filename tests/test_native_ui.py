@@ -623,7 +623,7 @@ def test_content_sized_widgets_use_shared_tokens(ctx, qtbot):
 
 
 def test_message_boxes_share_native_button_metrics(qtbot):
-    from PySide6.QtWidgets import QDialogButtonBox, QMessageBox
+    from PySide6.QtWidgets import QMessageBox
 
     from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT, message_box
 
