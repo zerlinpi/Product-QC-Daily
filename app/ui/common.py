@@ -130,7 +130,14 @@ def populate(widget, rows):
             if value in ("合格", "返工", "演示数据"):
                 item.setForeground(QColor("#107c10" if value == "合格" else "#ca5010"))
                 item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
-            elif isinstance(value, (int, float)) and not isinstance(value, bool):
+            elif value in ("正式数据", "启用", "停用"):
+                item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            elif (
+                isinstance(value, (int, float))
+                and not isinstance(value, bool)
+                or isinstance(value, str)
+                and re.fullmatch(r"[+-]?\d[\d,]*(?:\.\d+)?%?", value.strip())
+            ):
                 item.setTextAlignment(
                     Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
                 )
