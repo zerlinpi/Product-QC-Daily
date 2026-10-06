@@ -4,8 +4,8 @@ from PySide6.QtWidgets import QComboBox, QDateEdit, QWidget
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import (
-    align_table_columns,
     Page,
+    align_table_columns,
     button,
     card,
     content_grid,
