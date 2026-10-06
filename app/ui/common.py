@@ -8,6 +8,8 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
+    QComboBox,
+    QDialog,
     QDialogButtonBox,
     QFormLayout,
     QFrame,
@@ -16,6 +18,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QLineEdit,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -45,9 +48,39 @@ COMPACT_FIELD_MIN_WIDTH = 110
 FILTER_FIELD_MIN_WIDTH = 120
 SEARCH_FIELD_MIN_WIDTH = 240
 FORM_DIALOG_MIN_WIDTH = 460
+PROGRESS_DIALOG_MIN_WIDTH = 400
+IMPORT_DIALOG_SIZE = (1040, 680)
+DEMO_DIALOG_SIZE = (680, 700)
+DEMO_DIALOG_MIN_SIZE = (620, 560)
+STATUS_PROGRESS_MAX_WIDTH = 150
+REMARK_MAX_HEIGHT = 90
+SIGNATURE_PREVIEW_MIN_HEIGHT = 44
 TABLE_ROW_HEIGHT = 28
 CHART_MIN_HEIGHT = 190
 TOPBAR_MIN_HEIGHT = 36
+WIDE_LAYOUT_BREAKPOINT = 1100
+
+
+def message_box(parent, title, text, icon=QMessageBox.Icon.Information, informative_text=""):
+    """Build one native message-box style for information, warnings and errors."""
+    dialog = QMessageBox(parent)
+    dialog.setWindowTitle(title)
+    dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
+    dialog.setText(text)
+    if informative_text:
+        dialog.setInformativeText(informative_text)
+    dialog.setIcon(icon)
+    dialog.setStandardButtons(QMessageBox.StandardButton.Ok)
+    ok = dialog.button(QMessageBox.StandardButton.Ok)
+    if ok is not None:
+        button_metrics(ok)
+        ok.setAutoDefault(True)
+        ok.setDefault(True)
+    return dialog
+
+
+def show_information(parent, title, message):
+    message_box(parent, title, message).exec()
 
 
 def friendly_error(parent, error):
@@ -70,17 +103,24 @@ def friendly_error(parent, error):
         message = "无法读写文件。请检查路径、磁盘剩余空间和文件权限。"
     else:
         message = "操作未完成。请检查文件和数据库是否被占用；详细原因已写入日志。"
-    QMessageBox.warning(parent, "操作未完成", message[:1500])
+    message_box(
+        parent,
+        "操作未完成",
+        message[:1500],
+        icon=QMessageBox.Icon.Warning,
+    ).exec()
 
 
 def confirm(parent, title, message, action="确认", cancel="取消", danger=False):
     dialog = QMessageBox(parent)
     dialog.setWindowTitle(title)
+    dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
     dialog.setText(message)
     dialog.setIcon(QMessageBox.Icon.Warning if danger else QMessageBox.Icon.Question)
     accept = dialog.addButton(action, QMessageBox.ButtonRole.AcceptRole)
     accept.setObjectName("danger" if danger else "primary")
     reject = dialog.addButton(cancel, QMessageBox.ButtonRole.RejectRole)
+    button_metrics(accept, reject)
     dialog.setDefaultButton(reject)
     dialog.setEscapeButton(reject)
     dialog.exec()
@@ -254,6 +294,46 @@ def dialog_button_box(buttons, default=None):
             control.setAutoDefault(True)
             control.setDefault(True)
     return box
+
+
+def _single_field_dialog(parent, title, message, field_title, field):
+    dialog = QDialog(parent)
+    dialog.setWindowTitle(title)
+    dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
+    dialog.setMinimumWidth(FORM_DIALOG_MIN_WIDTH)
+    layout = dialog_layout(dialog)
+    if message:
+        layout.addWidget(label(message, "muted", True))
+    form = form_layout()
+    control_metrics(field)
+    form_row(form, field_title, field)
+    layout.addLayout(form)
+    buttons = dialog_button_box(
+        QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel,
+        default=QDialogButtonBox.StandardButton.Ok,
+    )
+    buttons.accepted.connect(dialog.accept)
+    buttons.rejected.connect(dialog.reject)
+    layout.addWidget(buttons)
+    field.setFocus()
+    return dialog
+
+
+def text_input_dialog(parent, title, message, field_title, initial=""):
+    field = QLineEdit(initial)
+    dialog = _single_field_dialog(parent, title, message, field_title, field)
+    accepted = dialog.exec() == QDialog.DialogCode.Accepted
+    return field.text(), accepted
+
+
+def choice_input_dialog(parent, title, message, field_title, items, current=0):
+    field = QComboBox()
+    field.addItems(list(items))
+    if field.count():
+        field.setCurrentIndex(min(max(current, 0), field.count() - 1))
+    dialog = _single_field_dialog(parent, title, message, field_title, field)
+    accepted = dialog.exec() == QDialog.DialogCode.Accepted
+    return field.currentText(), accepted
 
 
 def page_scroll():
