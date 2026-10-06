@@ -119,6 +119,11 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     app.processEvents()
     assert analytics._layout_mode == "narrow"
     assert grid_position(analytics.grid, analytics.trend_frame) == (4, 0, 1, 10)
+    reports = window.pages[5]
+    window.navigate(5)
+    app.processEvents()
+    assert reports._layout_mode == "narrow"
+    assert grid_position(reports.filters_grid, reports.source) == (3, 1, 1, 1)
 
     window.resize(1440, 920)
     app.processEvents()
@@ -137,6 +142,16 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     app.processEvents()
     assert analytics._layout_mode == "wide"
     assert grid_position(analytics.grid, analytics.trend_frame) == (2, 0, 1, 5)
+    window.navigate(5)
+    app.processEvents()
+    assert reports._layout_mode == "wide"
+    assert grid_position(reports.filters_grid, reports.source) == (1, 3, 1, 1)
+    window.navigate(4)
+    app.processEvents()
+    assert window.pages[4].search.isClearButtonEnabled()
+    window.navigate(6)
+    app.processEvents()
+    assert window.pages[6].team_count.text().startswith("共 ")
 
     reports = window.pages[5]
     reports.preset.setCurrentText("自定义")
@@ -235,6 +250,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "annual_standard_export": True,
         "native_windows_ui": True,
         "adaptive_native_layout": True,
+        "native_utility_pages": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)
