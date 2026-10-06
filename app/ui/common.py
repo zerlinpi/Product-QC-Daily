@@ -95,6 +95,7 @@ def confirm(parent, title, message, action="确认", cancel="取消", danger=Fal
     accept = dialog.addButton(action, QMessageBox.ButtonRole.AcceptRole)
     accept.setObjectName("danger" if danger else "primary")
     reject = dialog.addButton(cancel, QMessageBox.ButtonRole.RejectRole)
+    button_metrics(accept, reject)
     dialog.setDefaultButton(reject)
     dialog.setEscapeButton(reject)
     dialog.exec()
