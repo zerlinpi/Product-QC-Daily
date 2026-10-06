@@ -4,7 +4,16 @@ from PySide6.QtWidgets import QComboBox, QGridLayout, QWidget
 
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import date_range
-from app.ui.common import Page, button, card, grid_place, guarded, label, page_scroll, toolbar_layout
+from app.ui.common import (
+    Page,
+    button,
+    card,
+    grid_place,
+    guarded,
+    label,
+    page_scroll,
+    toolbar_layout,
+)
 from app.ui.widgets.chart_widget import ChartWidget
 from app.ui.widgets.stat_card import stat_card
 
