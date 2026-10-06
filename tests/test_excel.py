@@ -269,6 +269,12 @@ def test_legacy_layout_keeps_original_chart_positions_and_signature_cell(ctx, pa
         (3, 49),
         (3, 42),
     ]
+    assert not analysis.sheet_view.showGridLines
+    assert analysis.sheet_view.zoomScale == 85
+    assert analysis.page_setup.orientation == "landscape"
+    assert analysis.page_setup.fitToWidth == 1
+    assert analysis.print_options.horizontalCentered
+    assert analysis.print_area
     assert analysis._charts[2].series[0].val.numRef.f.endswith("$B$4:$B$27")
     assert analysis._charts[3].series[0].val.numRef.f.endswith("$H$34:$K$34")
     assert len(analysis._charts[4].series) == 1
