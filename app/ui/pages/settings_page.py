@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QSpinBox,
     QStyle,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -32,6 +31,7 @@ from app.ui.common import (
     native_group,
     page_scroll,
     populate,
+    stack_layout,
     table,
     toolbar_layout,
 )
@@ -45,9 +45,7 @@ class SettingsPage(Page):
         )
         scroll = page_scroll()
         content = QWidget()
-        body = QVBoxLayout(content)
-        body.setContentsMargins(0, 0, 0, 0)
-        body.setSpacing(8)
+        body = stack_layout(content)
         frame, layout = native_group("基础设置")
         form = form_layout()
         self.fields = {}
