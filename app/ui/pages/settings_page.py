@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFileDialog,
-    QGridLayout,
     QHeaderView,
     QLineEdit,
     QMessageBox,
@@ -26,6 +25,7 @@ from app.ui.common import (
     dialog_button_box,
     dialog_layout,
     form_layout,
+    form_grid,
     friendly_error,
     guarded,
     label,
@@ -139,9 +139,7 @@ class SettingsPage(Page):
         self.location.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         self.location.setToolTip(str(ctx.paths.root))
         layout.addWidget(self.location)
-        maintenance = QGridLayout()
-        maintenance.setHorizontalSpacing(12)
-        maintenance.setVerticalSpacing(8)
+        maintenance = form_grid()
 
         backup_actions = toolbar_layout()
         backup_button = button("立即备份全部数据", self.backup)
