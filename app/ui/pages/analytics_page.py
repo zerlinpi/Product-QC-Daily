@@ -13,6 +13,7 @@ from app.ui.common import (
     native_group,
     page_scroll,
     populate,
+    set_label_kind,
     table,
 )
 from app.ui.widgets.chart_widget import ChartWidget
@@ -201,6 +202,7 @@ class AnalyticsPage(Page):
             if valid
             else "日期范围无效：开始日期不能晚于结束日期"
         )
+        set_label_kind(self.scope, "warning" if valid else "error")
 
     @guarded
     def refresh(self, *_):
@@ -216,6 +218,7 @@ class AnalyticsPage(Page):
         self.scope.setText(
             f"当前范围：{filters.start} 至 {filters.end} · {self.source.currentText()} · {self.metric_choice.currentText()}"
         )
+        set_label_kind(self.scope, "status")
         comparison = self.ctx.statistics.comparison(filters)
         for widget, key in self.metrics:
             value, delta = comparison["current"][key], comparison["delta"][key]
