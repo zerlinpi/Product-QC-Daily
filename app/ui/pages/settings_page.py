@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.common import (
+    FORM_DIALOG_MIN_WIDTH,
     Page,
     align_table_columns,
     button,
@@ -253,7 +254,7 @@ class SettingsPage(Page):
         dialog = QDialog(self)
         dialog.setWindowTitle("编辑组别" if item else "新增组别")
         dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
-        dialog.setMinimumWidth(380)
+        dialog.setMinimumWidth(FORM_DIALOG_MIN_WIDTH)
         layout, form = dialog_layout(dialog), form_layout()
         layout.addWidget(
             label("名称为必填项；停用组别后不会影响已有检验记录。", "muted", True)
@@ -265,6 +266,7 @@ class SettingsPage(Page):
         order = QSpinBox()
         order.setRange(0, 10000)
         order.setValue(item["sort_order"] if item else 9)
+        control_metrics(name, order)
         for title, widget in [("名称", name), ("状态", enabled), ("排序", order)]:
             form.addRow(title, widget)
         layout.addLayout(form)
