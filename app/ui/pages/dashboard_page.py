@@ -5,8 +5,8 @@ from PySide6.QtWidgets import QComboBox, QWidget
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import date_range
 from app.ui.common import (
-    WIDE_LAYOUT_BREAKPOINT,
     COMPACT_FIELD_MIN_WIDTH,
+    WIDE_LAYOUT_BREAKPOINT,
     Page,
     button,
     card,
