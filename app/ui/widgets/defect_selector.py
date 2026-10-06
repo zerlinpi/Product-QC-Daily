@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.common import label, stack_layout, table, toolbar_layout
+from app.ui.common import align_table_columns, label, stack_layout, table, toolbar_layout
 
 
 class DefectSelector(QWidget):
@@ -33,6 +33,7 @@ class DefectSelector(QWidget):
         self.table.setColumnWidth(0, 55)
         self.table.setColumnWidth(1, 240)
         self.table.setColumnWidth(2, 105)
+        align_table_columns(self.table, right=(2,), center=(0,))
         self.table.setMinimumHeight(280)
         layout.addWidget(self.table, 1)
         self.total = label("已选 0 项 · 已知件数合计 0", "summary", True)
