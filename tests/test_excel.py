@@ -386,6 +386,7 @@ def test_legacy_export_syncs_current_team_and_defect_names(ctx, tmp_path):
 
 def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_path):
     from datetime import date
+    from zipfile import ZipFile
 
     from app.core.schemas import RecordFilter
 
@@ -424,8 +425,41 @@ def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_p
     assert monthly["F2"].number_format == "0.00%"
     assert monthly["H2"].number_format == "0.00%"
     assert len(monthly._charts) == 2
+
+    volume, rates = monthly._charts
+    assert volume.series[0].cat.strRef is not None
+    assert [point.v for point in volume.series[0].cat.strRef.strCache.pt] == [
+        f"2026-{month:02d}" for month in range(1, 13)
+    ]
+    assert [point.v for point in volume.series[0].val.numRef.numCache.pt] == [
+        monthly.cell(row, 2).value for row in range(2, 14)
+    ]
+    assert [point.v for point in rates.series[0].val.numRef.numCache.pt] == [
+        monthly.cell(row, 6).value for row in range(2, 14)
+    ]
+    assert [point.v for point in rates.series[1].val.numRef.numCache.pt] == [
+        monthly.cell(row, 8).value for row in range(2, 14)
+    ]
+    assert wb.calculation.calcMode == "auto"
+    assert wb.calculation.fullCalcOnLoad
+    assert wb.calculation.forceFullCalc
     assert dict(wb["统计摘要"].values)["数据范围"] == "演示数据"
     wb.close()
+
+    with ZipFile(path) as archive:
+        chart_xml = b"".join(
+            archive.read(name)
+            for name in archive.namelist()
+            if name.startswith("xl/charts/chart") and name.endswith(".xml")
+        )
+        assert b"strCache" in chart_xml
+        assert b"numCache" in chart_xml
+        assert b"2026-01" in chart_xml
+        assert b"2026-12" in chart_xml
+        workbook_xml = archive.read("xl/workbook.xml")
+        assert b'calcMode="auto"' in workbook_xml
+        assert b'fullCalcOnLoad="1"' in workbook_xml
+        assert b'forceFullCalc="1"' in workbook_xml
 
 
 
