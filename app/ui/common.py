@@ -126,6 +126,13 @@ def native_group(title):
     return group, layout
 
 
+def form_group(title):
+    group = QGroupBox(title)
+    layout = form_layout(group)
+    layout.setContentsMargins(*SECTION_MARGINS)
+    return group, layout
+
+
 def toolbar_layout(parent=None):
     layout = QHBoxLayout(parent) if parent is not None else QHBoxLayout()
     layout.setContentsMargins(0, 0, 0, 0)
