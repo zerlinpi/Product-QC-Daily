@@ -145,7 +145,7 @@ class RecordsPage(Page):
             if key != "export":
                 actions.addWidget(control)
         actions.addStretch()
-        self.selection_count = label("未选择记录", "muted")
+        self.selection_count = label("未选择记录", "summary")
         actions.addWidget(self.selection_count)
         actions.addWidget(self.action_buttons["export"])
         self.layout.addLayout(actions)
@@ -174,7 +174,7 @@ class RecordsPage(Page):
         self.trash.toggled.connect(self.search_records)
         self.layout.addWidget(self.table, 1)
         footer = toolbar_layout()
-        self.count = label("暂无记录", "muted")
+        self.count = label("暂无记录", "summary")
         footer.addWidget(self.count, 1)
         self.previous_button = button("上一页", lambda: self.turn(-1))
         self.next_button = button("下一页", lambda: self.turn(1))
