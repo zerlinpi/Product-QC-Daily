@@ -4,9 +4,9 @@ from PySide6.QtWidgets import QComboBox, QDateEdit, QWidget
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import (
-    WIDE_LAYOUT_BREAKPOINT,
     TABLE_LARGE_MIN_HEIGHT,
     TABLE_MEDIUM_MIN_HEIGHT,
+    WIDE_LAYOUT_BREAKPOINT,
     Page,
     align_table_columns,
     button,
