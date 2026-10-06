@@ -120,9 +120,9 @@ def confirm(parent, title, message, action="确认", cancel="取消", danger=Fal
     dialog.setText(message)
     dialog.setIcon(QMessageBox.Icon.Warning if danger else QMessageBox.Icon.Question)
     accept = dialog.addButton(action, QMessageBox.ButtonRole.AcceptRole)
-    accept.setObjectName("danger" if danger else "primary")
+    apply_button_role(accept, primary=not danger, danger=danger)
     reject = dialog.addButton(cancel, QMessageBox.ButtonRole.RejectRole)
-    button_metrics(accept, reject)
+    button_metrics(reject)
     dialog.setDefaultButton(reject)
     dialog.setEscapeButton(reject)
     dialog.exec()
@@ -150,10 +150,9 @@ def button_metrics(*widgets):
     return widgets
 
 
-def button(text, callback=None, primary=False, danger=False, icon=None):
-    widget = QPushButton(text)
+def apply_button_role(widget, primary=False, danger=False, icon=None):
+    """Apply one shared visual hierarchy to page and dialog action buttons."""
     widget.setObjectName("primary" if primary else "danger" if danger else "")
-    widget.setAutoDefault(False)
     button_metrics(widget)
     if primary:
         font = widget.font()
@@ -164,6 +163,13 @@ def button(text, callback=None, primary=False, danger=False, icon=None):
         widget.setIcon(style.standardIcon(icon))
     elif danger and style:
         widget.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning))
+    return widget
+
+
+def button(text, callback=None, primary=False, danger=False, icon=None):
+    widget = QPushButton(text)
+    widget.setAutoDefault(False)
+    apply_button_role(widget, primary=primary, danger=danger, icon=icon)
     if callback:
         widget.clicked.connect(callback)
     return widget
