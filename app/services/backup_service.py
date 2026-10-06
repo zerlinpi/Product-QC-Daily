@@ -174,11 +174,17 @@ class BackupService:
                         with archive.open(manifest_info) as raw:
                             with TextIOWrapper(raw, encoding="utf-8") as stream:
                                 manifest = json.load(stream)
-                        if manifest.get("format") != 1 or "product_qc.db" not in manifest.get(
-                            "files", {}
+                        files = manifest.get("files") if isinstance(manifest, dict) else None
+                        if (
+                            not isinstance(manifest, dict)
+                            or manifest.get("format") != 1
+                            or not isinstance(files, dict)
+                            or "product_qc.db" not in files
                         ):
                             raise ValueError("备份清单无效")
-                        for name, checksum in manifest["files"].items():
+                        for name, checksum in files.items():
+                            if not isinstance(name, str) or not isinstance(checksum, str):
+                                raise ValueError("备份清单无效")
                             valid = name == "product_qc.db" or (
                                 name.startswith("signatures/")
                                 and Path(name).name == name.removeprefix("signatures/")
@@ -193,7 +199,7 @@ class BackupService:
                     names = verify_database(target_db)
                     if any(not (stage / "signatures" / name).is_file() for name in names):
                         raise ValueError("备份缺少签名文件，当前数据库保持不变")
-            except (BadZipFile, KeyError, json.JSONDecodeError, OSError) as exc:
+            except (BadZipFile, KeyError, RuntimeError, UnicodeError, json.JSONDecodeError, OSError) as exc:
                 raise ValueError("无法读取完整备份；当前数据库保持不变") from exc
             # Preserve current database before the first mutation, including a damaged-media state.
             before = self.backup("before_restore", allow_missing=True)
