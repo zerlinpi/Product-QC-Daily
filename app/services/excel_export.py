@@ -122,6 +122,9 @@ def style_table(ws):
     ws.page_margins.right = 0.25
     ws.page_margins.top = 0.5
     ws.page_margins.bottom = 0.5
+    ws.page_margins.header = 0.2
+    ws.page_margins.footer = 0.2
+    ws.print_options.horizontalCentered = True
     ws.print_title_rows = "1:1"
 
     filter_sheets = {"检验记录", "不良明细", "不良项目", "月度统计"}
@@ -189,7 +192,11 @@ def style_table(ws):
     if ws.title == "检验记录":
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         for row in range(2, last_row + 1):
+            ws.cell(row, 1).alignment = Alignment(
+                horizontal="center", vertical="center", wrap_text=True
+            )
             ws.cell(row, 2).alignment = Alignment(horizontal="center", vertical="center")
+            ws.cell(row, 4).alignment = Alignment(vertical="center", wrap_text=True)
             for column in (3, 5, 6, 7, 9, 13, 14):
                 ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
             for column in (5, 6, 7):
@@ -199,9 +206,11 @@ def style_table(ws):
             ws.row_dimensions[row].height = max(
                 ws.row_dimensions[row].height or 22,
                 wrapped_row_height(
+                    (ws.cell(row, 1).value, ws.column_dimensions["A"].width),
+                    (ws.cell(row, 4).value, ws.column_dimensions["D"].width),
                     (ws.cell(row, 8).value, ws.column_dimensions["H"].width),
                     (ws.cell(row, 12).value, ws.column_dimensions["L"].width),
-                    maximum=90,
+                    maximum=96,
                 ),
             )
             judgment = ws.cell(row, 9)
@@ -216,13 +225,15 @@ def style_table(ws):
     elif ws.title == "不良明细":
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
         for row in range(2, last_row + 1):
+            ws.cell(row, 1).alignment = Alignment(vertical="center", wrap_text=True)
             ws.cell(row, 5).alignment = Alignment(vertical="top", wrap_text=True)
             ws.row_dimensions[row].height = max(
                 ws.row_dimensions[row].height or 22,
                 wrapped_row_height(
+                    (ws.cell(row, 1).value, ws.column_dimensions["A"].width),
                     (ws.cell(row, 3).value, ws.column_dimensions["C"].width),
                     (ws.cell(row, 5).value, ws.column_dimensions["E"].width),
-                    maximum=66,
+                    maximum=90,
                 ),
             )
         ws.print_area = f"A1:{last_letter}{last_row}"
@@ -677,6 +688,16 @@ def improve_analysis_display(ws):
     ws["A61"].alignment = alignment
 
 
+def standard_freeze_spec(title: str):
+    return {
+        "检验记录": (2, "C2"),
+        "不良明细": (2, "C2"),
+        "不良项目": (1, "B2"),
+        "统计摘要": (0, "A2"),
+        "月度统计": (1, "B2"),
+    }.get(title, (0, "A2"))
+
+
 def reset_workbook_views(wb, active_title, legacy=False):
     """Do not carry a template's saved scroll position into a fresh report.
 
@@ -709,18 +730,36 @@ def reset_workbook_views(wb, active_title, legacy=False):
                 Selection(pane="bottomLeft", activeCell="B2", sqref="B2"),
                 Selection(pane="bottomRight", activeCell="C2", sqref="C2"),
             ]
-        elif not legacy and ws.title == active_title:
-            view.pane = Pane(
-                xSplit=2, ySplit=1, topLeftCell="C2", activePane="bottomRight", state="frozen"
-            )
-            view.selection = [
-                Selection(pane="topRight", activeCell="C1", sqref="C1"),
-                Selection(pane="bottomLeft", activeCell="A2", sqref="A2"),
-                Selection(pane="bottomRight", activeCell="C2", sqref="C2"),
-            ]
         elif not legacy:
-            view.pane = Pane(ySplit=1, topLeftCell="A2", activePane="bottomLeft", state="frozen")
-            view.selection = [Selection(pane="bottomLeft", activeCell="A2", sqref="A2")]
+            x_split, top_left = standard_freeze_spec(ws.title)
+            if x_split:
+                split_column = get_column_letter(x_split + 1)
+                view.pane = Pane(
+                    xSplit=x_split,
+                    ySplit=1,
+                    topLeftCell=top_left,
+                    activePane="bottomRight",
+                    state="frozen",
+                )
+                view.selection = [
+                    Selection(
+                        pane="topRight",
+                        activeCell=f"{split_column}1",
+                        sqref=f"{split_column}1",
+                    ),
+                    Selection(pane="bottomLeft", activeCell="A2", sqref="A2"),
+                    Selection(pane="bottomRight", activeCell=top_left, sqref=top_left),
+                ]
+            else:
+                view.pane = Pane(
+                    ySplit=1,
+                    topLeftCell=top_left,
+                    activePane="bottomLeft",
+                    state="frozen",
+                )
+                view.selection = [
+                    Selection(pane="bottomLeft", activeCell=top_left, sqref=top_left)
+                ]
         ws.views.sheetView = [view]
 
 
