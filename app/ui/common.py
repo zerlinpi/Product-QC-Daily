@@ -28,6 +28,10 @@ from PySide6.QtWidgets import (
 
 from app.core.validation import validation_message
 
+APP_DEFAULT_SIZE = (1440, 920)
+APP_MIN_SIZE = (1080, 720)
+APP_MAX_SIZE = (2400, 1600)
+SIDEBAR_WIDTH = 176
 PAGE_MARGINS = (14, 12, 14, 12)
 DIALOG_MARGINS = (14, 12, 14, 12)
 SECTION_MARGINS = (10, 12, 10, 10)
