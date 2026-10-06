@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.common import (
+    align_table_columns,
     dialog_button_box,
     dialog_layout,
     form_grid,
@@ -88,6 +89,7 @@ class DemoDialog(QDialog):
         self.table = table(["不良项目", "相对频率"])
         self.table.setColumnWidth(0, 430)
         self.table.horizontalHeader().setStretchLastSection(True)
+        align_table_columns(self.table, right=(1,))
         self.items = []
         defects = ctx.defects.list(enabled_only=True)
         self.table.setRowCount(len(defects))
