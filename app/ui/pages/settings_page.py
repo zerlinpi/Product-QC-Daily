@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.common import (
+    align_table_columns,
     Page,
     button,
     confirm,
@@ -129,6 +130,7 @@ class SettingsPage(Page):
         self.teams.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.teams.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self.teams.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        align_table_columns(self.teams, right=(2,), center=(1,))
         self.teams.cellDoubleClicked.connect(lambda *_: self.edit_team(True))
         layout.addWidget(self.teams)
         body.addWidget(frame)
