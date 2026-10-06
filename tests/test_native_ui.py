@@ -401,3 +401,74 @@ def test_chart_palette_tracks_application_theme(qtbot):
     assert dark["text"].name() == QApplication.palette().windowText().color().name()
 
     apply_theme("light")
+
+
+
+def test_reusable_widgets_share_vertical_rhythm_and_empty_state_role(ctx, qtbot):
+    from PySide6.QtWidgets import QWidget
+
+    from app.ui.common import LAYOUT_SPACING, SECTION_MARGINS, stack_layout
+    from app.ui.widgets.chart_widget import ChartWidget
+    from app.ui.widgets.defect_selector import DefectSelector
+    from app.ui.widgets.stat_card import stat_card
+
+    host = QWidget()
+    qtbot.addWidget(host)
+    layout = stack_layout(host)
+    assert layout.getContentsMargins() == (0, 0, 0, 0)
+    assert layout.spacing() == LAYOUT_SPACING
+
+    chart = ChartWidget("一致性图表")
+    qtbot.addWidget(chart)
+    assert chart.layout().getContentsMargins() == (0, 0, 0, 0)
+    assert chart.layout().spacing() == LAYOUT_SPACING
+    assert chart.empty.objectName() == "empty"
+
+    selector = DefectSelector(ctx)
+    qtbot.addWidget(selector)
+    assert selector.layout().getContentsMargins() == (0, 0, 0, 0)
+    assert selector.layout().spacing() == LAYOUT_SPACING
+
+    metric = stat_card("一致性指标")
+    qtbot.addWidget(metric)
+    assert metric.layout().getContentsMargins() == SECTION_MARGINS
+    assert metric.layout().spacing() == 4
+
+
+def test_table_headers_follow_numeric_and_status_alignment(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    records = window.pages[2].table
+    assert records.horizontalHeaderItem(4).textAlignment() & Qt.AlignmentFlag.AlignRight
+    assert records.horizontalHeaderItem(7).textAlignment() & Qt.AlignmentFlag.AlignHCenter
+
+    analytics = window.pages[3]
+    assert analytics.ranking.horizontalHeaderItem(5).textAlignment() & Qt.AlignmentFlag.AlignRight
+    assert analytics.teams_table.horizontalHeaderItem(7).textAlignment() & Qt.AlignmentFlag.AlignRight
+
+    defects = window.pages[4].table
+    assert defects.horizontalHeaderItem(4).textAlignment() & Qt.AlignmentFlag.AlignRight
+    assert defects.horizontalHeaderItem(3).textAlignment() & Qt.AlignmentFlag.AlignHCenter
+
+    settings = window.pages[6].teams
+    assert settings.horizontalHeaderItem(2).textAlignment() & Qt.AlignmentFlag.AlignRight
+    assert settings.horizontalHeaderItem(1).textAlignment() & Qt.AlignmentFlag.AlignHCenter
+
+
+def test_normal_summary_and_empty_states_use_distinct_visual_roles(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    records = window.pages[2]
+    records.refresh()
+    assert records.count.objectName() == "summary"
+
+    analytics = window.pages[3]
+    analytics.refresh()
+    if analytics.pareto._pareto_rows:
+        assert analytics.top80.objectName() == "summary"
+    else:
+        assert analytics.top80.objectName() == "empty"
+
+    assert window.pages[0].charts[0].empty.objectName() == "empty"

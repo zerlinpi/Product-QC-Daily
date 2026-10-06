@@ -36,6 +36,7 @@ from app.ui.common import (
     button,
     dialog_button_box,
     friendly_error,
+    stack_layout,
 )
 from app.ui.dialogs.file_dialogs import ExcelSaveDialog
 from app.ui.localization import configure_chinese_ui
@@ -138,6 +139,11 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert not danger_probe.icon().isNull()
     primary_probe.deleteLater()
     danger_probe.deleteLater()
+    stack_probe = QFrame()
+    stack_probe_layout = stack_layout(stack_probe)
+    assert stack_probe_layout.getContentsMargins() == (0, 0, 0, 0)
+    assert stack_probe_layout.spacing() == LAYOUT_SPACING
+    stack_probe.deleteLater()
 
     def grid_position(layout, widget):
         index = layout.indexOf(widget)
@@ -205,6 +211,16 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert window.pages[5].import_status.objectName() == "summary"
     assert window.pages[6].team_count.objectName() == "summary"
     assert window.pages[1].defects.total.objectName() == "summary"
+    assert window.pages[2].count.objectName() == "summary"
+    assert window.pages[0].charts[0].empty.objectName() == "empty"
+    assert (
+        window.pages[2].table.horizontalHeaderItem(4).textAlignment()
+        & Qt.AlignmentFlag.AlignRight
+    )
+    assert (
+        window.pages[4].table.horizontalHeaderItem(3).textAlignment()
+        & Qt.AlignmentFlag.AlignHCenter
+    )
     window.refresh_theme()
 
     reports = window.pages[5]
@@ -307,6 +323,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "native_utility_pages": True,
         "unified_native_ui": True,
         "component_ui_consistency": True,
+        "full_ui_style_consistency": True,
     }
     if report_path:
         report_path.parent.mkdir(parents=True, exist_ok=True)

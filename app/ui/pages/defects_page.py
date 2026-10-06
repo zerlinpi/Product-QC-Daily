@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QLineEdit
 
 from app.ui.common import (
     Page,
+    align_table_columns,
     button,
     confirm,
     guarded,
@@ -47,6 +48,7 @@ class DefectsPage(Page):
         self.table.setColumnWidth(2, 160)
         self.table.setColumnWidth(3, 80)
         self.table.setColumnWidth(4, 70)
+        align_table_columns(self.table, right=(4,), center=(3,))
         self.table.cellDoubleClicked.connect(lambda *_: self.edit())
         group_layout.addWidget(self.table, 1)
         footer = toolbar_layout()

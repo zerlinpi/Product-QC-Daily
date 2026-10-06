@@ -155,6 +155,14 @@ def toolbar_layout(parent=None):
     return layout
 
 
+def stack_layout(parent=None, margins=(0, 0, 0, 0), spacing=LAYOUT_SPACING):
+    """Shared vertical rhythm for page bodies and reusable widgets."""
+    layout = QVBoxLayout(parent) if parent is not None else QVBoxLayout()
+    layout.setContentsMargins(*margins)
+    layout.setSpacing(spacing)
+    return layout
+
+
 def form_layout(parent=None):
     layout = QFormLayout(parent) if parent is not None else QFormLayout()
     layout.setHorizontalSpacing(12)
@@ -180,10 +188,7 @@ def content_grid(parent=None):
 
 
 def dialog_layout(dialog):
-    layout = QVBoxLayout(dialog)
-    layout.setContentsMargins(*DIALOG_MARGINS)
-    layout.setSpacing(LAYOUT_SPACING)
-    return layout
+    return stack_layout(dialog, DIALOG_MARGINS)
 
 
 def dialog_button_box(buttons, default=None):
@@ -239,6 +244,18 @@ def table(headers):
     )
     widget.horizontalHeader().setStretchLastSection(True)
     return widget
+
+
+def align_table_columns(widget, right=(), center=()):
+    """Keep table headers aligned with the data they describe."""
+    for column in right:
+        item = widget.horizontalHeaderItem(column)
+        if item is not None:
+            item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    for column in center:
+        item = widget.horizontalHeaderItem(column)
+        if item is not None:
+            item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
 
 
 def palette_color(role):
@@ -317,9 +334,7 @@ class Page(QWidget):
         super().__init__()
         self.ctx, self.window = ctx, window
         self.setObjectName("page")
-        self.layout = QVBoxLayout(self)
-        self.layout.setContentsMargins(*PAGE_MARGINS)
-        self.layout.setSpacing(LAYOUT_SPACING)
+        self.layout = stack_layout(self, PAGE_MARGINS)
         self.title_label = label(title, "title")
         self.subtitle_label = label(subtitle, "subtitle", True)
         self.layout.addWidget(self.title_label)

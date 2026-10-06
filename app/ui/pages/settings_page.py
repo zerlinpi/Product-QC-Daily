@@ -14,12 +14,12 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QSpinBox,
     QStyle,
-    QVBoxLayout,
     QWidget,
 )
 
 from app.ui.common import (
     Page,
+    align_table_columns,
     button,
     confirm,
     dialog_button_box,
@@ -32,6 +32,7 @@ from app.ui.common import (
     native_group,
     page_scroll,
     populate,
+    stack_layout,
     table,
     toolbar_layout,
 )
@@ -45,9 +46,7 @@ class SettingsPage(Page):
         )
         scroll = page_scroll()
         content = QWidget()
-        body = QVBoxLayout(content)
-        body.setContentsMargins(0, 0, 0, 0)
-        body.setSpacing(8)
+        body = stack_layout(content)
         frame, layout = native_group("基础设置")
         form = form_layout()
         self.fields = {}
@@ -131,6 +130,7 @@ class SettingsPage(Page):
         self.teams.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.teams.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self.teams.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
+        align_table_columns(self.teams, right=(2,), center=(1,))
         self.teams.cellDoubleClicked.connect(lambda *_: self.edit_team(True))
         layout.addWidget(self.teams)
         body.addWidget(frame)
@@ -250,6 +250,9 @@ class SettingsPage(Page):
         dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         dialog.setMinimumWidth(380)
         layout, form = dialog_layout(dialog), form_layout()
+        layout.addWidget(
+            label("名称为必填项；停用组别后不会影响已有检验记录。", "muted", True)
+        )
         name = QLineEdit(item["name"] if item else "")
         name.setPlaceholderText("请输入组别名称")
         enabled = QCheckBox("启用此组别")

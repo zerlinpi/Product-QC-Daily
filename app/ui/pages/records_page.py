@@ -17,6 +17,7 @@ from app.core.labels import source_label
 from app.core.schemas import RecordFilter
 from app.ui.common import (
     Page,
+    align_table_columns,
     button,
     confirm,
     form_grid,
@@ -163,6 +164,7 @@ class RecordsPage(Page):
         )
         for col, width in enumerate([215, 165, 75, 200, 85, 85, 85, 90, 120, 85]):
             self.table.setColumnWidth(col, width)
+        align_table_columns(self.table, right=(4, 5, 6), center=(2, 7, 9))
         self.table.horizontalHeader().setSortIndicatorShown(True)
         self.table.horizontalHeader().sectionClicked.connect(self.sort_by)
         self.table.cellDoubleClicked.connect(lambda *_: self.edit())
@@ -264,7 +266,7 @@ class RecordsPage(Page):
                 set_label_kind(self.count, "warning")
             else:
                 self.count.setText(self.result_summary)
-                set_label_kind(self.count, "muted")
+                set_label_kind(self.count, "summary")
         if hasattr(self, "previous_button"):
             self.previous_button.setEnabled(not self.filters_dirty and self.page > 1)
             pages = max(1, (getattr(self, "total", 0) + 49) // 50)
@@ -395,7 +397,7 @@ class RecordsPage(Page):
             + (" · 可调整条件或重置筛选" if not total else "")
         )
         self.count.setText(self.result_summary)
-        set_label_kind(self.count, "muted")
+        set_label_kind(self.count, "summary")
         self.total = total
         self.filters_dirty = False
         self.previous_button.setEnabled(self.page > 1)
