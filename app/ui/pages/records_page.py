@@ -7,7 +7,6 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDateEdit,
-    QInputDialog,
     QLineEdit,
     QMenu,
     QWidget,
@@ -20,6 +19,7 @@ from app.ui.common import (
     Page,
     align_table_columns,
     button,
+    choice_input_dialog,
     confirm,
     control_metrics,
     field_label,
@@ -31,6 +31,7 @@ from app.ui.common import (
     populate,
     set_label_kind,
     table,
+    text_input_dialog,
     toolbar_layout,
 )
 from app.ui.dialogs import file_dialogs
@@ -489,12 +490,12 @@ class RecordsPage(Page):
         ids = self.selected_ids()
         if not ids:
             return
-        value, ok = QInputDialog.getItem(
+        value, ok = choice_input_dialog(
             self,
-            "批量修改",
-            f"将 {len(ids)} 条记录的组别设为",
+            "批量修改组别",
+            f"将修改所选 {len(ids)} 条记录。",
+            "组别",
             [t["name"] for t in self.ctx.settings.teams(True)],
-            editable=False,
         )
         if ok:
             self.ctx.inspections.bulk_update(ids, team=value)
@@ -505,7 +506,12 @@ class RecordsPage(Page):
         ids = self.selected_ids()
         if not ids:
             return
-        value, ok = QInputDialog.getText(self, "批量修改", f"将 {len(ids)} 条记录的检验员设为")
+        value, ok = text_input_dialog(
+            self,
+            "批量修改检验员",
+            f"将修改所选 {len(ids)} 条记录。",
+            "检验员",
+        )
         if ok:
             self.ctx.inspections.bulk_update(ids, inspector=value)
             self.load_rows()
