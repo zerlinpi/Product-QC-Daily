@@ -334,7 +334,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert defects.count.objectName() == "empty"
     defects.search.clear()
     assert window.pages[1].defects.total.objectName() == "summary"
-    assert window.pages[2].count.objectName() == "summary"
+    assert window.pages[2].count.objectName() == "empty"
     assert window.pages[0].charts[0].empty.objectName() == "empty"
     assert (
         window.pages[2].table.horizontalHeaderItem(4).textAlignment()
@@ -378,6 +378,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     records.refresh()
     assert not records.filters_dirty
     assert records.applied_filters.source == "demo"
+    assert records.count.objectName() == "summary"
 
     assert header_footer_text("A" * 63 + "&TRAILING", 64).endswith("&&")
 
