@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from app.core.labels import source_label
 from app.core.schemas import RecordFilter
 from app.ui.common import (
+    align_table_columns,
     Page,
     button,
     confirm,
@@ -163,6 +164,7 @@ class RecordsPage(Page):
         )
         for col, width in enumerate([215, 165, 75, 200, 85, 85, 85, 90, 120, 85]):
             self.table.setColumnWidth(col, width)
+        align_table_columns(self.table, right=(4, 5, 6), center=(2, 7, 9))
         self.table.horizontalHeader().setSortIndicatorShown(True)
         self.table.horizontalHeader().sectionClicked.connect(self.sort_by)
         self.table.cellDoubleClicked.connect(lambda *_: self.edit())
