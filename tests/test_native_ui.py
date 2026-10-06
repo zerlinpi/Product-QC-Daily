@@ -498,6 +498,10 @@ def test_all_page_fields_share_one_native_control_height(ctx, qtbot):
         entry.inspector,
         entry.defects.search,
         entry.defects.category,
+        entry.auto_time,
+        *entry.keep.values(),
+        records.range_enabled,
+        records.trash,
         records.start,
         records.end,
         records.team,
@@ -520,7 +524,9 @@ def test_all_page_fields_share_one_native_control_height(ctx, qtbot):
         reports.source,
         settings.theme,
         settings.retention,
+        settings.auto_backup,
         *settings.fields.values(),
+        *[check for _, check, _ in entry.defects.entries],
         *[qty for _, _, qty in entry.defects.entries],
     ]
 
