@@ -312,7 +312,7 @@ def test_workflow_sections_use_consistent_native_group_boxes(ctx, qtbot):
 
 
 def test_common_buttons_share_native_height_and_action_hierarchy(qtbot):
-    from app.ui.common import CONTROL_MIN_HEIGHT, button
+    from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT, button
 
     normal = button("普通")
     primary = button("主要", primary=True)
@@ -320,6 +320,7 @@ def test_common_buttons_share_native_height_and_action_hierarchy(qtbot):
     for widget in (normal, primary, danger):
         qtbot.addWidget(widget)
         assert widget.minimumHeight() == CONTROL_MIN_HEIGHT
+        assert widget.minimumWidth() == BUTTON_MIN_WIDTH
         assert not widget.autoDefault()
 
     assert primary.font().bold()
@@ -349,7 +350,7 @@ def test_dynamic_status_labels_use_consistent_tones(ctx, qtbot):
 def test_dialog_button_box_helper_unifies_native_metrics(qtbot):
     from PySide6.QtWidgets import QDialogButtonBox
 
-    from app.ui.common import CONTROL_MIN_HEIGHT, dialog_button_box
+    from app.ui.common import BUTTON_MIN_WIDTH, CONTROL_MIN_HEIGHT, dialog_button_box
 
     box = dialog_button_box(
         QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
@@ -361,6 +362,8 @@ def test_dialog_button_box_helper_unifies_native_metrics(qtbot):
     cancel = box.button(QDialogButtonBox.StandardButton.Cancel)
     assert save.minimumHeight() == CONTROL_MIN_HEIGHT
     assert cancel.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert save.minimumWidth() == BUTTON_MIN_WIDTH
+    assert cancel.minimumWidth() == BUTTON_MIN_WIDTH
     assert save.isDefault()
     assert save.autoDefault()
     assert not cancel.autoDefault()
@@ -472,3 +475,54 @@ def test_normal_summary_and_empty_states_use_distinct_visual_roles(ctx, qtbot):
         assert analytics.top80.objectName() == "empty"
 
     assert window.pages[0].charts[0].empty.objectName() == "empty"
+
+
+
+def test_all_page_fields_share_one_native_control_height(ctx, qtbot):
+    from app.ui.common import CONTROL_MIN_HEIGHT
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    dashboard, entry, records, analytics, defects, reports, settings = window.pages
+
+    controls = [
+        dashboard.source,
+        entry.inspection_date,
+        entry.inspection_time,
+        entry.team,
+        entry.work_order,
+        entry.inspection_quantity,
+        entry.sampling_quantity,
+        entry.defect_quantity,
+        entry.judgment,
+        entry.inspector,
+        entry.defects.search,
+        entry.defects.category,
+        records.start,
+        records.end,
+        records.team,
+        records.judgment,
+        records.source,
+        records.defect,
+        records.has_defects,
+        records.search,
+        records.work_order,
+        records.inspector,
+        analytics.preset,
+        analytics.start,
+        analytics.end,
+        analytics.source,
+        analytics.metric_choice,
+        defects.search,
+        reports.preset,
+        reports.start,
+        reports.end,
+        reports.source,
+        settings.theme,
+        settings.retention,
+        *settings.fields.values(),
+        *[qty for _, _, qty in entry.defects.entries],
+    ]
+
+    assert controls
+    assert all(control.minimumHeight() == CONTROL_MIN_HEIGHT for control in controls)
