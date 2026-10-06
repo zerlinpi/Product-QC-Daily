@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from app.core.schemas import InspectionInput, RecordFilter
 from app.ui.common import (
+    WIDE_LAYOUT_BREAKPOINT,
     REMARK_MAX_HEIGHT,
     SIGNATURE_PREVIEW_MIN_HEIGHT,
     Page,
@@ -181,7 +182,7 @@ class InspectionPage(Page):
         )
 
     def _reflow_content(self):
-        mode = "wide" if self.width() >= 1100 else "narrow"
+        mode = "wide" if self.width() >= WIDE_LAYOUT_BREAKPOINT else "narrow"
         if mode == self._layout_mode:
             return
         self._layout_mode = mode
