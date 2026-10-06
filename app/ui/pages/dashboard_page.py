@@ -6,6 +6,7 @@ from app.core.schemas import RecordFilter
 from app.services.statistics_service import date_range
 from app.ui.common import (
     COMPACT_FIELD_MIN_WIDTH,
+    WIDE_LAYOUT_BREAKPOINT,
     Page,
     button,
     card,
@@ -84,7 +85,7 @@ class DashboardPage(Page):
         self._reflow_content()
 
     def _reflow_content(self):
-        mode = "wide" if self.width() >= 1100 else "narrow"
+        mode = "wide" if self.width() >= WIDE_LAYOUT_BREAKPOINT else "narrow"
         if mode == self._layout_mode:
             return
         self._layout_mode = mode
