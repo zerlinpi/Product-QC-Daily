@@ -572,6 +572,11 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert records["A2"].alignment.wrap_text
     assert records["D2"].alignment.wrap_text
     assert records["E2"].number_format == "#,##0"
+    assert records["E2"].alignment.horizontal == "right"
+    assert records["G2"].alignment.horizontal == "right"
+    assert records["G2"].fill.fgColor.rgb.endswith("FCE4D6")
+    assert records["G2"].font.bold
+    assert records["A1"].border.bottom.style == "medium"
     assert records.row_dimensions[2].height > 22
     assert records.print_area
 
@@ -580,10 +585,14 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert detail.print_area
     assert detail.freeze_panes == "C2"
     assert detail["A2"].alignment.wrap_text
+    assert detail["D2"].alignment.horizontal == "right"
+    assert detail["D2"].number_format == "#,##0"
 
     dictionary = wb["不良项目"]
     assert dictionary.print_area
     assert dictionary.freeze_panes == "B2"
+    assert dictionary["E2"].alignment.horizontal == "right"
+    assert dictionary["E2"].number_format == "#,##0"
 
     summary = wb["统计摘要"]
     assert summary.page_setup.orientation == "portrait"
@@ -597,6 +606,15 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
         summary.cell(row, 1).value: row for row in range(2, summary.max_row + 1)
     }
     assert summary.row_dimensions[note_rows["口径"]].height > 22
+    assert summary.cell(note_rows["口径"], 2).alignment.horizontal == "left"
+    metric_rows = {
+        summary.cell(row, 1).value: row for row in range(2, summary.max_row + 1)
+    }
+    assert summary.cell(metric_rows["不良率"], 2).fill.fgColor.rgb.endswith("FCE4D6")
+    assert summary.cell(metric_rows["不良率"], 2).font.color.rgb.endswith("C65911")
+    assert summary.cell(metric_rows["合格率"], 2).fill.fgColor.rgb.endswith("E2F0D9")
+    assert summary.cell(metric_rows["合格率"], 2).font.color.rgb.endswith("375623")
+    assert summary.cell(metric_rows["检验数量"], 2).alignment.horizontal == "right"
 
     monthly = wb["月度统计"]
     assert monthly["A2"].value
@@ -610,6 +628,9 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     assert monthly.freeze_panes == "B2"
     assert monthly["B2"].number_format == "#,##0"
     assert monthly["G2"].number_format == "#,##0"
+    assert monthly["B2"].alignment.horizontal == "right"
+    assert monthly["F2"].alignment.horizontal == "right"
+    assert monthly.cell(monthly.max_row, 1).border.top.style == "medium"
     assert monthly.print_area
     assert monthly.row_dimensions[monthly.max_row].height >= 24
     wb.close()
