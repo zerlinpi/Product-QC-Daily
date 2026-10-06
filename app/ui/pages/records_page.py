@@ -59,7 +59,7 @@ class RecordsPage(Page):
         self.result_summary = "暂无记录"
         filters, box = native_group("筛选条件")
         self.filters_grid = QGridLayout()
-        self.filters_grid.setHorizontalSpacing(8)
+        self.filters_grid.setHorizontalSpacing(12)
         self.filters_grid.setVerticalSpacing(8)
         self._filter_layout_mode = None
         self.range_enabled = QCheckBox("按日期筛选")
