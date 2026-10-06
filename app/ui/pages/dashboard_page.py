@@ -1,6 +1,6 @@
 from datetime import date, datetime, timedelta
 
-from PySide6.QtWidgets import QComboBox, QGridLayout, QWidget
+from PySide6.QtWidgets import QComboBox, QWidget
 
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import date_range
@@ -8,6 +8,7 @@ from app.ui.common import (
     Page,
     button,
     card,
+    content_grid,
     grid_place,
     guarded,
     label,
@@ -38,9 +39,7 @@ class DashboardPage(Page):
         self.layout.addLayout(toolbar)
         scroll = page_scroll()
         content = QWidget()
-        self.grid = QGridLayout(content)
-        self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.setSpacing(8)
+        self.grid = content_grid(content)
         self.cards = []
         self._layout_mode = None
         definitions = [
