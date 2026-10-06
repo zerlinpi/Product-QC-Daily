@@ -1,5 +1,6 @@
 import pyqtgraph as pg
 
+from app.ui.common import chart_palette
 from app.ui.widgets.chart_widget import ChartWidget
 
 
@@ -16,7 +17,22 @@ class ParetoWidget(ChartWidget):
         item.getAxis("right").linkToView(self.percentage_view)
         self.percentage_view.setXLink(item.vb)
         self.percentage_view.setYRange(0, 100, padding=0)
+        self._pareto_rows = []
         item.vb.sigResized.connect(self.sync_geometry)
+        self._apply_pareto_theme()
+
+    def _apply_pareto_theme(self):
+        colors = chart_palette()
+        axis = self.plot.getAxis("right")
+        axis.setPen(colors["axis"])
+        axis.setTextPen(colors["text"])
+        return colors
+
+    def refresh_theme(self):
+        self._apply_theme()
+        self._apply_pareto_theme()
+        if self._pareto_rows:
+            self.show_rows(self._pareto_rows)
 
     def sync_geometry(self):
         self.percentage_view.setGeometry(self.plot.getPlotItem().vb.sceneBoundingRect())
@@ -25,13 +41,19 @@ class ParetoWidget(ChartWidget):
         )
 
     def show_rows(self, rows):
-        self.draw([r["code"] for r in rows], [r["value"] for r in rows], bars=True)
+        self._pareto_rows = list(rows)
+        colors = self._apply_pareto_theme()
+        self.draw(
+            [r["code"] for r in self._pareto_rows],
+            [r["value"] for r in self._pareto_rows],
+            bars=True,
+        )
         self.percentage_view.clear()
         self.percentage_view.addItem(
             pg.PlotCurveItem(
                 list(range(len(rows))),
-                [r["cumulative"] * 100 for r in rows],
-                pen=pg.mkPen("#ca5010", width=2.5),
+                [r["cumulative"] * 100 for r in self._pareto_rows],
+                pen=pg.mkPen(colors["warning"], width=2.5),
             )
         )
         self.percentage_view.addItem(
@@ -39,7 +61,7 @@ class ParetoWidget(ChartWidget):
                 80,
                 angle=0,
                 pen=pg.mkPen(
-                    "#ca5010",
+                    colors["warning"],
                     width=1,
                     style=__import__("PySide6.QtCore", fromlist=["Qt"]).Qt.PenStyle.DashLine,
                 ),
