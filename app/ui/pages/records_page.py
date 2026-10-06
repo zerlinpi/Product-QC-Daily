@@ -16,8 +16,8 @@ from PySide6.QtWidgets import (
 from app.core.labels import source_label
 from app.core.schemas import RecordFilter
 from app.ui.common import (
-    align_table_columns,
     Page,
+    align_table_columns,
     button,
     confirm,
     form_grid,
