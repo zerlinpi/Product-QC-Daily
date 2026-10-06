@@ -2,7 +2,7 @@ import pyqtgraph as pg
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 
-from app.ui.common import chart_palette, label, stack_layout
+from app.ui.common import CHART_MIN_HEIGHT, chart_palette, label, stack_layout
 
 
 class ChartWidget(QWidget):
@@ -12,7 +12,7 @@ class ChartWidget(QWidget):
         layout.addWidget(label(title, "section"))
         self.plot = pg.PlotWidget()
         self.plot.setBackground(None)
-        self.plot.setMinimumHeight(190)
+        self.plot.setMinimumHeight(CHART_MIN_HEIGHT)
         self.plot.showGrid(x=False, y=True, alpha=0.12)
         self.plot.setMenuEnabled(False)
         self.plot.setMouseEnabled(x=False, y=False)
