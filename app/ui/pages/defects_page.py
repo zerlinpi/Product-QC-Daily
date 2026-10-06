@@ -1,10 +1,12 @@
 from PySide6.QtWidgets import QAbstractItemView, QHeaderView, QLineEdit
 
 from app.ui.common import (
+    SEARCH_FIELD_MIN_WIDTH,
     Page,
     align_table_columns,
     button,
     confirm,
+    control_metrics,
     guarded,
     label,
     native_group,
@@ -28,7 +30,7 @@ class DefectsPage(Page):
         self.search = QLineEdit()
         self.search.setPlaceholderText("搜索项目名称或编码")
         self.search.setClearButtonEnabled(True)
-        self.search.setMinimumWidth(260)
+        control_metrics(self.search, min_width=SEARCH_FIELD_MIN_WIDTH)
         self.search.textChanged.connect(self.refresh)
         toolbar.addWidget(self.search, 1)
         self.count = label("", "summary")

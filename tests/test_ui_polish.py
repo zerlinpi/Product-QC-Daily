@@ -235,7 +235,13 @@ def test_team_dialog_uses_desktop_window_flags_and_default_save(ctx, qtbot, monk
     monkeypatch.setattr(QDialog, "exec", inspect)
     page.edit_team(False)
 
-    assert observed == {"help": False, "default_save": True, "minimum_width": 380}
+    from app.ui.common import FORM_DIALOG_MIN_WIDTH
+
+    assert observed == {
+        "help": False,
+        "default_save": True,
+        "minimum_width": FORM_DIALOG_MIN_WIDTH,
+    }
 
 
 

@@ -18,14 +18,17 @@ from PySide6.QtWidgets import (
 )
 
 from app.ui.common import (
+    FORM_DIALOG_MIN_WIDTH,
     Page,
     align_table_columns,
     button,
     confirm,
+    control_metrics,
     dialog_button_box,
     dialog_layout,
     form_grid,
     form_layout,
+    form_row,
     friendly_error,
     guarded,
     label,
@@ -64,10 +67,12 @@ class SettingsPage(Page):
                     "录入时自动填写，可再修改" if key == "default_inspector" else "选填"
                 )
             self.fields[key] = field
-            form.addRow(title, field)
+            control_metrics(field)
+            form_row(form, title, field)
         self.theme = QComboBox()
         self.theme.addItems(["浅色", "深色", "跟随系统"])
-        form.addRow("界面主题", self.theme)
+        control_metrics(self.theme)
+        form_row(form, "界面主题", self.theme)
         for key, title in [
             ("template_path", "原表模板"),
             ("export_directory", "导出目录"),
@@ -79,6 +84,7 @@ class SettingsPage(Page):
                 "留空使用内置原表模板" if key == "template_path" else "留空使用默认文件夹"
             )
             self.fields[key] = field
+            control_metrics(field)
             row.addWidget(field, 1)
             browse = button(
                 "选择文件" if key == "template_path" else "选择文件夹",
@@ -86,13 +92,15 @@ class SettingsPage(Page):
             )
             browse.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
             row.addWidget(browse)
-            form.addRow(title, row)
+            form_row(form, title, row)
         self.auto_backup = QCheckBox("每天第一次启动自动备份")
-        form.addRow("自动备份", self.auto_backup)
+        control_metrics(self.auto_backup)
+        form_row(form, "自动备份", self.auto_backup)
         self.retention = QSpinBox()
         self.retention.setRange(1, 3650)
         self.retention.setSuffix(" 天")
-        form.addRow("自动备份保留", self.retention)
+        control_metrics(self.retention)
+        form_row(form, "自动备份保留", self.retention)
         layout.addLayout(form)
         layout.addWidget(
             label(
@@ -248,7 +256,7 @@ class SettingsPage(Page):
         dialog = QDialog(self)
         dialog.setWindowTitle("编辑组别" if item else "新增组别")
         dialog.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
-        dialog.setMinimumWidth(380)
+        dialog.setMinimumWidth(FORM_DIALOG_MIN_WIDTH)
         layout, form = dialog_layout(dialog), form_layout()
         layout.addWidget(
             label("名称为必填项；停用组别后不会影响已有检验记录。", "muted", True)
@@ -257,11 +265,13 @@ class SettingsPage(Page):
         name.setPlaceholderText("请输入组别名称")
         enabled = QCheckBox("启用此组别")
         enabled.setChecked(item["enabled"] if item else True)
+        control_metrics(enabled)
         order = QSpinBox()
         order.setRange(0, 10000)
         order.setValue(item["sort_order"] if item else 9)
+        control_metrics(name, order)
         for title, widget in [("名称", name), ("状态", enabled), ("排序", order)]:
-            form.addRow(title, widget)
+            form_row(form, title, widget)
         layout.addLayout(form)
         buttons = dialog_button_box(
             QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,

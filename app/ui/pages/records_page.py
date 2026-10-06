@@ -20,6 +20,7 @@ from app.ui.common import (
     align_table_columns,
     button,
     confirm,
+    control_metrics,
     form_grid,
     grid_place,
     guarded,
@@ -62,6 +63,7 @@ class RecordsPage(Page):
         self.filters_grid = form_grid()
         self._filter_layout_mode = None
         self.range_enabled = QCheckBox("按日期筛选")
+        control_metrics(self.range_enabled)
         self.start, self.end = (
             QDateEdit(QDate.currentDate().addMonths(-1)),
             QDateEdit(QDate.currentDate()),
@@ -86,7 +88,20 @@ class RecordsPage(Page):
             widget.setPlaceholderText(placeholder)
             widget.setClearButtonEnabled(True)
             widget.returnPressed.connect(self.search_records)
+        control_metrics(
+            self.start,
+            self.end,
+            self.team,
+            self.judgment,
+            self.source,
+            self.defect,
+            self.has_defects,
+            self.search,
+            self.work_order,
+            self.inspector,
+        )
         self.trash = QCheckBox("查看回收站")
+        control_metrics(self.trash)
 
         def field(title, widget, accessible_name=None):
             container = QWidget()

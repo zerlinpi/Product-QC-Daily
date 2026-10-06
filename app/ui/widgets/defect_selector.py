@@ -8,7 +8,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from app.ui.common import align_table_columns, label, stack_layout, table, toolbar_layout
+from app.ui.common import (
+    FILTER_FIELD_MIN_WIDTH,
+    SEARCH_FIELD_MIN_WIDTH,
+    align_table_columns,
+    control_metrics,
+    label,
+    stack_layout,
+    table,
+    toolbar_layout,
+)
 
 
 class DefectSelector(QWidget):
@@ -24,7 +33,14 @@ class DefectSelector(QWidget):
         self.search.setPlaceholderText("搜索不良项目…")
         self.search.setClearButtonEnabled(True)
         self.category = QComboBox()
-        self.category.setMinimumWidth(120)
+        control_metrics(
+            self.search,
+            min_width=SEARCH_FIELD_MIN_WIDTH,
+        )
+        control_metrics(
+            self.category,
+            min_width=FILTER_FIELD_MIN_WIDTH,
+        )
         self.category.setAccessibleName("不良项目分类")
         filters.addWidget(self.search, 2)
         filters.addWidget(self.category, 1)
@@ -65,11 +81,13 @@ class DefectSelector(QWidget):
         for row, item in enumerate(items):
             check = QCheckBox()
             check.setEnabled(item["enabled"])
+            control_metrics(check)
             qty = QSpinBox()
             qty.setRange(0, 100_000_000)
             qty.setSpecialValueText("未知")
             qty.setValue(1)
             qty.setEnabled(False)
+            control_metrics(qty)
             self.table.setCellWidget(row, 0, check)
             text = QTableWidgetItem(item["name"] + ("（停用）" if not item["enabled"] else ""))
             text.setToolTip(f"{item['code']} · {item['category']}\n{item['description']}")

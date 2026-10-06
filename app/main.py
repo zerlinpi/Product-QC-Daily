@@ -30,6 +30,7 @@ from app.core.schemas import InspectionInput, RecordFilter
 from app.services.excel_common import file_sha256
 from app.services.excel_export import header_footer_text
 from app.ui.common import (
+    BUTTON_MIN_WIDTH,
     CONTROL_MIN_HEIGHT,
     LAYOUT_SPACING,
     PAGE_MARGINS,
@@ -91,6 +92,8 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert "取消" in controls.button(QDialogButtonBox.StandardButton.Cancel).text()
     assert controls.button(QDialogButtonBox.StandardButton.Save).minimumHeight() == CONTROL_MIN_HEIGHT
     assert controls.button(QDialogButtonBox.StandardButton.Cancel).minimumHeight() == CONTROL_MIN_HEIGHT
+    assert controls.button(QDialogButtonBox.StandardButton.Save).minimumWidth() == BUTTON_MIN_WIDTH
+    assert controls.button(QDialogButtonBox.StandardButton.Cancel).minimumWidth() == BUTTON_MIN_WIDTH
     picker_directory = ctx.paths.exports / "自检导出目录"
     picker = ExcelSaveDialog(
         window, "导出报表", picker_directory / "日检报告.xlsx", "电子表格 (*.xlsx)"
@@ -131,10 +134,74 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     for index, titles in expected_groups.items():
         present = {group.title() for group in window.pages[index].findChildren(QGroupBox)}
         assert titles.issubset(present)
+
+    dashboard, entry, records, analytics, defects, reports, settings = window.pages
+    field_controls = [
+        dashboard.source,
+        entry.inspection_date,
+        entry.inspection_time,
+        entry.team,
+        entry.work_order,
+        entry.inspection_quantity,
+        entry.sampling_quantity,
+        entry.defect_quantity,
+        entry.judgment,
+        entry.inspector,
+        records.start,
+        records.end,
+        records.team,
+        records.judgment,
+        records.source,
+        records.defect,
+        records.has_defects,
+        records.search,
+        records.work_order,
+        records.inspector,
+        analytics.preset,
+        analytics.start,
+        analytics.end,
+        analytics.source,
+        analytics.metric_choice,
+        defects.search,
+        reports.preset,
+        reports.start,
+        reports.end,
+        reports.source,
+        settings.theme,
+        settings.retention,
+        *settings.fields.values(),
+        entry.defects.search,
+        entry.defects.category,
+        *[qty for _, _, qty in entry.defects.entries],
+    ]
+    assert all(control.minimumHeight() == CONTROL_MIN_HEIGHT for control in field_controls)
+
+    settings_field_titles = {
+        "公司名称",
+        "工厂名称",
+        "默认检验员",
+        "默认组别",
+        "界面主题",
+        "原表模板",
+        "导出目录",
+        "备份目录",
+        "自动备份",
+        "自动备份保留",
+    }
+    settings_labels = {
+        item.text(): item.objectName()
+        for item in settings.findChildren(type(settings.title_label))
+        if item.text() in settings_field_titles
+    }
+    assert settings_labels.keys() == settings_field_titles
+    assert all(kind == "fieldLabel" for kind in settings_labels.values())
+
     primary_probe = button("主要操作", primary=True)
     danger_probe = button("危险操作", danger=True)
     assert primary_probe.minimumHeight() == CONTROL_MIN_HEIGHT
     assert danger_probe.minimumHeight() == CONTROL_MIN_HEIGHT
+    assert primary_probe.minimumWidth() == BUTTON_MIN_WIDTH
+    assert danger_probe.minimumWidth() == BUTTON_MIN_WIDTH
     assert primary_probe.font().bold()
     assert not danger_probe.icon().isNull()
     primary_probe.deleteLater()

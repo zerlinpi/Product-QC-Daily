@@ -20,7 +20,12 @@ from PySide6.QtWidgets import (
 
 from app import __version__
 from app.ui.common import (
+    APP_DEFAULT_SIZE,
+    APP_MAX_SIZE,
+    APP_MIN_SIZE,
+    CONTROL_MIN_HEIGHT,
     SIDEBAR_MARGINS,
+    SIDEBAR_WIDTH,
     TOPBAR_MARGINS,
     TOPBAR_MIN_HEIGHT,
     friendly_error,
@@ -50,8 +55,8 @@ class MainWindow(QMainWindow):
         self._job_dialog = None
         self._export_message = None
         self.setWindowTitle("成品日检管理系统")
-        self.resize(1440, 920)
-        self.setMinimumSize(1080, 720)
+        self.resize(*APP_DEFAULT_SIZE)
+        self.setMinimumSize(*APP_MIN_SIZE)
         self._dark_theme = apply_theme(ctx.settings.get("theme"))
         central = QWidget()
         root = QHBoxLayout(central)
@@ -59,7 +64,7 @@ class MainWindow(QMainWindow):
         root.setSpacing(0)
         sidebar = QFrame()
         sidebar.setObjectName("qcSidebar")
-        sidebar.setFixedWidth(176)
+        sidebar.setFixedWidth(SIDEBAR_WIDTH)
         nav = QVBoxLayout(sidebar)
         nav.setContentsMargins(*SIDEBAR_MARGINS)
         nav.setSpacing(2)
@@ -87,7 +92,7 @@ class MainWindow(QMainWindow):
         for i, (title, icon) in enumerate(nav_items):
             item = QListWidgetItem(self.style().standardIcon(icon), title)
             item.setToolTip(f"{title} · Ctrl+{i + 1}")
-            item.setSizeHint(QSize(0, 28))
+            item.setSizeHint(QSize(0, CONTROL_MIN_HEIGHT))
             self.navigation.addItem(item)
             self.nav_items.append(item)
         self.navigation.currentRowChanged.connect(self._navigate_from_sidebar)
@@ -157,7 +162,10 @@ class MainWindow(QMainWindow):
         self.navigate(0)
         size = ctx.settings.get("window_size")
         if isinstance(size, list) and len(size) == 2:
-            self.resize(max(1080, min(size[0], 2400)), max(720, min(size[1], 1600)))
+            self.resize(
+                max(APP_MIN_SIZE[0], min(size[0], APP_MAX_SIZE[0])),
+                max(APP_MIN_SIZE[1], min(size[1], APP_MAX_SIZE[1])),
+            )
         if ctx.settings.get("window_maximized", False):
             self.setWindowState(Qt.WindowState.WindowMaximized)
         hints = QApplication.instance().styleHints()

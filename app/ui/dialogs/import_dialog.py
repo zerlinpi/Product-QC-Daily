@@ -5,8 +5,11 @@ from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QStyle
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
 from app.ui.common import (
+    FILTER_FIELD_MIN_WIDTH,
     align_table_columns,
     button,
+    button_metrics,
+    control_metrics,
     dialog_button_box,
     dialog_layout,
     guarded,
@@ -48,7 +51,7 @@ class ImportDialog(QDialog):
         filter_row.addWidget(label("显示", "fieldLabel"))
         self.filter = QComboBox()
         self.filter.setAccessibleName("导入状态筛选")
-        self.filter.setMinimumWidth(150)
+        control_metrics(self.filter, min_width=FILTER_FIELD_MIN_WIDTH)
         self.filter.addItem("全部状态", "")
         for key, value in IMPORT_STATUS_LABELS.items():
             self.filter.addItem(value, key)
@@ -83,7 +86,7 @@ class ImportDialog(QDialog):
             QDialogButtonBox.ButtonRole.AcceptRole,
         )
         accept.setEnabled(preview.counts["valid"] > 0)
-        accept.setMinimumHeight(28)
+        button_metrics(accept)
         accept.setDefault(True)
         actions.accepted.connect(self.accept)
         actions.rejected.connect(self.reject)

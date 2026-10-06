@@ -10,10 +10,12 @@ from PySide6.QtWidgets import (
 
 from app.ui.common import (
     align_table_columns,
+    control_metrics,
     dialog_button_box,
     dialog_layout,
     form_grid,
     form_group,
+    form_row,
     friendly_error,
     label,
     native_group,
@@ -58,6 +60,7 @@ class DemoDialog(QDialog):
             widget.setDecimals(1)
         self.rework.setValue(8)
         self.defect.setValue(2)
+        control_metrics(self.count, self.start, self.end, self.rework, self.defect)
         self.pass_rate = label("合格率目标：92.0%", "status")
         self.rework.valueChanged.connect(
             lambda v: self.pass_rate.setText(f"合格率目标：{100 - v:.1f}%")
@@ -69,8 +72,8 @@ class DemoDialog(QDialog):
             ("返工率目标", self.rework),
             ("不良率目标", self.defect),
         ]:
-            range_form.addRow(title, widget)
-        range_form.addRow("判定参考", self.pass_rate)
+            form_row(range_form, title, widget)
+        form_row(range_form, "判定参考", self.pass_rate)
         layout.addWidget(range_group)
 
         team_group, team_layout = native_group("参与组别")
@@ -80,6 +83,7 @@ class DemoDialog(QDialog):
         for i, team in enumerate(ctx.settings.teams(True)):
             checkbox = QCheckBox(team["name"])
             checkbox.setChecked(True)
+            control_metrics(checkbox)
             self.teams.append(checkbox)
             team_grid.addWidget(checkbox, i // 6, i % 6)
         layout.addWidget(team_group)
@@ -100,6 +104,7 @@ class DemoDialog(QDialog):
             value = QSpinBox()
             value.setRange(0, 1000)
             value.setValue(4 if item["code"] in ("d", "e", "g") else 1)
+            control_metrics(value)
             self.table.setCellWidget(row, 1, value)
             self.items.append((item["id"], value))
         defect_layout.addWidget(self.table, 1)

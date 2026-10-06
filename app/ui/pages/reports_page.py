@@ -12,8 +12,10 @@ from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import (
+    FILTER_FIELD_MIN_WIDTH,
     Page,
     button,
+    control_metrics,
     form_grid,
     grid_place,
     guarded,
@@ -66,6 +68,7 @@ class ReportsPage(Page):
             ("结束日期", self.end),
             ("数据范围", self.source),
         ]
+        control_metrics(*[widget for _, widget in controls], min_width=FILTER_FIELD_MIN_WIDTH)
         self.filter_controls = []
         for col, (title, widget) in enumerate(controls):
             caption = label(title, "fieldLabel")

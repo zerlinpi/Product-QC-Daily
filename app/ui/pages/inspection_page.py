@@ -19,6 +19,7 @@ from app.ui.common import (
     button,
     confirm,
     content_grid,
+    control_metrics,
     form_grid,
     grid_place,
     guarded,
@@ -86,6 +87,7 @@ class InspectionPage(Page):
             ("检验判定", self.judgment),
             ("检验员 *", self.inspector),
         ]
+        control_metrics(*[widget for _, widget in names])
         for index, (title, widget) in enumerate(names):
             row, col = (index // 2) * 2, index % 2
             fields.addWidget(label(title, "fieldLabel"), row, col)
@@ -96,6 +98,7 @@ class InspectionPage(Page):
         left_layout.addLayout(fields)
         self.auto_time = QCheckBox("新建记录保存时使用当前时间")
         self.auto_time.setChecked(True)
+        control_metrics(self.auto_time)
         left_layout.addWidget(self.auto_time)
         self.suggestion = label("历史抽样仅供参考，不代表正式检验标准。", "muted", True)
         left_layout.addWidget(self.suggestion)
@@ -140,6 +143,7 @@ class InspectionPage(Page):
         ]:
             checkbox = QCheckBox(title)
             checkbox.setChecked(key in settings["keep_fields"])
+            control_metrics(checkbox)
             self.keep[key] = checkbox
             keep_row.addWidget(checkbox)
         keep_row.addStretch()

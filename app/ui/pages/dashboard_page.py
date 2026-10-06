@@ -5,10 +5,12 @@ from PySide6.QtWidgets import QComboBox, QWidget
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import date_range
 from app.ui.common import (
+    COMPACT_FIELD_MIN_WIDTH,
     Page,
     button,
     card,
     content_grid,
+    control_metrics,
     grid_place,
     guarded,
     label,
@@ -29,7 +31,7 @@ class DashboardPage(Page):
         toolbar.addWidget(label("数据范围", "fieldLabel"))
         self.source = QComboBox()
         self.source.addItems(["正式数据", "演示数据"])
-        self.source.setMinimumWidth(110)
+        control_metrics(self.source, min_width=COMPACT_FIELD_MIN_WIDTH)
         self.source.currentIndexChanged.connect(self.refresh)
         toolbar.addWidget(self.source)
         self.refreshed = label("", "summary")

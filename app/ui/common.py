@@ -28,6 +28,10 @@ from PySide6.QtWidgets import (
 
 from app.core.validation import validation_message
 
+APP_DEFAULT_SIZE = (1440, 920)
+APP_MIN_SIZE = (1080, 720)
+APP_MAX_SIZE = (2400, 1600)
+SIDEBAR_WIDTH = 176
 PAGE_MARGINS = (14, 12, 14, 12)
 DIALOG_MARGINS = (14, 12, 14, 12)
 SECTION_MARGINS = (10, 12, 10, 10)
@@ -36,6 +40,13 @@ TOPBAR_MARGINS = (14, 4, 14, 4)
 LAYOUT_SPACING = 8
 TOOLBAR_SPACING = 6
 CONTROL_MIN_HEIGHT = 28
+BUTTON_MIN_WIDTH = 84
+COMPACT_FIELD_MIN_WIDTH = 110
+FILTER_FIELD_MIN_WIDTH = 120
+SEARCH_FIELD_MIN_WIDTH = 240
+FORM_DIALOG_MIN_WIDTH = 460
+TABLE_ROW_HEIGHT = 28
+CHART_MIN_HEIGHT = 190
 TOPBAR_MIN_HEIGHT = 36
 
 
@@ -87,11 +98,21 @@ def guarded(function):
     return wrapped
 
 
+def button_metrics(*widgets):
+    """Apply the shared Windows desktop button footprint."""
+    for widget in widgets:
+        widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+        widget.setMinimumWidth(BUTTON_MIN_WIDTH)
+    if len(widgets) == 1:
+        return widgets[0]
+    return widgets
+
+
 def button(text, callback=None, primary=False, danger=False):
     widget = QPushButton(text)
     widget.setObjectName("primary" if primary else "danger" if danger else "")
     widget.setAutoDefault(False)
-    widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+    button_metrics(widget)
     if primary:
         font = widget.font()
         font.setBold(True)
@@ -103,6 +124,17 @@ def button(text, callback=None, primary=False, danger=False):
     if callback:
         widget.clicked.connect(callback)
     return widget
+
+
+def control_metrics(*widgets, min_width=None):
+    """Apply shared desktop field metrics without repainting native controls."""
+    for widget in widgets:
+        widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
+        if min_width is not None:
+            widget.setMinimumWidth(min_width)
+    if len(widgets) == 1:
+        return widgets[0]
+    return widgets
 
 
 def label(text, kind="", wrap=False):
@@ -172,6 +204,15 @@ def form_layout(parent=None):
     return layout
 
 
+def form_row(layout, title, field):
+    """Add a form row using the same field-label semantics as grid-based forms."""
+    caption = label(title, "fieldLabel")
+    if isinstance(field, QWidget):
+        caption.setBuddy(field)
+    layout.addRow(caption, field)
+    return caption
+
+
 def form_grid(parent=None):
     layout = QGridLayout(parent) if parent is not None else QGridLayout()
     layout.setContentsMargins(0, 0, 0, 0)
@@ -195,7 +236,7 @@ def dialog_button_box(buttons, default=None):
     """Create a native dialog button box with the same control metrics everywhere."""
     box = QDialogButtonBox(buttons)
     for control in box.buttons():
-        control.setMinimumHeight(CONTROL_MIN_HEIGHT)
+        button_metrics(control)
         control.setAutoDefault(False)
     if default is not None:
         control = box.button(default)
@@ -225,7 +266,7 @@ def table(headers):
     widget.setAlternatingRowColors(True)
     widget.setShowGrid(True)
     widget.verticalHeader().setVisible(False)
-    widget.verticalHeader().setDefaultSectionSize(28)
+    widget.verticalHeader().setDefaultSectionSize(TABLE_ROW_HEIGHT)
     widget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
     widget.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
     widget.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
