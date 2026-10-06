@@ -532,3 +532,47 @@ def test_all_page_fields_share_one_native_control_height(ctx, qtbot):
 
     assert controls
     assert all(control.minimumHeight() == CONTROL_MIN_HEIGHT for control in controls)
+
+
+
+def test_form_layouts_share_the_same_field_label_role(ctx, qtbot):
+    from PySide6.QtWidgets import QLabel
+
+    from app.ui.dialogs.defect_dialog import DefectDialog
+    from app.ui.dialogs.demo_dialog import DemoDialog
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    settings = window.pages[6]
+    settings_titles = {
+        "公司名称",
+        "工厂名称",
+        "默认检验员",
+        "默认组别",
+        "界面主题",
+        "原表模板",
+        "导出目录",
+        "备份目录",
+        "自动备份",
+        "自动备份保留",
+    }
+    settings_labels = {
+        widget.text(): widget.objectName()
+        for widget in settings.findChildren(QLabel)
+        if widget.text() in settings_titles
+    }
+    assert settings_labels.keys() == settings_titles
+    assert set(settings_labels.values()) == {"fieldLabel"}
+
+    defect = DefectDialog(ctx, window)
+    qtbot.addWidget(defect)
+    for title in {"编码 *", "名称 *", "分类", "说明", "排序", "状态"}:
+        label_widget = next(widget for widget in defect.findChildren(QLabel) if widget.text() == title)
+        assert label_widget.objectName() == "fieldLabel"
+
+    demo = DemoDialog(ctx, window)
+    qtbot.addWidget(demo)
+    for title in {"生成数量", "开始日期", "结束日期", "返工率目标", "不良率目标", "判定参考"}:
+        label_widget = next(widget for widget in demo.findChildren(QLabel) if widget.text() == title)
+        assert label_widget.objectName() == "fieldLabel"
