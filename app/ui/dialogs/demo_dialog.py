@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 
 from app.ui.common import (
     align_table_columns,
+    control_metrics,
     dialog_button_box,
     dialog_layout,
     form_grid,
@@ -58,6 +59,7 @@ class DemoDialog(QDialog):
             widget.setDecimals(1)
         self.rework.setValue(8)
         self.defect.setValue(2)
+        control_metrics(self.count, self.start, self.end, self.rework, self.defect)
         self.pass_rate = label("合格率目标：92.0%", "status")
         self.rework.valueChanged.connect(
             lambda v: self.pass_rate.setText(f"合格率目标：{100 - v:.1f}%")
@@ -100,6 +102,7 @@ class DemoDialog(QDialog):
             value = QSpinBox()
             value.setRange(0, 1000)
             value.setValue(4 if item["code"] in ("d", "e", "g") else 1)
+            control_metrics(value)
             self.table.setCellWidget(row, 1, value)
             self.items.append((item["id"], value))
         defect_layout.addWidget(self.table, 1)
