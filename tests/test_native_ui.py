@@ -637,6 +637,7 @@ def test_message_boxes_share_native_button_metrics(qtbot):
     assert ok.isDefault()
     assert ok.autoDefault()
     assert dialog.icon() == QMessageBox.Icon.Information
+    assert not bool(dialog.windowFlags() & Qt.WindowType.WindowContextHelpButtonHint)
 
 
 
