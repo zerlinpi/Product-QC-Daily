@@ -9,6 +9,7 @@ from app.ui.common import (
     button,
     card,
     content_grid,
+    control_metrics,
     form_grid,
     grid_place,
     guarded,
@@ -53,6 +54,7 @@ class AnalyticsPage(Page):
             ("数据范围", self.source),
             ("排行口径", self.metric_choice),
         ]
+        control_metrics(*[widget for _, widget in controls])
         self.filter_controls = []
         for col, (title, widget) in enumerate(controls):
             caption = label(title, "fieldLabel")
