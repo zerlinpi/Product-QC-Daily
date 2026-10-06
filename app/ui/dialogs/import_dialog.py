@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QStyle
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
 from app.ui.common import (
+    align_table_columns,
     button,
     dialog_button_box,
     dialog_layout,
@@ -60,6 +61,7 @@ class ImportDialog(QDialog):
         self.table.setColumnWidth(0, 80)
         self.table.setColumnWidth(1, 245)
         self.table.setColumnWidth(2, 100)
+        align_table_columns(self.table, right=(0,), center=(2,))
         layout.addWidget(self.table, 1)
         pagination = toolbar_layout()
         self.count = label("", "summary")
