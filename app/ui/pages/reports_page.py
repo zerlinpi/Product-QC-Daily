@@ -12,8 +12,8 @@ from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import (
-    WIDE_LAYOUT_BREAKPOINT,
     FILTER_FIELD_MIN_WIDTH,
+    WIDE_LAYOUT_BREAKPOINT,
     Page,
     button,
     control_metrics,
