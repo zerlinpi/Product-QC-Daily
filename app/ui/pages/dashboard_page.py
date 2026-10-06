@@ -31,7 +31,7 @@ class DashboardPage(Page):
         content = QWidget()
         self.grid = QGridLayout(content)
         self.grid.setContentsMargins(0, 0, 0, 0)
-        self.grid.setSpacing(9)
+        self.grid.setSpacing(8)
         self.cards = []
         self._layout_mode = None
         definitions = [
