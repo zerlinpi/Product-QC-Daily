@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QComboBox, QDateEdit, QWidget
 from app.core.schemas import RecordFilter
 from app.services.statistics_service import PRESETS, date_range
 from app.ui.common import (
+    WIDE_LAYOUT_BREAKPOINT,
     Page,
     align_table_columns,
     button,
@@ -123,7 +124,7 @@ class AnalyticsPage(Page):
         self._reflow_layout()
 
     def _reflow_layout(self):
-        mode = "wide" if self.width() >= 1100 else "narrow"
+        mode = "wide" if self.width() >= WIDE_LAYOUT_BREAKPOINT else "narrow"
         if mode == self._layout_mode:
             return
         self._layout_mode = mode
