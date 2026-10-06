@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
+    QDialogButtonBox,
     QScrollArea,
     QStyle,
     QTableWidget,
@@ -166,10 +167,25 @@ def dialog_layout(dialog):
     return layout
 
 
+def dialog_button_box(buttons, default=None):
+    """Create a native dialog button box with the same control metrics everywhere."""
+    box = QDialogButtonBox(buttons)
+    for control in box.buttons():
+        control.setMinimumHeight(CONTROL_MIN_HEIGHT)
+        control.setAutoDefault(False)
+    if default is not None:
+        control = box.button(default)
+        if control is not None:
+            control.setAutoDefault(True)
+            control.setDefault(True)
+    return box
+
+
 def page_scroll():
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
     scroll.setFrameShape(QFrame.Shape.NoFrame)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     return scroll
 
 
@@ -203,6 +219,29 @@ def table(headers):
     )
     widget.horizontalHeader().setStretchLastSection(True)
     return widget
+
+
+def palette_color(role):
+    return QApplication.palette().color(role)
+
+
+def chart_palette():
+    """Theme-aware colors shared by every pyqtgraph widget."""
+    accent = palette_color(QPalette.ColorRole.Highlight)
+    axis = palette_color(QPalette.ColorRole.Mid)
+    text = palette_color(QPalette.ColorRole.WindowText)
+    fill = QColor(accent)
+    fill.setAlpha(28)
+    grid = QColor(axis)
+    grid.setAlpha(72)
+    return {
+        "accent": accent,
+        "axis": axis,
+        "text": text,
+        "fill": fill,
+        "grid": grid,
+        "warning": semantic_color("warning"),
+    }
 
 
 def semantic_color(kind):
