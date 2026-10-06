@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QStyle
 
 from app.core.labels import IMPORT_STATUS_LABELS, import_status_label
@@ -105,17 +104,6 @@ class ImportDialog(QDialog):
                 for r in page_rows
             ],
         )
-        status_colors = {
-            "valid": "#107c10",
-            "duplicate": "#ca5010",
-            "conflict": "#ca5010",
-            "invalid": "#c42b1c",
-            "unrecognized": "#c42b1c",
-        }
-        for index, row in enumerate(page_rows):
-            status_item = self.table.item(index, 2)
-            status_item.setForeground(QColor(status_colors.get(row.status, "#616161")))
-            status_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
         pages = max(1, (len(rows) + 199) // 200)
         self.visible_status.setText(f"当前显示 {len(rows)} 条")
         self.count.setText(f"共 {len(rows)} 条 · 第 {self.page} / {pages} 页 · 每页 200 条")
