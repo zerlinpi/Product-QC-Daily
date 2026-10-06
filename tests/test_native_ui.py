@@ -1,4 +1,4 @@
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QDate, Qt
 from PySide6.QtWidgets import QApplication, QFrame, QGroupBox, QListWidget, QPushButton
 
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
