@@ -46,7 +46,7 @@ class SettingsPage(Page):
         content = QWidget()
         body = QVBoxLayout(content)
         body.setContentsMargins(0, 0, 0, 0)
-        body.setSpacing(10)
+        body.setSpacing(8)
         frame, layout = native_group("基础设置")
         form = form_layout()
         self.fields = {}
