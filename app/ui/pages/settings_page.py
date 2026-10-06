@@ -22,6 +22,7 @@ from app.ui.common import (
     align_table_columns,
     button,
     confirm,
+    control_metrics,
     dialog_button_box,
     dialog_layout,
     form_grid,
@@ -64,9 +65,11 @@ class SettingsPage(Page):
                     "录入时自动填写，可再修改" if key == "default_inspector" else "选填"
                 )
             self.fields[key] = field
+            control_metrics(field)
             form.addRow(title, field)
         self.theme = QComboBox()
         self.theme.addItems(["浅色", "深色", "跟随系统"])
+        control_metrics(self.theme)
         form.addRow("界面主题", self.theme)
         for key, title in [
             ("template_path", "原表模板"),
@@ -79,6 +82,7 @@ class SettingsPage(Page):
                 "留空使用内置原表模板" if key == "template_path" else "留空使用默认文件夹"
             )
             self.fields[key] = field
+            control_metrics(field)
             row.addWidget(field, 1)
             browse = button(
                 "选择文件" if key == "template_path" else "选择文件夹",
@@ -92,6 +96,7 @@ class SettingsPage(Page):
         self.retention = QSpinBox()
         self.retention.setRange(1, 3650)
         self.retention.setSuffix(" 天")
+        control_metrics(self.retention)
         form.addRow("自动备份保留", self.retention)
         layout.addLayout(form)
         layout.addWidget(
