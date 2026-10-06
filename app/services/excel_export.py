@@ -62,12 +62,16 @@ def header_footer_text(value, limit=72) -> str:
     return text.replace("&", "&&")
 
 
-def wrapped_row_height(*fields, base=22, line_height=15, maximum=72) -> float:
+def wrapped_row_height(*fields, base=22, line_height=15, maximum=90) -> float:
     """Estimate a readable Excel row height for wrapped Chinese/English text."""
     lines = 1
     for value, column_width in fields:
         width = max(int(float(column_width or 10) * 0.9), 8)
-        lines = max(lines, max(1, (display_width(value) + width - 1) // width))
+        text_lines = str(value if value is not None else "").splitlines() or [""]
+        wrapped_lines = sum(
+            max(1, (display_width(text) + width - 1) // width) for text in text_lines
+        )
+        lines = max(lines, wrapped_lines)
     return min(maximum, max(base, lines * line_height + 6))
 
 
@@ -197,7 +201,7 @@ def style_table(ws):
                 wrapped_row_height(
                     (ws.cell(row, 8).value, ws.column_dimensions["H"].width),
                     (ws.cell(row, 12).value, ws.column_dimensions["L"].width),
-                    maximum=66,
+                    maximum=90,
                 ),
             )
             judgment = ws.cell(row, 9)
@@ -232,7 +236,7 @@ def style_table(ws):
                 wrapped_row_height(
                     (ws.cell(row, 2).value, ws.column_dimensions["B"].width),
                     (ws.cell(row, 6).value, ws.column_dimensions["F"].width),
-                    maximum=60,
+                    maximum=78,
                 ),
             )
         ws.print_area = f"A1:{last_letter}{last_row}"
