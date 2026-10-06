@@ -27,8 +27,9 @@ class ImportDialog(QDialog):
         self.setWindowFlag(Qt.WindowType.WindowContextHelpButtonHint, False)
         self.resize(1040, 680)
         layout = dialog_layout(self)
-        layout.addWidget(label("检查导入内容", "title"))
-        layout.addWidget(label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "muted"))
+        layout.addWidget(
+            label(f"工作表：{preview.sheet} · 总记录：{len(preview.rows)}", "summary")
+        )
         self.summary = label(
             "   ".join(
                 f"{import_status_label(key)} {value}" for key, value in preview.counts.items()
