@@ -576,3 +576,68 @@ def test_form_layouts_share_the_same_field_label_role(ctx, qtbot):
     for title in {"生成数量", "开始日期", "结束日期", "返工率目标", "不良率目标", "判定参考"}:
         label_widget = next(widget for widget in demo.findChildren(QLabel) if widget.text() == title)
         assert label_widget.objectName() == "fieldLabel"
+
+
+
+def test_field_labels_wire_buddies_and_accessible_names_across_pages(ctx, qtbot):
+    from PySide6.QtWidgets import QLabel
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    dashboard, entry, records, analytics, _defects, reports, settings = window.pages
+
+    checks = [
+        (dashboard, "数据范围", dashboard.source),
+        (entry, "检验日期", entry.inspection_date),
+        (entry, "加工单号 *", entry.work_order),
+        (records, "开始日期", records.start),
+        (records, "加工单号", records.work_order),
+        (analytics, "统计周期", analytics.preset),
+        (analytics, "排行口径", analytics.metric_choice),
+        (reports, "报表周期", reports.preset),
+        (reports, "数据范围", reports.source),
+        (settings, "公司名称", settings.fields["company"]),
+        (settings, "原表模板", settings.fields["template_path"]),
+    ]
+
+    for parent, title, control in checks:
+        caption = next(
+            widget
+            for widget in parent.findChildren(QLabel)
+            if widget.text() == title and widget.objectName() == "fieldLabel"
+        )
+        assert caption.buddy() is control
+        assert control.accessibleName()
+
+
+def test_table_minimum_rows_use_shared_density_metrics(ctx, qtbot):
+    from app.ui.common import CONTROL_MIN_HEIGHT, TABLE_ROW_HEIGHT
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    analytics = window.pages[3]
+    settings = window.pages[6]
+    selector = window.pages[1].defects
+
+    cases = [
+        (analytics.ranking, 10),
+        (analytics.teams_table, 8),
+        (settings.teams, 7),
+        (selector.table, 9),
+    ]
+    for widget, rows in cases:
+        expected = CONTROL_MIN_HEIGHT + TABLE_ROW_HEIGHT * rows + widget.frameWidth() * 2
+        assert widget.minimumHeight() == expected
+
+
+def test_shared_button_icon_path_keeps_native_system_icons(qtbot):
+    from PySide6.QtWidgets import QStyle
+
+    from app.ui.common import button
+
+    control = button(
+        "保存",
+        icon=QStyle.StandardPixmap.SP_DialogSaveButton,
+    )
+    qtbot.addWidget(control)
+    assert not control.icon().isNull()

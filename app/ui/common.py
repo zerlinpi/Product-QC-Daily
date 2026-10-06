@@ -108,7 +108,7 @@ def button_metrics(*widgets):
     return widgets
 
 
-def button(text, callback=None, primary=False, danger=False):
+def button(text, callback=None, primary=False, danger=False, icon=None):
     widget = QPushButton(text)
     widget.setObjectName("primary" if primary else "danger" if danger else "")
     widget.setAutoDefault(False)
@@ -117,10 +117,11 @@ def button(text, callback=None, primary=False, danger=False):
         font = widget.font()
         font.setBold(True)
         widget.setFont(font)
-    if danger:
-        style = QApplication.instance().style() if QApplication.instance() else None
-        if style:
-            widget.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning))
+    style = QApplication.instance().style() if QApplication.instance() else None
+    if icon is not None and style:
+        widget.setIcon(style.standardIcon(icon))
+    elif danger and style:
+        widget.setIcon(style.standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning))
     if callback:
         widget.clicked.connect(callback)
     return widget
@@ -141,6 +142,16 @@ def label(text, kind="", wrap=False):
     widget = QLabel(text)
     widget.setObjectName(kind)
     widget.setWordWrap(wrap)
+    return widget
+
+
+def field_label(text, buddy=None):
+    """Create one consistent field caption and wire it to its control when possible."""
+    widget = label(text, "fieldLabel")
+    if isinstance(buddy, QWidget):
+        widget.setBuddy(buddy)
+        if not buddy.accessibleName():
+            buddy.setAccessibleName(text.replace("*", "").strip())
     return widget
 
 
@@ -204,11 +215,10 @@ def form_layout(parent=None):
     return layout
 
 
-def form_row(layout, title, field):
-    """Add a form row using the same field-label semantics as grid-based forms."""
-    caption = label(title, "fieldLabel")
-    if isinstance(field, QWidget):
-        caption.setBuddy(field)
+def form_row(layout, title, field, buddy=None):
+    """Add a form row with the same caption, buddy and accessibility semantics everywhere."""
+    target = buddy if buddy is not None else field if isinstance(field, QWidget) else None
+    caption = field_label(title, target)
     layout.addRow(caption, field)
     return caption
 
@@ -284,6 +294,14 @@ def table(headers):
         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
     )
     widget.horizontalHeader().setStretchLastSection(True)
+    return widget
+
+
+def table_minimum_rows(widget, rows):
+    """Set a table minimum height from shared header/row metrics instead of ad-hoc pixels."""
+    widget.setMinimumHeight(
+        CONTROL_MIN_HEIGHT + TABLE_ROW_HEIGHT * max(1, rows) + widget.frameWidth() * 2
+    )
     return widget
 
 

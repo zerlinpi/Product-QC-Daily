@@ -20,6 +20,7 @@ from app.ui.common import (
     confirm,
     content_grid,
     control_metrics,
+    field_label,
     form_grid,
     grid_place,
     guarded,
@@ -90,7 +91,7 @@ class InspectionPage(Page):
         control_metrics(*[widget for _, widget in names])
         for index, (title, widget) in enumerate(names):
             row, col = (index // 2) * 2, index % 2
-            fields.addWidget(label(title, "fieldLabel"), row, col)
+            fields.addWidget(field_label(title, widget), row, col)
             fields.addWidget(widget, row + 1, col)
             widget.installEventFilter(self)
             for child in widget.findChildren(QLineEdit):
@@ -108,10 +109,10 @@ class InspectionPage(Page):
         left_layout.addLayout(helpers)
         self.judgment_hint = label("判定由检验员确认，系统建议仅供参考。", "muted", True)
         left_layout.addWidget(self.judgment_hint)
-        left_layout.addWidget(label("备注", "fieldLabel"))
         self.remark = QTextEdit()
         self.remark.setPlaceholderText("检验说明、异常原因或处理结果")
         self.remark.setMaximumHeight(90)
+        left_layout.addWidget(field_label("备注", self.remark))
         left_layout.addWidget(self.remark)
         signature_row = toolbar_layout()
         self.signature_label = label("尚未选择签名", "muted")

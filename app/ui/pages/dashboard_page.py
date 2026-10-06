@@ -11,6 +11,7 @@ from app.ui.common import (
     card,
     content_grid,
     control_metrics,
+    field_label,
     grid_place,
     guarded,
     label,
@@ -28,11 +29,11 @@ class DashboardPage(Page):
         self.today_label = label(date.today().strftime("%Y 年 %m 月 %d 日"), "muted")
         toolbar.addWidget(self.today_label)
         toolbar.addStretch()
-        toolbar.addWidget(label("数据范围", "fieldLabel"))
         self.source = QComboBox()
         self.source.addItems(["正式数据", "演示数据"])
         control_metrics(self.source, min_width=COMPACT_FIELD_MIN_WIDTH)
         self.source.currentIndexChanged.connect(self.refresh)
+        toolbar.addWidget(field_label("数据范围", self.source))
         toolbar.addWidget(self.source)
         self.refreshed = label("", "summary")
         toolbar.addWidget(self.refreshed)

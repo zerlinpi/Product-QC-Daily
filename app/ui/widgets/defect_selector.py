@@ -16,6 +16,7 @@ from app.ui.common import (
     label,
     stack_layout,
     table,
+    table_minimum_rows,
     toolbar_layout,
 )
 
@@ -32,6 +33,7 @@ class DefectSelector(QWidget):
         self.search = QLineEdit()
         self.search.setPlaceholderText("搜索不良项目…")
         self.search.setClearButtonEnabled(True)
+        self.search.setAccessibleName("搜索不良项目")
         self.category = QComboBox()
         control_metrics(
             self.search,
@@ -50,7 +52,7 @@ class DefectSelector(QWidget):
         self.table.setColumnWidth(1, 240)
         self.table.setColumnWidth(2, 105)
         align_table_columns(self.table, right=(2,), center=(0,))
-        self.table.setMinimumHeight(280)
+        table_minimum_rows(self.table, 9)
         layout.addWidget(self.table, 1)
         self.total = label("已选 0 项 · 已知件数合计 0", "summary", True)
         layout.addWidget(self.total)

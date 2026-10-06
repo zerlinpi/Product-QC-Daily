@@ -1,12 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import QDate, Qt
-from PySide6.QtWidgets import (
-    QComboBox,
-    QDateEdit,
-    QFileDialog,
-    QStyle,
-)
+from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QStyle
 
 from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
@@ -16,6 +11,7 @@ from app.ui.common import (
     Page,
     button,
     control_metrics,
+    field_label,
     form_grid,
     grid_place,
     guarded,
@@ -42,8 +38,12 @@ class ReportsPage(Page):
             )
         )
         import_actions = toolbar_layout()
-        self.import_button = button("选择表格并预览", self.import_file, primary=True)
-        self.import_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogOpenButton))
+        self.import_button = button(
+            "选择表格并预览",
+            self.import_file,
+            primary=True,
+            icon=QStyle.StandardPixmap.SP_DialogOpenButton,
+        )
         import_actions.addWidget(self.import_button)
         import_actions.addStretch()
         layout.addLayout(import_actions)
@@ -71,7 +71,7 @@ class ReportsPage(Page):
         control_metrics(*[widget for _, widget in controls], min_width=FILTER_FIELD_MIN_WIDTH)
         self.filter_controls = []
         for col, (title, widget) in enumerate(controls):
-            caption = label(title, "fieldLabel")
+            caption = field_label(title, widget)
             self.filter_controls.append((caption, widget))
             self.filters_grid.addWidget(caption, 0, col)
             self.filters_grid.addWidget(widget, 1, col)
@@ -91,11 +91,18 @@ class ReportsPage(Page):
             )
         )
         export_actions = toolbar_layout()
-        self.original_export = button("按原表导出", lambda: self.export(True), primary=True)
-        self.original_export.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+        self.original_export = button(
+            "按原表导出",
+            lambda: self.export(True),
+            primary=True,
+            icon=QStyle.StandardPixmap.SP_DialogSaveButton,
+        )
         self.original_export.setToolTip("保留原始表格、公式和 6 张图表布局")
-        self.detailed_export = button("导出明细报表", lambda: self.export(False))
-        self.detailed_export.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
+        self.detailed_export = button(
+            "导出明细报表",
+            lambda: self.export(False),
+            icon=QStyle.StandardPixmap.SP_DialogSaveButton,
+        )
         self.detailed_export.setToolTip("适合年度分析：月份筛选、统计摘要、月度统计和趋势图")
         export_actions.addStretch()
         export_actions.addWidget(self.detailed_export)
