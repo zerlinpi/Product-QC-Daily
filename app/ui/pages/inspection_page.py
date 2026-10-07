@@ -115,6 +115,7 @@ class InspectionPage(Page):
         self.remark = QTextEdit()
         self.remark.setPlaceholderText("检验说明、异常原因或处理结果")
         self.remark.setMaximumHeight(REMARK_MAX_HEIGHT)
+        control_metrics(self.remark)
         left_layout.addWidget(field_label("备注", self.remark))
         left_layout.addWidget(self.remark)
         signature_row = toolbar_layout()
@@ -244,6 +245,7 @@ class InspectionPage(Page):
         for key in ("work_order", "inspector"):
             completer = QCompleter(self.ctx.inspections.recent_values(key), self)
             completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+            completer.popup().setObjectName("completionPopup")
             getattr(self, key).setCompleter(completer)
         self.dirty = was_dirty
         self.saved_note.setText(previous_note)
