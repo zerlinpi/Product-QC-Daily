@@ -1,14 +1,18 @@
-v1.1.37 继续统一导出表单与 Windows 桌面端视觉体系，重点收口 7 个页面的页面头、侧栏、表格密度和质量指标语义层级；不新增业务功能，不修改数据库 schema、统计口径、Excel 字段结构或导入兼容性。
+v1.1.38 重新设计 Windows 桌面端视觉体系，参考 fantastic-admin/basic 的现代后台设计语言，重点解决旧版 WindowsVista 控件外观偏 Win7、层级沉重的问题；业务功能、数据库、统计口径和 Excel 导出结构保持不变。
 
-- 7 个页面统一使用相同的标题区结构，并在标题/说明与页面内容之间增加原生水平分隔线，页面层级更清楚。
-- 页面边距统一调整为 16×14，保留紧凑桌面布局，同时减少标题、筛选区和内容区挤在一起的感觉。
-- 左侧导航宽度由 176 调整为 184，导航行高统一为 30；品牌区与导航、导航与本地数据状态之间增加原生分隔线。
-- 顶栏高度统一为 40，并保持 Windows 原生控件与系统主题绘制；“本机 · 离线”增加明确说明，不引入网页式导航。
-- 全局表格表头与数据行统一为 30 高度，继续保持交替行、整行选择、原生滚动和现有数字/状态对齐规则。
-- 质量总览与质量分析的 KPI 与 Excel 报表语义保持一致：不良/返工指标使用克制的警示色，合格率使用成功色，检验/抽检数量保持普通前景色。
-- 浅色与深色主题分别使用已有 Windows 语义色，不重绘 QPushButton、QLineEdit、QComboBox、QTableWidget、QHeaderView、滚动条等标准控件。
-- 组别编辑弹窗进入时焦点直接落在名称；编辑已有组别时自动选中名称文本，键盘修改更直接。
-- 保持 v1.1.32–v1.1.36 的图表数据缓存、长文本自动行高、Sheet 级冻结、打印布局和 Excel 视觉层级优化不变。
-- 新增桌面壳层、页面分隔、表格密度、语义 KPI 和打包 EXE 自检回归；完整 pytest 预计为 182 项。
+- Windows 主界面不再优先使用 WindowsVista/Windows Qt style；统一改为 Fusion 作为跨平台绘制基底，避免系统旧主题影响主界面观感。
+- 建立应用自己的浅色/深色 Design Tokens：main background、panel、sidebar、muted、border、hover、primary、primary-soft、success、warning、error 等语义角色。
+- 参考 fantastic-admin 的布局层级：主内容区浅灰、侧栏/顶栏独立面板、1px 细边界、柔和 hover/active 背景、蓝色 primary 激活状态。
+- 左侧导航宽度调整为 204px，菜单行高 40px，图标 18px；菜单项加入 8px 圆角、hover 背景和柔和蓝色 active 状态。
+- 顶栏高度调整为 48px，页面标题 16pt / 700，整体从旧式桌面工具感转向现代后台应用感。
+- 表单控件统一为 32px 高；按钮、输入框、下拉框、日期/时间、数字输入、文本框使用 6px 圆角、细边框和清晰 focus 状态。
+- 主按钮使用 primary 蓝，危险操作使用红色描边与浅危险背景；禁用状态统一弱化，不再依赖 Win7 原生按钮皮肤。
+- QGroupBox / 图表 card 使用白色或暗色 panel、10px 圆角和 1px border，保留桌面端信息密度但去除旧式立体边框。
+- 表格表头 36px、数据行 34px，关闭旧式网格线；保留交替行，并使用浅蓝选中态、柔和表头背景和现代滚动条。
+- QMenu、QToolTip、QProgressBar、QScrollBar 同步进入统一主题，避免主窗口现代但弹出层仍像旧 Windows 控件。
+- 深色模式同步使用深灰面板、蓝色 active、柔和 muted/border，而不是简单反转颜色。
+- Windows 原生标题栏继续跟随明暗模式；文件选择器、系统窗口行为、快捷键、离线数据和所有业务交互保持不变。
+- 保留 v1.1.32–v1.1.37 的 Excel 图表缓存、长文本行高、冻结窗格、打印布局和报表视觉层级优化。
+- 更新 UI 与实际打包 EXE 自检：要求 Fusion style、现代 QSS selectors、204px sidebar、40px nav、32px controls、36/34px table density 和 48px topbar 均真实进入最终 EXE。
 
 下载 `Product-QC-Daily-windows-x64.zip`，完整解压后运行 `Product-QC-Daily.exe`。
