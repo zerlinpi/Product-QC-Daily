@@ -23,27 +23,35 @@ def test_legacy_export_keeps_full_blank_form_after_last_record(ctx, payload, tmp
     assert ws["B50"]._style == template_ws["B2"]._style
     assert ws["J50"]._style == template_ws["J2"]._style
     template.close()
-    assert ws["B2"].number_format == "yyyy-mm-dd hh:mm:ss"
-    assert ws.column_dimensions["B"].width >= 26
-    assert ws.column_dimensions["D"].width >= 20
-    assert ws.row_dimensions[1].height >= 30
-    assert all(cell.alignment.wrap_text for cell in ws[1])
+    assert ws["B2"].number_format == template_ws["B2"].number_format
+    for column in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"):
+        assert ws.column_dimensions[column].width == template_ws.column_dimensions[column].width
+        assert ws.column_dimensions[column].hidden == template_ws.column_dimensions[column].hidden
+    assert ws.row_dimensions[1].height == template_ws.row_dimensions[1].height
+    for column in range(1, 11):
+        assert ws.cell(1, column)._style == template_ws.cell(1, column)._style
     wb.close()
 
 
-def test_analysis_sheet_uses_readable_widths_and_wrapped_note(ctx, payload, tmp_path):
+def test_analysis_sheet_preserves_template_layout(ctx, payload, tmp_path):
     ctx.inspections.save(payload)
+    template = load_workbook(ctx.paths.template)
+    template_ws = template["数据分析表"]
     output = ctx.excel.export(
         tmp_path / "analysis-layout.xlsx", RecordFilter(), legacy=True, prefer_com=False
     )
     wb = load_workbook(output)
     ws = wb["数据分析表"]
-    assert ws.column_dimensions["A"].width >= 22
-    assert ws.column_dimensions["B"].width >= 18
-    assert ws.row_dimensions[2].height >= 30
-    assert ws.row_dimensions[32].height >= 30
-    assert ws["A61"].alignment.wrap_text
-    assert ws.row_dimensions[61].height >= 40
+    for column in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"):
+        assert ws.column_dimensions[column].width == template_ws.column_dimensions[column].width
+        assert ws.column_dimensions[column].hidden == template_ws.column_dimensions[column].hidden
+    for row in (1, 2, 3, 32, 33, 61):
+        assert ws.row_dimensions[row].height == template_ws.row_dimensions[row].height
+    assert ws.sheet_view.showGridLines == template_ws.sheet_view.showGridLines
+    assert ws.sheet_view.zoomScale == template_ws.sheet_view.zoomScale
+    assert ws.page_margins == template_ws.page_margins
+    assert ws["A61"]._style == template_ws["A61"]._style
+    template.close()
     wb.close()
 
 
