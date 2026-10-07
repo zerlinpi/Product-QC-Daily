@@ -108,8 +108,8 @@ class DemoService:
         start: date,
         end: date,
         teams: list[str],
-        rework_rate=0.08,
-        defect_rate=0.02,
+        rework_rate=0.18,
+        defect_rate=0.025,
         weights: dict[int, float] | None = None,
         seed: int | None = None,
     ) -> int:
@@ -127,9 +127,13 @@ class DemoService:
             raise ValueError("请至少启用一个不良项目，并设置正数权重")
         rng = random.Random(seed)
         scheduled_dates = balanced_demo_dates(start, end, count, rng)
+        team_weights = [DEMO_TEAM_WEIGHTS.get(team, 50) for team in teams]
         with self.ctx.db.session() as session:
             for i, inspection_date in enumerate(scheduled_dates):
-                sampling = rng.choice([20, 30, 40, 50, 60, 80, 100, 120, 140, 160])
+                sampling = rng.choices(
+                    DEMO_SAMPLING_VALUES,
+                    weights=DEMO_SAMPLING_WEIGHTS,
+                )[0]
                 batch_probability = min(1, max(0.2, defect_rate * 10)) if defect_rate else 0
                 defective = rng.random() < batch_probability
                 quantity = (
@@ -151,11 +155,14 @@ class DemoService:
                 data = InspectionInput(
                     inspection_date=inspection_date,
                     inspection_time=time(rng.randint(8, 20), rng.randrange(60)),
-                    team=rng.choice(teams),
+                    team=rng.choices(teams, weights=team_weights)[0],
                     work_order=f"DEMO-{inspection_date:%Y%m}-{i // 4 + 1:05}",
                     inspection_quantity=max(
                         sampling,
-                        rng.choice([300, 400, 480, 500, 600, 700, 800, 900, 1000, 1200]),
+                        rng.choices(
+                            DEMO_INSPECTION_VALUES,
+                            weights=DEMO_INSPECTION_WEIGHTS,
+                        )[0],
                     ),
                     sampling_quantity=sampling,
                     defect_quantity=quantity,
