@@ -26,7 +26,7 @@ def test_custom_report_dates_update_visible_export_scope(ctx, qtbot):
     window = MainWindow(ctx)
     qtbot.addWidget(window)
     page = window.pages[5]
-    page.preset.setCurrentText("自定义")
+    page.preset.setCurrentText("自定义区间")
     page.start.setDate(QDate(2025, 12, 30))
     page.end.setDate(QDate(2026, 1, 3))
     assert "2025-12-30 至 2026-01-03" in page.export_scope.text()
