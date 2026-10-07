@@ -639,7 +639,7 @@ def test_form_layouts_share_the_same_field_label_role(ctx, qtbot):
 
     demo = DemoDialog(ctx, window)
     qtbot.addWidget(demo)
-    for title in {"生成数量（约 7 条/工作日）", "开始日期", "结束日期", "返工率目标", "不良率目标", "判定参考"}:
+    for title in {"生成数量（约 5 条/自然日）", "开始日期", "结束日期", "返工率目标", "不良率目标", "判定参考"}:
         label_widget = next(widget for widget in demo.findChildren(QLabel) if widget.text() == title)
         assert label_widget.objectName() == "fieldLabel"
 
