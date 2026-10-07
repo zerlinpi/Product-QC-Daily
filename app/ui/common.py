@@ -219,7 +219,7 @@ def card():
 
 
 def native_group(title):
-    """Native Windows-style titled section for forms and utility workflows."""
+    """Shared titled section for compact desktop forms and utility workflows."""
     group = QGroupBox(title)
     layout = QVBoxLayout(group)
     layout.setContentsMargins(*SECTION_MARGINS)
@@ -340,7 +340,7 @@ def choice_input_dialog(parent, title, message, field_title, items, current=0):
 
 
 def separator(name=""):
-    """Native horizontal divider used for desktop page and navigation structure."""
+    """Subtle horizontal divider used for desktop page and navigation structure."""
     line = QFrame()
     if name:
         line.setObjectName(name)
@@ -438,15 +438,15 @@ def semantic_color(kind):
     dark = palette.color(QPalette.ColorRole.Window).lightness() < 128
     colors = (
         {
-            "success": "#6ccb5f",
-            "warning": "#f5a623",
-            "error": "#ff8a80",
+            "success": "#4ade80",
+            "warning": "#f59e0b",
+            "error": "#fb7185",
         }
         if dark
         else {
-            "success": "#107c10",
-            "warning": "#ca5010",
-            "error": "#c42b1c",
+            "success": "#16a34a",
+            "warning": "#d97706",
+            "error": "#dc2626",
         }
     )
     return QColor(colors[kind])
