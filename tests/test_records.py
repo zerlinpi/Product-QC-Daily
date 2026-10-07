@@ -145,3 +145,51 @@ def test_duplicate_team_and_defect_code_errors_are_actionable(ctx):
         ctx.settings.save_team("U1")
     with pytest.raises(ValueError, match="不良项目编码已存在"):
         ctx.defects.save({"code": "a", "name": "重复编码"})
+
+
+def test_iter_records_streams_without_repeated_count_queries(ctx, payload):
+    from sqlalchemy import event
+
+    from app.core.schemas import InspectionInput, RecordFilter
+
+    for index in range(3):
+        ctx.inspections.save(
+            InspectionInput(
+                **(
+                    payload.model_dump()
+                    | {"work_order": f"STREAM-{index}"}
+                )
+            )
+        )
+
+    statements = []
+
+    def capture(_connection, _cursor, statement, _parameters, _context, _executemany):
+        statements.append(statement.lower())
+
+    event.listen(ctx.db.engine, "before_cursor_execute", capture)
+    try:
+        rows = list(ctx.inspections.iter_records(RecordFilter(descending=False)))
+    finally:
+        event.remove(ctx.db.engine, "before_cursor_execute", capture)
+
+    assert len(rows) == 3
+    assert not any("count(" in statement for statement in statements)
+    assert any("from inspection_records" in statement for statement in statements)
+
+
+def test_record_sort_tie_breaker_follows_requested_direction(ctx, payload):
+    from app.core.schemas import InspectionInput, RecordFilter
+
+    first = ctx.inspections.save(
+        InspectionInput(**(payload.model_dump() | {"work_order": "ORDER-FIRST"}))
+    )
+    second = ctx.inspections.save(
+        InspectionInput(**(payload.model_dump() | {"work_order": "ORDER-SECOND"}))
+    )
+
+    ascending, _ = ctx.inspections.query(RecordFilter(descending=False))
+    descending, _ = ctx.inspections.query(RecordFilter(descending=True))
+
+    assert [row["id"] for row in ascending] == [first["id"], second["id"]]
+    assert [row["id"] for row in descending] == [second["id"], first["id"]]
