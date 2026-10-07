@@ -217,8 +217,15 @@ def test_export_full_timestamp_fits_and_stays_a_real_date(ctx, payload, tmp_path
     ws = wb["成品日检表" if legacy else "检验记录"]
     assert ws["B2"].value == stamp
     assert ws["B2"].is_date
-    assert ws["B2"].number_format == "yyyy-mm-dd hh:mm:ss"
-    assert ws.column_dimensions["B"].width >= 24
+    if legacy:
+        template = load_workbook(ctx.paths.template)
+        template_ws = template["成品日检表"]
+        assert ws["B2"].number_format == template_ws["B2"].number_format
+        assert ws.column_dimensions["B"].width == template_ws.column_dimensions["B"].width
+        template.close()
+    else:
+        assert ws["B2"].number_format == "yyyy-mm-dd hh:mm:ss"
+        assert ws.column_dimensions["B"].width >= 24
     wb.close()
 
 
@@ -269,12 +276,14 @@ def test_legacy_layout_keeps_original_chart_positions_and_signature_cell(ctx, pa
         (3, 49),
         (3, 42),
     ]
-    assert not analysis.sheet_view.showGridLines
-    assert analysis.sheet_view.zoomScale == 85
-    assert analysis.page_setup.orientation == "landscape"
-    assert analysis.page_setup.fitToWidth == 1
-    assert analysis.print_options.horizontalCentered
-    assert analysis.print_area
+    template = load_workbook(ctx.paths.template)
+    template_analysis = template["数据分析表"]
+    assert analysis.sheet_view.showGridLines == template_analysis.sheet_view.showGridLines
+    assert analysis.sheet_view.zoomScale == template_analysis.sheet_view.zoomScale
+    assert analysis.page_setup.orientation == template_analysis.page_setup.orientation
+    assert analysis.page_setup.fitToWidth == template_analysis.page_setup.fitToWidth
+    assert analysis.print_options.horizontalCentered == template_analysis.print_options.horizontalCentered
+    assert analysis.print_area == template_analysis.print_area
     assert analysis._charts[2].series[0].val.numRef.f.endswith("$B$4:$B$27")
     assert analysis._charts[3].series[0].val.numRef.f.endswith("$H$34:$K$34")
     assert len(analysis._charts[4].series) == 1
@@ -282,15 +291,17 @@ def test_legacy_layout_keeps_original_chart_positions_and_signature_cell(ctx, pa
     assert ws.column_dimensions["A"].hidden
     assert ws.row_dimensions[2].height == pytest.approx(34.45)
     assert ws["C2"].font.name == "微软雅黑"
-    assert not ws.sheet_view.showGridLines
-    assert ws.sheet_view.zoomScale == 90
-    assert ws.page_setup.orientation == "landscape"
-    assert ws.page_setup.fitToWidth == 1
-    assert ws.print_title_rows == "$1:$1"
+    template_ws = template["成品日检表"]
+    assert ws.sheet_view.showGridLines == template_ws.sheet_view.showGridLines
+    assert ws.sheet_view.zoomScale == template_ws.sheet_view.zoomScale
+    assert ws.page_setup.orientation == template_ws.page_setup.orientation
+    assert ws.page_setup.fitToWidth == template_ws.page_setup.fitToWidth
+    assert ws.print_title_rows == template_ws.print_title_rows
     anchor = ws._images[0].anchor
     assert (anchor._from.col, anchor._from.row) == (9, 1)
     assert (anchor._from.colOff + anchor.ext.cx) / 9525 <= ws.column_dimensions["J"].width * 7 + 5
     assert (anchor._from.rowOff + anchor.ext.cy) / 9525 <= ws.row_dimensions[2].height * 4 / 3
+    template.close()
     wb.close()
 
 

@@ -78,6 +78,7 @@ def test_modern_theme_styles_standard_controls_consistently(ctx, qtbot):
         "QMenu {",
         "QTableWidget {",
         "QTableWidget::item:hover",
+        "QListView#completionPopup",
         "QHeaderView::section",
         "QGroupBox {",
         "QScrollBar:vertical",
@@ -544,6 +545,7 @@ def test_all_page_fields_share_one_native_control_height(ctx, qtbot):
         entry.defect_quantity,
         entry.judgment,
         entry.inspector,
+        entry.remark,
         entry.defects.search,
         entry.defects.category,
         entry.auto_time,
@@ -581,6 +583,18 @@ def test_all_page_fields_share_one_native_control_height(ctx, qtbot):
     assert controls
     assert all(control.minimumHeight() == CONTROL_MIN_HEIGHT for control in controls)
 
+
+
+def test_entry_completers_use_themed_popup_role(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    entry = window.pages[1]
+    entry.refresh()
+
+    for field in (entry.work_order, entry.inspector):
+        completer = field.completer()
+        assert completer is not None
+        assert completer.popup().objectName() == "completionPopup"
 
 
 def test_form_layouts_share_the_same_field_label_role(ctx, qtbot):

@@ -899,14 +899,9 @@ def repair_analysis(
             code = chr(97 + i)
             write_text(tool.cell(i + 2, 1), code)
             write_text(tool.cell(i + 2, 2), defect_names.get(code, ""))
-    ws["A61"] = "项目统计为出现批次；不良率=不良件数/抽检件数。逐项已知数量见标准报表。"
-    for column in ("L", "M"):
-        ws.column_dimensions[column].width = max(ws.column_dimensions[column].width, 12)
-        for row in (1, 31):
-            ws.cell(row, 12 if column == "L" else 13).alignment = Alignment(
-                wrap_text=True, vertical="center"
-            )
-    improve_analysis_display(ws)
+    # Keep the template's visible layout untouched. L/M are helper cells used
+    # only by formulas; writing values must not resize, re-align, or restyle
+    # the user's source form.
     ws.data_validations.dataValidation.clear()
     wb.calculation = CalcProperties(calcId=191029, fullCalcOnLoad=True, forceFullCalc=True)
 
@@ -1059,7 +1054,8 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             write_text(cell, value)
             if legacy and col <= len(row_style):
                 cell._style = copy(row_style[col - 1])
-        ws.cell(index, 2).number_format = "yyyy-mm-dd hh:mm:ss"
+        if not legacy:
+            ws.cell(index, 2).number_format = "yyyy-mm-dd hh:mm:ss"
         if legacy:
             write_text(ws.cell(index, 14), source_label(row["source"]))
             ws.row_dimensions[index].height = row_height
@@ -1072,11 +1068,9 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
                 )
     if legacy:
         extend_legacy_form(ws, row_style, row_height, count)
-        improve_legacy_sheet_display(ws)
         duplicate = wb["成品日检表报表"]
         duplicate_style, duplicate_height = legacy_layout["成品日检表报表"]
         extend_legacy_form(duplicate, duplicate_style, duplicate_height, 0)
-        improve_legacy_sheet_display(duplicate)
         # The hidden duplicate is intentionally empty to avoid two copies being imported.
         analysis_start = filters.start or minimum or date.today()
         analysis_end = filters.end or maximum or date.today()
@@ -1097,7 +1091,6 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         for chart in wb["数据分析表"]._charts:
             clear_chart_caches(chart)
             repair_chart_ranges(chart)
-            improve_chart_labels(chart)
         selected_week = analysis_end - timedelta(days=analysis_end.weekday())
         embed_legacy_analysis_chart_data(
             wb,
@@ -1153,9 +1146,10 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         calcOnSave=True,
         forceFullCalc=True,
     )
-    # A full timestamp needs more room than the short date in the old template.
-    # Apply this after standard table styling, which otherwise resets B to 15.
-    ws.column_dimensions["B"].width = max(ws.column_dimensions["B"].width, 26)
+    # Standard reports show seconds explicitly; template exports keep the
+    # template's original width and number format for visual fidelity.
+    if not legacy:
+        ws.column_dimensions["B"].width = max(ws.column_dimensions["B"].width, 26)
     reset_workbook_views(wb, ws.title, legacy)
     with NamedTemporaryFile(suffix=".xlsx", dir=path.parent, delete=False) as handle:
         temp = Path(handle.name)
@@ -1229,14 +1223,12 @@ def create_empty_template(source: Path, target: Path) -> None:
             if index > 1:
                 del ws.row_dimensions[index]
         extend_legacy_form(ws, row_style, row_height, 0)
-        improve_legacy_sheet_display(ws)
     analysis = wb["数据分析表"]
     analysis.delete_rows(62, max(analysis.max_row - 61, 1))
     analysis["M17"] = None  # An unused scratch calculation from the source data.
     for chart in analysis._charts:
         clear_chart_caches(chart)
         repair_chart_ranges(chart)
-        improve_chart_labels(chart)
     repair_analysis(wb, date(2026, 1, 1), date(2026, 1, 31), 0)
     reset_workbook_views(wb, "成品日检表", legacy=True)
     wb.properties.creator = "Product-QC-Daily"

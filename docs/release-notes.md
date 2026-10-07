@@ -1,10 +1,15 @@
-v1.1.39 继续收口 v1.1.38 的现代 Windows 桌面视觉一致性，只修复已识别的 UI 残留，不新增业务功能；数据库 schema、统计口径和 Excel 导入导出结构保持不变。
+v1.1.40 重点完成两项收口：继续检查并修复桌面 UI 最后的组件一致性缺口；让“按原表导出”真正以用户选择的 Excel 模板为视觉基准，不再擅自重设计模板布局。
 
-- Dashboard / Analytics KPI 不再使用带标题切边框观感的 QGroupBox，改为与图表一致的平面 card：标题使用 muted 层级，大数字保留质量语义色，整体更接近现代桌面管理软件。
-- 图表与表格状态语义色统一回 v1.1.38 Design Tokens：浅色 success/warning/error 使用 #16a34a / #d97706 / #dc2626，深色使用 #4ade80 / #f59e0b / #fb7185，避免主界面与 PyQtGraph/状态单元格出现两套色彩体系。
-- 补齐 QDoubleSpinBox 主题，避免“生成演示数据”中的返工率/不良率输入仍保留 Fusion 默认外观；SpinBox、DateEdit、TimeEdit 的右侧 subcontrol 继续使用统一的扁平处理。
-- QDialog / QMessageBox 明确跟随 panel/text token；QCalendarWidget 的背景、文本、工具按钮 hover 和日期选择状态进入同一 light/dark 主题。
-- 表格增加柔和 row hover，选中行仍保持 primary-soft，继续保留无网格线、数字右对齐、状态居中与高信息密度。
-- 更新 UI 回归测试与实际打包 EXE self-test，要求新 selector、平面 KPI card 和新版语义色真实进入最终 Windows 可执行程序。
+- 日检录入页“备注” QTextEdit 进入统一 32px 控件基线，继续保留 90px 最大高度，与同页输入框、日期、时间、数字输入保持一致。
+- 加工单号 / 检验员 QCompleter 自动补全弹层增加独立 completionPopup 主题角色，light/dark 下使用与 ComboBox、Menu 相同的 panel、border、hover、selected 语义。
+- 原表导出不再强制把时间列 B 扩到 26；保留模板原始列宽。例如外部模板 B=14.22、D=22.78 时，导出后继续保持该宽度。
+- 原表导出不再把时间显示格式强制改成 `yyyy-mm-dd hh:mm:ss`；单元格仍保存真实 datetime，但显示格式完全继承模板，例如 `m/d/yy h:mm`。
+- 原表导出不再强制修改表头高度、表头换行/居中、网格线、缩放比例、A4 横向、小页边距、打印标题行等视觉设置。
+- “数据分析表”不再强制扩大 A/B 等列、不再修改可见行高/缩放/网格线/打印布局，也不再额外写入 A61 说明文字；公式、团队/不良项目名称同步和图表数据缓存仍正常更新。
+- 不再强制旋转旧模板图表坐标轴标签；保留模板原有图表设计与锚点，只修复数据引用和缓存。
+- 保留必要的功能性修复：导出文件仍从 A1 打开、主表冻结 C2，避免历史模板保存到 400 多行滚动位置造成“打开即跳到几百行”的旧问题。
+- 新增模板忠实度回归：对外部模板自定义 B/D 列宽、表头高度、时间格式、网格线、缩放、页边距和分析表尺寸后，导出结果必须逐项保持。
+- 标准“明细报表”继续使用现代 QC 报表样式，不受本轮原表模板忠实度调整影响。
+- 数据库 schema、统计口径、导入逻辑、Excel 数据结构和 7 个页面业务功能均未新增或改变。
 
 下载 `Product-QC-Daily-windows-x64.zip`，完整解压后运行 `Product-QC-Daily.exe`。

@@ -22,29 +22,89 @@ def test_legacy_export_keeps_full_blank_form_after_last_record(ctx, payload, tmp
     template_ws = template["成品日检表"]
     assert ws["B50"]._style == template_ws["B2"]._style
     assert ws["J50"]._style == template_ws["J2"]._style
+    assert ws["B2"].number_format == template_ws["B2"].number_format
+    for column in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"):
+        assert ws.column_dimensions[column].width == template_ws.column_dimensions[column].width
+        assert ws.column_dimensions[column].hidden == template_ws.column_dimensions[column].hidden
+    assert ws.row_dimensions[1].height == template_ws.row_dimensions[1].height
+    for column in range(1, 11):
+        assert ws.cell(1, column)._style == template_ws.cell(1, column)._style
     template.close()
-    assert ws["B2"].number_format == "yyyy-mm-dd hh:mm:ss"
-    assert ws.column_dimensions["B"].width >= 26
-    assert ws.column_dimensions["D"].width >= 20
-    assert ws.row_dimensions[1].height >= 30
-    assert all(cell.alignment.wrap_text for cell in ws[1])
     wb.close()
 
 
-def test_analysis_sheet_uses_readable_widths_and_wrapped_note(ctx, payload, tmp_path):
+def test_analysis_sheet_preserves_template_layout(ctx, payload, tmp_path):
     ctx.inspections.save(payload)
+    template = load_workbook(ctx.paths.template)
+    template_ws = template["数据分析表"]
     output = ctx.excel.export(
         tmp_path / "analysis-layout.xlsx", RecordFilter(), legacy=True, prefer_com=False
     )
     wb = load_workbook(output)
     ws = wb["数据分析表"]
-    assert ws.column_dimensions["A"].width >= 22
-    assert ws.column_dimensions["B"].width >= 18
-    assert ws.row_dimensions[2].height >= 30
-    assert ws.row_dimensions[32].height >= 30
-    assert ws["A61"].alignment.wrap_text
-    assert ws.row_dimensions[61].height >= 40
+    for column in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"):
+        assert ws.column_dimensions[column].width == template_ws.column_dimensions[column].width
+        assert ws.column_dimensions[column].hidden == template_ws.column_dimensions[column].hidden
+    for row in (1, 2, 3, 32, 33, 61):
+        assert ws.row_dimensions[row].height == template_ws.row_dimensions[row].height
+    assert ws.sheet_view.showGridLines == template_ws.sheet_view.showGridLines
+    assert ws.sheet_view.zoomScale == template_ws.sheet_view.zoomScale
+    assert ws.page_margins == template_ws.page_margins
+    assert ws["A61"]._style == template_ws["A61"]._style
+    template.close()
     wb.close()
+
+
+def test_external_legacy_template_keeps_visible_form_style_exactly(ctx, payload, tmp_path):
+    source = tmp_path / "uploaded-style-template.xlsx"
+    template = load_workbook(ctx.paths.template)
+    form = template["成品日检表"]
+    analysis = template["数据分析表"]
+
+    form.column_dimensions["B"].width = 14.2222222222222
+    form.column_dimensions["D"].width = 22.7777777777778
+    form.row_dimensions[1].height = 19.5
+    form["B2"].number_format = "m/d/yy h:mm"
+    form.sheet_view.showGridLines = True
+    form.sheet_view.zoomScale = 73
+    form.page_margins.left = 0.75
+    form.page_margins.right = 0.75
+    form.page_margins.top = 1
+    form.page_margins.bottom = 1
+
+    analysis.column_dimensions["A"].width = 11.3333333333333
+    analysis.column_dimensions["B"].width = 11.3333333333333
+    analysis.row_dimensions[2].height = 22.5
+    analysis.sheet_view.showGridLines = True
+    analysis.sheet_view.zoomScale = 90
+    template.save(source)
+    template.close()
+
+    ctx.settings.update({"template_path": str(source)})
+    ctx.inspections.save(payload)
+    output = ctx.excel.export(
+        tmp_path / "matched-style.xlsx", RecordFilter(), legacy=True, prefer_com=False
+    )
+
+    result = load_workbook(output)
+    form = result["成品日检表"]
+    analysis = result["数据分析表"]
+    assert form.column_dimensions["B"].width == 14.2222222222222
+    assert form.column_dimensions["D"].width == 22.7777777777778
+    assert form.row_dimensions[1].height == 19.5
+    assert form["B2"].number_format == "m/d/yy h:mm"
+    assert form.sheet_view.showGridLines
+    assert form.sheet_view.zoomScale == 73
+    assert form.page_margins.left == 0.75
+    assert form.page_margins.right == 0.75
+    assert form.page_margins.top == 1
+    assert form.page_margins.bottom == 1
+    assert analysis.column_dimensions["A"].width == 11.3333333333333
+    assert analysis.column_dimensions["B"].width == 11.3333333333333
+    assert analysis.row_dimensions[2].height == 22.5
+    assert analysis.sheet_view.showGridLines
+    assert analysis.sheet_view.zoomScale == 90
+    result.close()
 
 
 def test_export_job_uses_modal_animation_instead_of_statusbar_progress(ctx, qtbot):
