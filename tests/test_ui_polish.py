@@ -279,7 +279,7 @@ def test_import_preview_uses_native_dialog_button_box(ctx, qtbot, tmp_path):
     assert accept.isDefault()
     assert buttons.button(QDialogButtonBox.StandardButton.Cancel) is not None
     assert dialog.visible_status.text() == "当前显示 1 条"
-    assert dialog.table.item(0, 2).foreground().color().name() == "#107c10"
+    assert dialog.table.item(0, 2).foreground().color().name() == "#16a34a"
     assert dialog.filter.accessibleName() == "导入状态筛选"
 
 

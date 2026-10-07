@@ -73,8 +73,11 @@ def test_modern_theme_styles_standard_controls_consistently(ctx, qtbot):
         "QLineEdit,",
         "QComboBox,",
         "QDateEdit,",
+        "QDoubleSpinBox,",
+        "QDialog,",
         "QMenu {",
         "QTableWidget {",
+        "QTableWidget::item:hover",
         "QHeaderView::section",
         "QGroupBox {",
         "QScrollBar:vertical",
@@ -98,8 +101,11 @@ def test_sections_and_metrics_use_native_desktop_frames(ctx, qtbot):
 
     metric = stat_card("今日检验批次")
     qtbot.addWidget(metric)
-    assert isinstance(metric, QGroupBox)
-    assert metric.title() == "今日检验批次"
+    assert isinstance(metric, QFrame)
+    assert not isinstance(metric, QGroupBox)
+    assert metric.objectName() == "card"
+    assert metric.title_label.text() == "今日检验批次"
+    assert metric.title_label.objectName() == "metricTitle"
 
 
 
@@ -433,13 +439,13 @@ def test_chart_palette_tracks_application_theme(qtbot):
     apply_theme("light")
     chart.refresh_theme()
     light = chart_palette()
-    assert light["warning"].name() == "#ca5010"
+    assert light["warning"].name() == "#d97706"
     assert light["text"].name() == QApplication.palette().windowText().color().name()
 
     apply_theme("dark")
     chart.refresh_theme()
     dark = chart_palette()
-    assert dark["warning"].name() == "#f5a623"
+    assert dark["warning"].name() == "#f59e0b"
     assert dark["text"].name() == QApplication.palette().windowText().color().name()
 
     apply_theme("light")
