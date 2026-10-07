@@ -33,14 +33,32 @@ def test_main_navigation_uses_native_list_and_compact_desktop_metrics(ctx, qtbot
         "系统设置",
     ]
     assert all(not navigation.item(i).icon().isNull() for i in range(navigation.count()))
-    assert all(navigation.item(i).sizeHint().height() == 28 for i in range(navigation.count()))
+    assert all(navigation.item(i).sizeHint().height() == 30 for i in range(navigation.count()))
     sidebar = window.findChild(QFrame, "qcSidebar")
-    assert sidebar is not None and sidebar.width() == 176
+    assert sidebar is not None and sidebar.width() == 184
     navigation.setCurrentRow(3)
     assert window.stack.currentIndex() == 3
     records = window.pages[2].table
-    assert records.verticalHeader().defaultSectionSize() == 28
+    assert records.verticalHeader().defaultSectionSize() == 30
+    assert records.horizontalHeader().minimumHeight() == 30
     assert records.showGrid()
+
+
+def test_all_pages_and_shell_share_native_desktop_structure(ctx, qtbot):
+    from app.ui.common import TOPBAR_MIN_HEIGHT
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    window.show()
+
+    assert window.topbar.minimumHeight() == TOPBAR_MIN_HEIGHT == 40
+    assert window.sidebar_top_separator.frameShape() == QFrame.Shape.HLine
+    assert window.sidebar_bottom_separator.frameShape() == QFrame.Shape.HLine
+    assert "数据保存在本机" in window.offline_status.toolTip()
+    for page in window.pages:
+        assert page.header.objectName() == "pageHeader"
+        assert page.header_separator.frameShape() == QFrame.Shape.HLine
+        assert page.header_separator.objectName() == "pageHeaderSeparator"
 
 
 def test_native_primitives_are_not_overpainted_by_global_theme(ctx, qtbot):
@@ -134,6 +152,27 @@ def test_native_tables_use_alternating_rows_and_data_alignment(qtbot):
     assert widget.item(0, 2).textAlignment() & Qt.AlignmentFlag.AlignRight
     assert widget.item(0, 3).textAlignment() & Qt.AlignmentFlag.AlignHCenter
     assert widget.item(0, 4).textAlignment() & Qt.AlignmentFlag.AlignHCenter
+
+
+def test_quality_metrics_use_restrained_semantic_tones(ctx, qtbot):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+
+    dashboard = window.pages[0]
+    dashboard_kinds = {
+        key: widget.value_label.objectName() for widget, key, _monthly in dashboard.cards
+    }
+    assert dashboard_kinds["defect_quantity"] == "metricWarning"
+    assert dashboard_kinds["defect_rate"] == "metricWarning"
+    assert dashboard_kinds["pass_rate"] == "metricSuccess"
+    assert dashboard_kinds["inspection_quantity"] == "metric"
+
+    analytics = window.pages[3]
+    analytics_kinds = {key: widget.value_label.objectName() for widget, key in analytics.metrics}
+    assert analytics_kinds["defect_quantity"] == "metricWarning"
+    assert analytics_kinds["defect_rate"] == "metricWarning"
+    assert analytics_kinds["rework_rate"] == "metricWarning"
+    assert analytics_kinds["sampling_quantity"] == "metric"
 
 
 def test_core_pages_reflow_at_minimum_and_wide_desktop_widths(ctx, qtbot):
