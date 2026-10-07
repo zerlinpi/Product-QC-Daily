@@ -47,19 +47,19 @@ class DashboardPage(Page):
         self.cards = []
         self._layout_mode = None
         definitions = [
-            ("今日检验批次", "batches", False),
-            ("今日检验数量", "inspection_quantity", False),
-            ("今日抽检数量", "sampling_quantity", False),
-            ("今日不良件数", "defect_quantity", False),
-            ("今日不良率", "defect_rate", False),
-            ("今日返工批次", "rework_batches", False),
-            ("今日合格率", "pass_rate", False),
-            ("本月检验批次", "batches", True),
-            ("本月不良率", "defect_rate", True),
-            ("本月返工率", "rework_rate", True),
+            ("今日检验批次", "batches", False, ""),
+            ("今日检验数量", "inspection_quantity", False, ""),
+            ("今日抽检数量", "sampling_quantity", False, ""),
+            ("今日不良件数", "defect_quantity", False, "warning"),
+            ("今日不良率", "defect_rate", False, "warning"),
+            ("今日返工批次", "rework_batches", False, "warning"),
+            ("今日合格率", "pass_rate", False, "success"),
+            ("本月检验批次", "batches", True, ""),
+            ("本月不良率", "defect_rate", True, "warning"),
+            ("本月返工率", "rework_rate", True, "warning"),
         ]
-        for i, (title, key, monthly) in enumerate(definitions):
-            widget = stat_card(title)
+        for i, (title, key, monthly, tone) in enumerate(definitions):
+            widget = stat_card(title, tone=tone)
             self.grid.addWidget(widget, i // 5, i % 5 * 2, 1, 2)
             self.cards.append((widget, key, monthly))
         self.charts = []
