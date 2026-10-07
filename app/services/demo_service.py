@@ -76,7 +76,7 @@ class DemoService:
         scheduled_dates = balanced_demo_dates(start, end, count, rng)
         with self.ctx.db.session() as session:
             for i, inspection_date in enumerate(scheduled_dates):
-                sampling = rng.choice([20, 40, 60, 80, 100, 120])
+                sampling = rng.choice([20, 30, 40, 50, 60, 80, 100, 120, 140, 160])
                 batch_probability = min(1, max(0.2, defect_rate * 10)) if defect_rate else 0
                 defective = rng.random() < batch_probability
                 quantity = (
@@ -102,7 +102,7 @@ class DemoService:
                     work_order=f"DEMO-{inspection_date:%Y%m}-{i // 4 + 1:05}",
                     inspection_quantity=max(
                         sampling,
-                        rng.choice([300, 400, 480, 600, 700, 800, 900, 1000]),
+                        rng.choice([300, 400, 480, 500, 600, 700, 800, 900, 1000, 1200]),
                     ),
                     sampling_quantity=sampling,
                     defect_quantity=quantity,
