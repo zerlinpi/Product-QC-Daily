@@ -34,12 +34,13 @@ from app.core.validation import validation_message
 APP_DEFAULT_SIZE = (1440, 920)
 APP_MIN_SIZE = (1080, 720)
 APP_MAX_SIZE = (2400, 1600)
-SIDEBAR_WIDTH = 176
-PAGE_MARGINS = (14, 12, 14, 12)
+SIDEBAR_WIDTH = 184
+NAV_ITEM_HEIGHT = 30
+PAGE_MARGINS = (16, 14, 16, 14)
 DIALOG_MARGINS = (14, 12, 14, 12)
 SECTION_MARGINS = (10, 12, 10, 10)
-SIDEBAR_MARGINS = (8, 10, 8, 8)
-TOPBAR_MARGINS = (14, 4, 14, 4)
+SIDEBAR_MARGINS = (10, 12, 10, 10)
+TOPBAR_MARGINS = (16, 6, 16, 6)
 LAYOUT_SPACING = 8
 TOOLBAR_SPACING = 6
 CONTROL_MIN_HEIGHT = 28
@@ -55,9 +56,10 @@ DEMO_DIALOG_MIN_SIZE = (620, 560)
 STATUS_PROGRESS_MAX_WIDTH = 150
 REMARK_MAX_HEIGHT = 90
 SIGNATURE_PREVIEW_MIN_HEIGHT = 44
-TABLE_ROW_HEIGHT = 28
+TABLE_HEADER_HEIGHT = 30
+TABLE_ROW_HEIGHT = 30
 CHART_MIN_HEIGHT = 190
-TOPBAR_MIN_HEIGHT = 36
+TOPBAR_MIN_HEIGHT = 40
 WIDE_LAYOUT_BREAKPOINT = 1100
 
 
@@ -337,6 +339,16 @@ def choice_input_dialog(parent, title, message, field_title, items, current=0):
     return field.currentText(), accepted
 
 
+def separator(name=""):
+    """Native horizontal divider used for desktop page and navigation structure."""
+    line = QFrame()
+    if name:
+        line.setObjectName(name)
+    line.setFrameShape(QFrame.Shape.HLine)
+    line.setFrameShadow(QFrame.Shadow.Sunken)
+    return line
+
+
 def page_scroll():
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
@@ -370,7 +382,7 @@ def table(headers):
     widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
     widget.horizontalHeader().setHighlightSections(False)
     widget.horizontalHeader().setMinimumSectionSize(55)
-    widget.horizontalHeader().setMinimumHeight(CONTROL_MIN_HEIGHT)
+    widget.horizontalHeader().setMinimumHeight(TABLE_HEADER_HEIGHT)
     widget.horizontalHeader().setDefaultAlignment(
         Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
     )
@@ -381,7 +393,7 @@ def table(headers):
 def table_minimum_rows(widget, rows):
     """Set a table minimum height from shared header/row metrics instead of ad-hoc pixels."""
     widget.setMinimumHeight(
-        CONTROL_MIN_HEIGHT + TABLE_ROW_HEIGHT * max(1, rows) + widget.frameWidth() * 2
+        TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT * max(1, rows) + widget.frameWidth() * 2
     )
     return widget
 
@@ -475,11 +487,16 @@ class Page(QWidget):
         self.ctx, self.window = ctx, window
         self.setObjectName("page")
         self.layout = stack_layout(self, PAGE_MARGINS)
+        self.header = QWidget()
+        self.header.setObjectName("pageHeader")
+        header_layout = stack_layout(self.header, margins=(0, 0, 0, 2), spacing=2)
         self.title_label = label(title, "title")
         self.subtitle_label = label(subtitle, "subtitle", True)
-        self.layout.addWidget(self.title_label)
-        self.layout.addWidget(self.subtitle_label)
-        self.layout.addSpacing(2)
+        header_layout.addWidget(self.title_label)
+        header_layout.addWidget(self.subtitle_label)
+        self.layout.addWidget(self.header)
+        self.header_separator = separator("pageHeaderSeparator")
+        self.layout.addWidget(self.header_separator)
 
     def refresh(self):
         pass

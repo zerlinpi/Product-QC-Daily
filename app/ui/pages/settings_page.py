@@ -324,6 +324,9 @@ class SettingsPage(Page):
                 friendly_error(dialog, exc)
 
         buttons.accepted.connect(save)
+        name.setFocus()
+        if item:
+            name.selectAll()
         if dialog.exec():
             self.refresh()
 

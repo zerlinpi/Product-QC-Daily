@@ -33,12 +33,16 @@ from app.ui.common import (
     BUTTON_MIN_WIDTH,
     CONTROL_MIN_HEIGHT,
     LAYOUT_SPACING,
+    NAV_ITEM_HEIGHT,
     PAGE_MARGINS,
     PROGRESS_DIALOG_MIN_WIDTH,
     REMARK_MAX_HEIGHT,
+    SIDEBAR_WIDTH,
     SIGNATURE_PREVIEW_MIN_HEIGHT,
     STATUS_PROGRESS_MAX_WIDTH,
+    TABLE_HEADER_HEIGHT,
     TABLE_ROW_HEIGHT,
+    TOPBAR_MIN_HEIGHT,
     button,
     dialog_button_box,
     friendly_error,
@@ -232,8 +236,22 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         (entry.defects.table, 9),
     ]
     for widget, rows in density_tables:
-        expected = CONTROL_MIN_HEIGHT + TABLE_ROW_HEIGHT * rows + widget.frameWidth() * 2
+        expected = TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT * rows + widget.frameWidth() * 2
         assert widget.minimumHeight() == expected
+
+    assert window.navigation.item(0).sizeHint().height() == NAV_ITEM_HEIGHT
+    assert window.findChild(QFrame, "qcSidebar").width() == SIDEBAR_WIDTH
+    assert window.topbar.minimumHeight() == TOPBAR_MIN_HEIGHT
+    assert all(
+        page.header_separator.frameShape() == QFrame.Shape.HLine for page in window.pages
+    )
+    dashboard_metric_kinds = {
+        key: widget.value_label.objectName()
+        for widget, key, _monthly in window.pages[0].cards
+    }
+    assert dashboard_metric_kinds["defect_rate"] == "metricWarning"
+    assert dashboard_metric_kinds["pass_rate"] == "metricSuccess"
+    assert window.pages[3].metrics[2][0].value_label.objectName() == "metricWarning"
 
     primary_probe = button("主要操作", primary=True)
     danger_probe = button("危险操作", danger=True)

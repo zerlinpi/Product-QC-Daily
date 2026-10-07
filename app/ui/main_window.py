@@ -22,7 +22,7 @@ from app.ui.common import (
     APP_DEFAULT_SIZE,
     APP_MAX_SIZE,
     APP_MIN_SIZE,
-    CONTROL_MIN_HEIGHT,
+    NAV_ITEM_HEIGHT,
     SIDEBAR_MARGINS,
     SIDEBAR_WIDTH,
     STATUS_PROGRESS_MAX_WIDTH,
@@ -32,6 +32,7 @@ from app.ui.common import (
     guarded,
     label,
     message_box,
+    separator,
     toolbar_layout,
 )
 from app.ui.dialogs.progress_dialog import TaskProgressDialog
@@ -71,7 +72,9 @@ class MainWindow(QMainWindow):
         nav.setSpacing(2)
         nav.addWidget(label("成品日检", "brand"))
         nav.addWidget(label("质量管理", "muted"))
-        nav.addSpacing(4)
+        self.sidebar_top_separator = separator("sidebarTopSeparator")
+        nav.addWidget(self.sidebar_top_separator)
+        nav.addSpacing(2)
         nav_items = [
             ("质量总览", QStyle.StandardPixmap.SP_ComputerIcon),
             ("日检录入", QStyle.StandardPixmap.SP_FileDialogNewFolder),
@@ -93,11 +96,13 @@ class MainWindow(QMainWindow):
         for i, (title, icon) in enumerate(nav_items):
             item = QListWidgetItem(self.style().standardIcon(icon), title)
             item.setToolTip(f"{title} · Ctrl+{i + 1}")
-            item.setSizeHint(QSize(0, CONTROL_MIN_HEIGHT))
+            item.setSizeHint(QSize(0, NAV_ITEM_HEIGHT))
             self.navigation.addItem(item)
             self.nav_items.append(item)
         self.navigation.currentRowChanged.connect(self._navigate_from_sidebar)
         nav.addWidget(self.navigation, 1)
+        self.sidebar_bottom_separator = separator("sidebarBottomSeparator")
+        nav.addWidget(self.sidebar_bottom_separator)
         nav.addWidget(label("数据保存在本机", "muted"))
         nav.addWidget(label(f"版本 {__version__} · 离线使用", "muted"))
         root.addWidget(sidebar)
@@ -106,13 +111,17 @@ class MainWindow(QMainWindow):
         right.setSpacing(0)
         top = QFrame()
         top.setObjectName("topbar")
+        self.topbar = top
         toolbar = toolbar_layout(top)
+        self.topbar_layout = toolbar
         toolbar.setContentsMargins(*TOPBAR_MARGINS)
         top.setMinimumHeight(TOPBAR_MIN_HEIGHT)
         self.company = label("成品质量管理", "section")
         toolbar.addWidget(self.company)
         toolbar.addStretch()
-        toolbar.addWidget(label("本机 · 离线", "muted"))
+        self.offline_status = label("本机 · 离线", "muted")
+        self.offline_status.setToolTip("程序离线运行，数据保存在本机")
+        toolbar.addWidget(self.offline_status)
         right.addWidget(top)
         self.stack = QStackedWidget()
         right.addWidget(self.stack, 1)

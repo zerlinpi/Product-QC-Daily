@@ -82,14 +82,14 @@ class AnalyticsPage(Page):
         self.metrics = []
         self._layout_mode = None
         definitions = [
-            ("检验数量", "inspection_quantity"),
-            ("抽检数量", "sampling_quantity"),
-            ("不良件数", "defect_quantity"),
-            ("不良率", "defect_rate"),
-            ("返工率", "rework_rate"),
+            ("检验数量", "inspection_quantity", ""),
+            ("抽检数量", "sampling_quantity", ""),
+            ("不良件数", "defect_quantity", "warning"),
+            ("不良率", "defect_rate", "warning"),
+            ("返工率", "rework_rate", "warning"),
         ]
-        for i, (title, key) in enumerate(definitions):
-            widget = stat_card(title)
+        for i, (title, key, tone) in enumerate(definitions):
+            widget = stat_card(title, tone=tone)
             self.grid.addWidget(widget, 0, i * 2, 1, 2)
             self.metrics.append((widget, key))
         self.pareto_frame, layout = card()
