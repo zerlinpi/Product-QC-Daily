@@ -25,13 +25,13 @@ from app.ui.common import (
 from app.ui.dialogs import file_dialogs
 from app.ui.dialogs.import_dialog import ImportDialog
 
-REPORT_SCOPES = ["全年", "单月", "单日", "自定义区间"]
+REPORT_SCOPES = ["全年", "单月", "具体日期", "自定义区间"]
 
 
 class ReportsPage(Page):
     def __init__(self, ctx, window):
         super().__init__(
-            ctx, window, "报表中心", "导入前先检查内容；导出时可按全年、单月、单日或自定义日期范围选择数据"
+            ctx, window, "报表中心", "导入前先检查内容；导出时可按全年、单月、具体日期或自定义日期范围选择数据"
         )
         panel, layout = native_group("导入历史日检表")
         layout.addWidget(
@@ -117,7 +117,7 @@ class ReportsPage(Page):
         self.set_range("全年")
         layout.addWidget(
             label(
-                "全年适合年度归档；单月用于月报；单日用于指定日期；自定义区间用于跨月或临时范围。明细报表导出后还可直接按年份、月份或日期筛选。",
+                "全年适合年度归档；单月用于月报；具体日期用于指定某一天；自定义区间用于跨月或临时范围。明细报表导出后还可直接按年份、月份或日期筛选。",
                 "muted",
                 True,
             )
@@ -155,11 +155,11 @@ class ReportsPage(Page):
     def _active_filter_widgets(self):
         mode = self.preset.currentText()
         active = [self.preset]
-        if mode in {"全年", "单月"}:
+        if mode in {"全年", "单月", "具体日期"}:
             active.append(self.year)
         if mode == "单月":
             active.append(self.month)
-        elif mode == "单日":
+        elif mode == "具体日期":
             active.append(self.day)
         elif mode == "自定义区间":
             active.extend([self.start, self.end])
@@ -216,9 +216,12 @@ class ReportsPage(Page):
             return date(year, month, 1), date(
                 year, month, calendar.monthrange(year, month)[1]
             )
-        if mode == "单日":
-            day = self.day.date().toPython()
-            return day, day
+        if mode == "具体日期":
+            chosen = self.day.date().toPython()
+            year = self.year.value()
+            day = min(chosen.day, calendar.monthrange(year, chosen.month)[1])
+            chosen = date(year, chosen.month, day)
+            return chosen, chosen
         return self.start.date().toPython(), self.end.date().toPython()
 
     def sync_preset_range(self):
@@ -230,11 +233,27 @@ class ReportsPage(Page):
             widget.setDate(QDate(value))
             widget.blockSignals(previous)
 
+    def _sync_day_to_year(self):
+        year = self.year.value()
+        current = self.day.date().toPython()
+        selected = date(
+            year,
+            current.month,
+            min(current.day, calendar.monthrange(year, current.month)[1]),
+        )
+        blocked = self.day.blockSignals(True)
+        self.day.setMinimumDate(QDate(year, 1, 1))
+        self.day.setMaximumDate(QDate(year, 12, 31))
+        self.day.setDate(QDate(selected))
+        self.day.blockSignals(blocked)
+
     def _period_changed(self, *_):
+        self._sync_day_to_year()
         self.sync_preset_range()
         self.update_scope_text()
 
     def set_range(self, _name):
+        self._sync_day_to_year()
         self._update_filter_visibility()
         self.sync_preset_range()
         self.update_scope_text()
@@ -251,7 +270,7 @@ class ReportsPage(Page):
             return f"{start.year} 全年"
         if mode == "单月":
             return f"{start.year} 年 {start.month:02d} 月"
-        if mode == "单日":
+        if mode == "具体日期":
             return str(start)
         return f"{start} 至 {end}"
 
