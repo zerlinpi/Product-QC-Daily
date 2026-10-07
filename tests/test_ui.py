@@ -291,6 +291,32 @@ def test_analysis_reports_and_dashboard_show_scope_feedback(ctx, qtbot):
 
 
 
+def test_reports_support_year_month_and_single_day_ranges(ctx, qtbot):
+    from PySide6.QtCore import QDate
+
+    from app.ui.main_window import MainWindow
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[5]
+
+    page.preset.setCurrentText("全年")
+    page.year.setValue(2025)
+    assert page.selected_range() == (date(2025, 1, 1), date(2025, 12, 31))
+    assert "2025 全年" in page.export_scope.text()
+
+    page.preset.setCurrentText("单月")
+    page.year.setValue(2024)
+    page.month.setCurrentIndex(1)
+    assert page.selected_range() == (date(2024, 2, 1), date(2024, 2, 29))
+    assert "2024 年 02 月" in page.export_scope.text()
+
+    page.preset.setCurrentText("单日")
+    page.day.setDate(QDate(2026, 3, 18))
+    assert page.selected_range() == (date(2026, 3, 18), date(2026, 3, 18))
+    assert "2026-03-18" in page.export_scope.text()
+
+
 def test_reports_invalid_custom_range_disables_export_before_save_dialog(
     ctx, qtbot, monkeypatch
 ):
@@ -302,7 +328,7 @@ def test_reports_invalid_custom_range_disables_export_before_save_dialog(
     window = MainWindow(ctx)
     qtbot.addWidget(window)
     page = window.pages[5]
-    page.preset.setCurrentText("自定义")
+    page.preset.setCurrentText("自定义区间")
     page.start.setDate(QDate(2026, 10, 2))
     page.end.setDate(QDate(2026, 10, 1))
 
