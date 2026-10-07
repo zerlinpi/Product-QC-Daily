@@ -452,11 +452,15 @@ def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_p
     wb = load_workbook(path)
     records = wb["检验记录"]
     headers = [cell.value for cell in records[1]]
-    assert headers[-1] == "月份"
-    assert records.auto_filter.ref.endswith(f"N{records.max_row}")
-    months = {records.cell(row, 14).value for row in range(2, records.max_row + 1)}
-    assert months <= {f"2026-{month:02d}" for month in range(1, 13)}
-    assert months
+    assert headers[-3:] == ["年份", "月份", "日期"]
+    assert records.auto_filter.ref.endswith(f"P{records.max_row}")
+    years = {records.cell(row, 14).value for row in range(2, records.max_row + 1)}
+    months = {records.cell(row, 15).value for row in range(2, records.max_row + 1)}
+    dates = {records.cell(row, 16).value for row in range(2, records.max_row + 1)}
+    assert years == {2026}
+    assert months == {f"2026-{month:02d}" for month in range(1, 13)}
+    assert all(value.year == 2026 for value in dates)
+    assert records["P2"].number_format == "yyyy-mm-dd"
 
     monthly = wb["月度统计"]
     assert [monthly.cell(row, 1).value for row in range(2, 14)] == [
@@ -570,7 +574,7 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     records = wb["检验记录"]
     assert records.page_setup.orientation == "landscape"
     assert not records.sheet_view.showGridLines
-    assert records.auto_filter.ref.endswith(f"N{records.max_row}")
+    assert records.auto_filter.ref.endswith(f"P{records.max_row}")
     assert records.column_dimensions["D"].width >= 22
     assert records.column_dimensions["L"].width >= 34
     assert records["L2"].alignment.wrap_text
