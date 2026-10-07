@@ -143,7 +143,7 @@ def test_reports_page_uses_native_group_boxes_and_compact_export_actions(ctx, qt
     buttons = {button.text(): button for button in page.findChildren(QPushButton)}
     assert "按原表导出" in buttons
     assert "导出明细报表" in buttons
-    assert "月份筛选" in buttons["导出明细报表"].toolTip()
+    assert "年份、月份、具体日期" in buttons["导出明细报表"].toolTip()
 
 
 
@@ -270,12 +270,13 @@ def test_reports_settings_and_defects_keep_native_utility_hierarchy(ctx, qtbot):
     reports = window.pages[5]
     qtbot.waitUntil(lambda: reports._layout_mode == "narrow")
     assert position(reports.filters_grid, reports.preset) == (1, 0, 1, 1)
-    assert position(reports.filters_grid, reports.source) == (3, 1, 1, 1)
+    assert position(reports.filters_grid, reports.year) == (1, 1, 1, 1)
+    assert position(reports.filters_grid, reports.source) == (3, 0, 1, 1)
     assert reports.import_status.textInteractionFlags() & Qt.TextInteractionFlag.TextSelectableByMouse
 
     window.resize(1440, 920)
     qtbot.waitUntil(lambda: reports._layout_mode == "wide")
-    assert position(reports.filters_grid, reports.source) == (1, 3, 1, 1)
+    assert position(reports.filters_grid, reports.source) == (1, 2, 1, 1)
 
     window.navigate(6)
     settings = window.pages[6]
@@ -378,7 +379,7 @@ def test_dynamic_status_labels_use_consistent_tones(ctx, qtbot):
     qtbot.addWidget(window)
 
     reports = window.pages[5]
-    reports.preset.setCurrentText("自定义")
+    reports.preset.setCurrentText("自定义区间")
     reports.start.setDate(QDate(2026, 2, 2))
     reports.end.setDate(QDate(2026, 2, 1))
     assert reports.export_scope.objectName() == "error"
@@ -569,6 +570,9 @@ def test_all_page_fields_share_one_native_control_height(ctx, qtbot):
         analytics.metric_choice,
         defects.search,
         reports.preset,
+        reports.year,
+        reports.month,
+        reports.day,
         reports.start,
         reports.end,
         reports.source,
@@ -656,7 +660,8 @@ def test_field_labels_wire_buddies_and_accessible_names_across_pages(ctx, qtbot)
         (records, "加工单号", records.work_order),
         (analytics, "统计周期", analytics.preset),
         (analytics, "排行口径", analytics.metric_choice),
-        (reports, "报表周期", reports.preset),
+        (reports, "导出范围", reports.preset),
+        (reports, "年份", reports.year),
         (reports, "数据范围", reports.source),
         (settings, "公司名称", settings.fields["company"]),
         (settings, "原表模板", settings.fields["template_path"]),
