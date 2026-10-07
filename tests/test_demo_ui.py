@@ -78,6 +78,9 @@ def test_demo_dialog_uses_desktop_sections_and_clear_primary_action(ctx, qtbot):
     assert dialog.count.value() == suggested_demo_count(
         date(today.year, 1, 1), date(today.year, 12, 31)
     )
+    assert dialog.rework.value() == 18
+    assert dialog.defect.value() == 2.5
+    assert dialog.pass_rate.text() == "合格率目标：82.0%"
 
 
 
