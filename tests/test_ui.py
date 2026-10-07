@@ -292,6 +292,8 @@ def test_analysis_reports_and_dashboard_show_scope_feedback(ctx, qtbot):
 
 
 def test_reports_support_year_month_and_single_day_ranges(ctx, qtbot):
+    from datetime import date
+
     from PySide6.QtCore import QDate
 
     from app.ui.main_window import MainWindow
