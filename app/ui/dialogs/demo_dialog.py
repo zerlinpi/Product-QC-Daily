@@ -71,7 +71,7 @@ class DemoDialog(QDialog):
             lambda v: self.pass_rate.setText(f"合格率目标：{100 - v:.1f}%")
         )
         for title, widget in [
-            ("生成数量（约 7 条/工作日）", self.count),
+            ("生成数量（约 5 条/自然日）", self.count),
             ("开始日期", self.start),
             ("结束日期", self.end),
             ("返工率目标", self.rework),
@@ -95,7 +95,7 @@ class DemoDialog(QDialog):
 
         layout.addWidget(
             label(
-                "整年模拟会覆盖 1–12 月的工作日；默认密度按你上传的成品日检表约 7 条/工作日估算。",
+                "整年模拟会覆盖 1–12 月的每个自然日（含周末）；默认密度按你上传的成品日检表整体约 5 条/自然日估算。",
                 "muted",
                 True,
             )
