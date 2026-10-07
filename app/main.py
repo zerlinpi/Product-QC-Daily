@@ -90,6 +90,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "QMenu {",
         "QTableWidget {",
         "QTableWidget::item:hover",
+        "QListView#completionPopup",
         "QHeaderView::section",
         "QGroupBox {",
         "QScrollBar:vertical",
