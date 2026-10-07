@@ -303,6 +303,7 @@ def apply_theme(mode="light"):
         QDateEdit,
         QTimeEdit,
         QSpinBox,
+        QDoubleSpinBox,
         QTextEdit {{
             color: {text};
             background: {input_bg};
