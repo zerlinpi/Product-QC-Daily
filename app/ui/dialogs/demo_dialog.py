@@ -63,10 +63,10 @@ class DemoDialog(QDialog):
             widget.setRange(0, 100)
             widget.setSuffix(" %")
             widget.setDecimals(1)
-        self.rework.setValue(8)
-        self.defect.setValue(2)
+        self.rework.setValue(18)
+        self.defect.setValue(2.5)
         control_metrics(self.count, self.start, self.end, self.rework, self.defect)
-        self.pass_rate = label("合格率目标：92.0%", "status")
+        self.pass_rate = label("合格率目标：82.0%", "status")
         self.rework.valueChanged.connect(
             lambda v: self.pass_rate.setText(f"合格率目标：{100 - v:.1f}%")
         )
