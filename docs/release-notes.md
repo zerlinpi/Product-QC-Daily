@@ -9,6 +9,6 @@ v1.1.37 继续统一导出表单与 Windows 桌面端视觉体系，重点收口
 - 浅色与深色主题分别使用已有 Windows 语义色，不重绘 QPushButton、QLineEdit、QComboBox、QTableWidget、QHeaderView、滚动条等标准控件。
 - 组别编辑弹窗进入时焦点直接落在名称；编辑已有组别时自动选中名称文本，键盘修改更直接。
 - 保持 v1.1.32–v1.1.36 的图表数据缓存、长文本自动行高、Sheet 级冻结、打印布局和 Excel 视觉层级优化不变。
-- 新增桌面壳层、页面分隔、表格密度、语义 KPI 和打包 EXE 自检回归；完整 pytest 仍为 180 项。
+- 新增桌面壳层、页面分隔、表格密度、语义 KPI 和打包 EXE 自检回归；完整 pytest 预计为 182 项。
 
 下载 `Product-QC-Daily-windows-x64.zip`，完整解压后运行 `Product-QC-Daily.exe`。
