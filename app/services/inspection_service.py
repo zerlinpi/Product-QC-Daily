@@ -81,19 +81,28 @@ class InspectionService:
         self.db, self.paths, self.signatures = db, paths, signatures
 
     def save_in_session(
-        self, session, data: InspectionInput, record_id=None, inspection_no=None, fingerprint=None
+        self,
+        session,
+        data: InspectionInput,
+        record_id=None,
+        inspection_no=None,
+        fingerprint=None,
+        *,
+        validate_references=True,
+        flush=True,
     ) -> R:
         record = session.get(R, record_id) if record_id else R()
         if record is None or (record_id and record.deleted_at):
             raise ValueError("记录已删除或不存在，请刷新")
-        team = session.scalar(select(Team).where(Team.name == data.team))
-        if not team or (not team.enabled and (not record_id or record.team != data.team)):
-            raise ValueError("该组别不存在或已停用，请在设置中检查")
-        existing = {d.defect_id for d in record.defects} if record_id else set()
-        for d in data.defects:
-            item = session.get(DefectItem, d.defect_id)
-            if not item or (not item.enabled and d.defect_id not in existing):
-                raise ValueError("不良项目不存在或已停用")
+        if validate_references:
+            team = session.scalar(select(Team).where(Team.name == data.team))
+            if not team or (not team.enabled and (not record_id or record.team != data.team)):
+                raise ValueError("该组别不存在或已停用，请在设置中检查")
+            existing = {d.defect_id for d in record.defects} if record_id else set()
+            for d in data.defects:
+                item = session.get(DefectItem, d.defect_id)
+                if not item or (not item.enabled and d.defect_id not in existing):
+                    raise ValueError("不良项目不存在或已停用")
         for key, value in data.model_dump(exclude={"defects"}).items():
             setattr(record, key, value)
         if record_id:
@@ -108,7 +117,8 @@ class InspectionService:
         record.updated_at = datetime.now()
         record.defects = [InspectionDefect(**d.model_dump()) for d in data.defects]
         session.add(record)
-        session.flush()
+        if flush:
+            session.flush()
         return record
 
     def save(self, data: InspectionInput, record_id: int | None = None) -> dict:
