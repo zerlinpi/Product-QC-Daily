@@ -428,9 +428,11 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         prefer_com=False,
     )
     workbook = load_workbook(standard)
-    assert workbook["检验记录"]["N1"].value == "月份"
+    assert workbook["检验记录"]["N1"].value == "年份"
+    assert workbook["检验记录"]["O1"].value == "月份"
+    assert workbook["检验记录"]["P1"].value == "日期"
     assert workbook["检验记录"].auto_filter.ref.endswith(
-        f"N{workbook['检验记录'].max_row}"
+        f"P{workbook['检验记录'].max_row}"
     )
     monthly = workbook["月度统计"]
     assert monthly.max_row == 14
@@ -462,6 +464,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "export_view_reset": True,
         "export_path_dialog": True,
         "annual_standard_export": True,
+        "annual_month_day_export_filters": True,
         "modern_fusion_ui": True,
         "adaptive_desktop_layout": True,
         "modern_utility_pages": True,
