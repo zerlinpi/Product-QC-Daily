@@ -1,12 +1,11 @@
-from datetime import date, time, timedelta
 import logging
 import random
+from datetime import date, time, timedelta
 
 from sqlalchemy import delete, func, select
 
 from app.core.schemas import InspectionInput
 from app.database.models import InspectionRecord
-
 
 DEMO_RECORDS_PER_WORKDAY = 7
 
