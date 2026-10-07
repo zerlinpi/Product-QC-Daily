@@ -77,24 +77,22 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window = MainWindow(reopened)
     if sys.platform == "win32":
         selected_style = preferred_style_name(sys.platform, QStyleFactory.keys())
-        assert selected_style and selected_style.lower() in (
-            "windowsvista",
-            "windows",
-        ), "Windows 原生 Qt style 不可用"
+        assert selected_style and selected_style.lower() == "fusion", "现代 Fusion Qt style 不可用"
     stylesheet = app.styleSheet()
     for selector in (
         "QPushButton {",
-        "QListWidget {",
-        "QLineEdit",
-        "QComboBox",
-        "QDateEdit",
+        "QListWidget#navigation {",
+        "QLineEdit,",
+        "QComboBox,",
+        "QDateEdit,",
         "QMenu {",
         "QTableWidget {",
         "QHeaderView::section",
         "QGroupBox {",
-        "QMessageBox {",
+        "QScrollBar:vertical",
     ):
-        assert selector not in stylesheet
+        assert selector in stylesheet
+    assert "border-radius: 8px" in stylesheet
     controls = dialog_button_box(
         QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
         default=QDialogButtonBox.StandardButton.Save,
