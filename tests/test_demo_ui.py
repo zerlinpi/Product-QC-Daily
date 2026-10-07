@@ -89,10 +89,12 @@ def test_full_year_demo_matches_uploaded_form_workday_density(ctx):
     assert count == len(expected_days) * 7
     assert ctx.demo.generate(count, start, end, ["U1"], seed=41) == count
 
-    rows, total = ctx.inspections.query(
-        RecordFilter(source="demo", page_size=100_000, descending=False)
+    rows = list(
+        ctx.inspections.iter_records(
+            RecordFilter(source="demo", page_size=500, descending=False)
+        )
     )
-    assert total == count
+    assert len(rows) == count
     dates = [date.fromisoformat(row["inspection_date"]) for row in rows]
     assert set(dates) == set(expected_days)
     assert {day.month for day in dates} == set(range(1, 13))
