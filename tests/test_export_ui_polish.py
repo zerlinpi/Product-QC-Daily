@@ -55,6 +55,58 @@ def test_analysis_sheet_preserves_template_layout(ctx, payload, tmp_path):
     wb.close()
 
 
+def test_external_legacy_template_keeps_visible_form_style_exactly(ctx, payload, tmp_path):
+    source = tmp_path / "uploaded-style-template.xlsx"
+    template = load_workbook(ctx.paths.template)
+    form = template["成品日检表"]
+    analysis = template["数据分析表"]
+
+    form.column_dimensions["B"].width = 14.2222222222222
+    form.column_dimensions["D"].width = 22.7777777777778
+    form.row_dimensions[1].height = 19.5
+    form["B2"].number_format = "m/d/yy h:mm"
+    form.sheet_view.showGridLines = True
+    form.sheet_view.zoomScale = 73
+    form.page_margins.left = 0.75
+    form.page_margins.right = 0.75
+    form.page_margins.top = 1
+    form.page_margins.bottom = 1
+
+    analysis.column_dimensions["A"].width = 11.3333333333333
+    analysis.column_dimensions["B"].width = 11.3333333333333
+    analysis.row_dimensions[2].height = 22.5
+    analysis.sheet_view.showGridLines = True
+    analysis.sheet_view.zoomScale = 90
+    template.save(source)
+    template.close()
+
+    ctx.settings.update({"template_path": str(source)})
+    ctx.inspections.save(payload)
+    output = ctx.excel.export(
+        tmp_path / "matched-style.xlsx", RecordFilter(), legacy=True, prefer_com=False
+    )
+
+    result = load_workbook(output)
+    form = result["成品日检表"]
+    analysis = result["数据分析表"]
+    assert form.column_dimensions["B"].width == 14.2222222222222
+    assert form.column_dimensions["D"].width == 22.7777777777778
+    assert form.row_dimensions[1].height == 19.5
+    assert form["B2"].number_format == "m/d/yy h:mm"
+    assert form.sheet_view.showGridLines
+    assert form.sheet_view.zoomScale == 73
+    assert form.page_margins.left == 0.75
+    assert form.page_margins.right == 0.75
+    assert form.page_margins.top == 1
+    assert form.page_margins.bottom == 1
+    assert analysis.column_dimensions["A"].width == 11.3333333333333
+    assert analysis.column_dimensions["B"].width == 11.3333333333333
+    assert analysis.row_dimensions[2].height == 22.5
+    assert analysis.sheet_view.showGridLines
+    assert analysis.sheet_view.zoomScale == 90
+    result.close()
+
+
 def test_export_job_uses_modal_animation_instead_of_statusbar_progress(ctx, qtbot):
     window = MainWindow(ctx)
     qtbot.addWidget(window)
