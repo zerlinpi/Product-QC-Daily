@@ -8,6 +8,22 @@ from app.core.schemas import InspectionInput
 from app.database.models import InspectionRecord
 
 DEMO_RECORDS_PER_DAY = 5
+DEMO_DAILY_VOLUME_VALUES = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+DEMO_DAILY_VOLUME_WEIGHTS = (1, 1, 5, 23, 9, 22, 1, 1, 3)
+DEMO_SAMPLING_VALUES = (20, 30, 40, 50, 60, 80, 100, 120, 140, 160)
+DEMO_SAMPLING_WEIGHTS = (14, 12, 117, 20, 51, 154, 30, 42, 3, 10)
+DEMO_INSPECTION_VALUES = (200, 300, 360, 400, 480, 500, 600, 700, 800, 900, 1000, 1200)
+DEMO_INSPECTION_WEIGHTS = (10, 91, 7, 21, 3, 28, 151, 8, 22, 23, 16, 15)
+DEMO_TEAM_WEIGHTS = {
+    "U1": 46,
+    "U2": 58,
+    "U3": 94,
+    "U4": 59,
+    "U5": 56,
+    "U6": 54,
+    "U7": 52,
+    "U8": 40,
+}
 
 
 def demo_days(start: date, end: date) -> list[date]:
@@ -24,25 +40,62 @@ def suggested_demo_count(start: date, end: date) -> int:
     return min(100_000, max(1, len(demo_days(start, end)) * DEMO_RECORDS_PER_DAY))
 
 
-def balanced_demo_dates(start: date, end: date, count: int, rng: random.Random) -> list[date]:
-    """Spread demo records across the entire range, including weekends."""
+def daily_demo_counts(
+    start: date, end: date, count: int, rng: random.Random
+) -> list[tuple[date, int]]:
+    """Distribute records over the range with sample-derived daily variation."""
     days = demo_days(start, end)
+    if not days:
+        return []
     if count <= len(days):
-        if count == 1:
-            return [days[len(days) // 2]]
-        last = len(days) - 1
-        return [days[round(index * last / (count - 1))] for index in range(count)]
+        selected = (
+            [days[len(days) // 2]]
+            if count == 1
+            else [
+                days[round(index * (len(days) - 1) / (count - 1))]
+                for index in range(count)
+            ]
+        )
+        selected_counts = {day: 1 for day in selected}
+        return [(day, selected_counts.get(day, 0)) for day in days]
 
-    base, extra = divmod(count, len(days))
-    result = [day for day in days for _ in range(base)]
-    if extra:
-        if extra == 1:
-            result.append(days[len(days) // 2])
-        else:
-            last = len(days) - 1
-            result.extend(days[round(index * last / (extra - 1))] for index in range(extra))
-    rng.shuffle(result)
-    return result
+    sampled = rng.choices(
+        DEMO_DAILY_VOLUME_VALUES,
+        weights=DEMO_DAILY_VOLUME_WEIGHTS,
+        k=len(days),
+    )
+    scale = count / sum(sampled)
+    counts = [max(1, round(value * scale)) for value in sampled]
+
+    delta = count - sum(counts)
+    order = list(range(len(days)))
+    rng.shuffle(order)
+    while delta:
+        changed = False
+        for index in order:
+            if delta > 0:
+                counts[index] += 1
+                delta -= 1
+                changed = True
+            elif counts[index] > 1:
+                counts[index] -= 1
+                delta += 1
+                changed = True
+            if delta == 0:
+                break
+        if not changed:
+            break
+
+    return list(zip(days, counts, strict=True))
+
+
+def balanced_demo_dates(start: date, end: date, count: int, rng: random.Random) -> list[date]:
+    """Spread records across the selected range while keeping realistic daily volume."""
+    return [
+        day
+        for day, daily_count in daily_demo_counts(start, end, count, rng)
+        for _ in range(daily_count)
+    ]
 
 
 class DemoService:
