@@ -302,7 +302,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window.navigate(5)
     app.processEvents()
     assert reports._layout_mode == "narrow"
-    assert grid_position(reports.filters_grid, reports.source) == (3, 1, 1, 1)
+    assert grid_position(reports.filters_grid, reports.source) == (3, 0, 1, 1)
 
     window.resize(1440, 920)
     app.processEvents()
@@ -324,7 +324,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window.navigate(5)
     app.processEvents()
     assert reports._layout_mode == "wide"
-    assert grid_position(reports.filters_grid, reports.source) == (1, 3, 1, 1)
+    assert grid_position(reports.filters_grid, reports.source) == (1, 2, 1, 1)
     window.navigate(4)
     app.processEvents()
     assert window.pages[4].search.isClearButtonEnabled()
@@ -367,13 +367,19 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window.refresh_theme()
 
     reports = window.pages[5]
-    reports.preset.setCurrentText("自定义")
+    reports.preset.setCurrentText("自定义区间")
     reports.start.setDate(QDate(2026, 10, 2))
     reports.end.setDate(QDate(2026, 10, 1))
+    reports.update_scope_text()
+    app.processEvents()
+    assert reports.selected_range() == (date(2026, 10, 2), date(2026, 10, 1))
     assert not reports.original_export.isEnabled()
     assert not reports.detailed_export.isEnabled()
     assert reports.export_scope.text() == "日期范围无效：开始日期不能晚于结束日期"
     reports.end.setDate(QDate(2026, 10, 2))
+    reports.update_scope_text()
+    app.processEvents()
+    assert reports.selected_range() == (date(2026, 10, 2), date(2026, 10, 2))
     assert reports.original_export.isEnabled()
     assert reports.detailed_export.isEnabled()
 
@@ -428,9 +434,11 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         prefer_com=False,
     )
     workbook = load_workbook(standard)
-    assert workbook["检验记录"]["N1"].value == "月份"
+    assert workbook["检验记录"]["N1"].value == "年份"
+    assert workbook["检验记录"]["O1"].value == "月份"
+    assert workbook["检验记录"]["P1"].value == "日期"
     assert workbook["检验记录"].auto_filter.ref.endswith(
-        f"N{workbook['检验记录'].max_row}"
+        f"P{workbook['检验记录'].max_row}"
     )
     monthly = workbook["月度统计"]
     assert monthly.max_row == 14
@@ -462,6 +470,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "export_view_reset": True,
         "export_path_dialog": True,
         "annual_standard_export": True,
+        "annual_month_day_export_filters": True,
         "modern_fusion_ui": True,
         "adaptive_desktop_layout": True,
         "modern_utility_pages": True,

@@ -7,6 +7,43 @@ from sqlalchemy import delete, func, select
 from app.core.schemas import InspectionInput
 from app.database.models import InspectionRecord
 
+DEMO_RECORDS_PER_DAY = 5
+
+
+def demo_days(start: date, end: date) -> list[date]:
+    """Return every calendar day in the selected range."""
+    if end < start:
+        return []
+    return [start + timedelta(days=offset) for offset in range((end - start).days + 1)]
+
+
+def suggested_demo_count(start: date, end: date) -> int:
+    """Match the uploaded form's overall density: 460 rows across 92 calendar days."""
+    if end < start:
+        return 1
+    return min(100_000, max(1, len(demo_days(start, end)) * DEMO_RECORDS_PER_DAY))
+
+
+def balanced_demo_dates(start: date, end: date, count: int, rng: random.Random) -> list[date]:
+    """Spread demo records across the entire range, including weekends."""
+    days = demo_days(start, end)
+    if count <= len(days):
+        if count == 1:
+            return [days[len(days) // 2]]
+        last = len(days) - 1
+        return [days[round(index * last / (count - 1))] for index in range(count)]
+
+    base, extra = divmod(count, len(days))
+    result = [day for day in days for _ in range(base)]
+    if extra:
+        if extra == 1:
+            result.append(days[len(days) // 2])
+        else:
+            last = len(days) - 1
+            result.extend(days[round(index * last / (extra - 1))] for index in range(extra))
+    rng.shuffle(result)
+    return result
+
 
 class DemoService:
     def __init__(self, ctx):
@@ -36,9 +73,10 @@ class DemoService:
         if not ids:
             raise ValueError("请至少启用一个不良项目，并设置正数权重")
         rng = random.Random(seed)
+        scheduled_dates = balanced_demo_dates(start, end, count, rng)
         with self.ctx.db.session() as session:
-            for i in range(count):
-                sampling = rng.choice([20, 32, 50, 80])
+            for i, inspection_date in enumerate(scheduled_dates):
+                sampling = rng.choice([20, 30, 40, 50, 60, 80, 100, 120, 140, 160])
                 batch_probability = min(1, max(0.2, defect_rate * 10)) if defect_rate else 0
                 defective = rng.random() < batch_probability
                 quantity = (
@@ -58,11 +96,14 @@ class DemoService:
                     else 0
                 )
                 data = InspectionInput(
-                    inspection_date=start + timedelta(days=rng.randrange((end - start).days + 1)),
+                    inspection_date=inspection_date,
                     inspection_time=time(rng.randint(8, 20), rng.randrange(60)),
                     team=rng.choice(teams),
-                    work_order=f"DEMO-{start:%Y%m}-{i // 4 + 1:05}",
-                    inspection_quantity=sampling * rng.choice([5, 8, 10]),
+                    work_order=f"DEMO-{inspection_date:%Y%m}-{i // 4 + 1:05}",
+                    inspection_quantity=max(
+                        sampling,
+                        rng.choice([300, 400, 480, 500, 600, 700, 800, 900, 1000, 1200]),
+                    ),
                     sampling_quantity=sampling,
                     defect_quantity=quantity,
                     judgment="返工" if rng.random() < rework_rate else "合格",
@@ -78,7 +119,12 @@ class DemoService:
                     if quantity
                     else [],
                 )
-                self.ctx.inspections.save_in_session(session, data)
+                self.ctx.inspections.save_in_session(
+                    session,
+                    data,
+                    validate_references=False,
+                    flush=False,
+                )
         logging.getLogger("qc.demo").info("生成演示数据 %s", count)
         return count
 
