@@ -302,7 +302,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window.navigate(5)
     app.processEvents()
     assert reports._layout_mode == "narrow"
-    assert grid_position(reports.filters_grid, reports.source) == (3, 1, 1, 1)
+    assert grid_position(reports.filters_grid, reports.source) == (3, 0, 1, 1)
 
     window.resize(1440, 920)
     app.processEvents()
@@ -324,7 +324,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window.navigate(5)
     app.processEvents()
     assert reports._layout_mode == "wide"
-    assert grid_position(reports.filters_grid, reports.source) == (1, 3, 1, 1)
+    assert grid_position(reports.filters_grid, reports.source) == (1, 2, 1, 1)
     window.navigate(4)
     app.processEvents()
     assert window.pages[4].search.isClearButtonEnabled()
