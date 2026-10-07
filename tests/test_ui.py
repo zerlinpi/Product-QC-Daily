@@ -313,7 +313,7 @@ def test_reports_support_year_month_and_single_day_ranges(ctx, qtbot):
     assert page.selected_range() == (date(2024, 2, 1), date(2024, 2, 29))
     assert "2024 年 02 月" in page.export_scope.text()
 
-    page.preset.setCurrentText("单日")
+    page.preset.setCurrentText("具体日期")
     page.day.setDate(QDate(2026, 3, 18))
     assert page.selected_range() == (date(2026, 3, 18), date(2026, 3, 18))
     assert "2026-03-18" in page.export_scope.text()
