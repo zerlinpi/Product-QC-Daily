@@ -367,7 +367,7 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window.refresh_theme()
 
     reports = window.pages[5]
-    reports.preset.setCurrentText("自定义")
+    reports.preset.setCurrentText("自定义区间")
     reports.start.setDate(QDate(2026, 10, 2))
     reports.end.setDate(QDate(2026, 10, 1))
     assert not reports.original_export.isEnabled()
