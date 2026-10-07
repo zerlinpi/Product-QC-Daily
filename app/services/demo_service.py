@@ -119,7 +119,12 @@ class DemoService:
                     if quantity
                     else [],
                 )
-                self.ctx.inspections.save_in_session(session, data)
+                self.ctx.inspections.save_in_session(
+                    session,
+                    data,
+                    validate_references=False,
+                    flush=False,
+                )
         logging.getLogger("qc.demo").info("生成演示数据 %s", count)
         return count
 
