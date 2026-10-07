@@ -81,6 +81,11 @@ def test_demo_dialog_uses_desktop_sections_and_clear_primary_action(ctx, qtbot):
 
 
 
+def test_suggested_full_year_demo_count_handles_leap_year():
+    assert suggested_demo_count(date(2026, 1, 1), date(2026, 12, 31)) == 1825
+    assert suggested_demo_count(date(2024, 1, 1), date(2024, 12, 31)) == 1830
+
+
 def test_full_year_demo_matches_uploaded_form_calendar_density(ctx):
     start, end = date(2026, 1, 1), date(2026, 12, 31)
     expected_days = demo_days(start, end)
