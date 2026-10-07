@@ -327,6 +327,8 @@ def test_reports_support_year_month_and_exact_date_ranges(ctx, qtbot):
 
 
 def test_reports_export_uses_chronological_order(ctx, qtbot, monkeypatch, tmp_path):
+    from datetime import date
+
     from app.ui.dialogs import file_dialogs
     from app.ui.main_window import MainWindow
 
