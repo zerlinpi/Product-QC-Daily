@@ -129,24 +129,14 @@ def test_default_team_cannot_be_disabled_until_another_default_is_selected(ctx):
 
 
 
-@pytest.mark.parametrize(
-    ("page_index", "module_name"),
-    [
-        (3, "app.ui.pages.analytics_page"),
-        (5, "app.ui.pages.reports_page"),
-    ],
-)
-def test_relative_date_pages_resync_non_custom_range_on_refresh(
-    ctx, qtbot, monkeypatch, page_index, module_name
-):
-    import importlib
-
+def test_analytics_resyncs_relative_range_on_refresh(ctx, qtbot, monkeypatch):
     from PySide6.QtCore import QDate
 
-    module = importlib.import_module(module_name)
+    import app.ui.pages.analytics_page as module
+
     window = MainWindow(ctx)
     qtbot.addWidget(window)
-    page = window.pages[page_index]
+    page = window.pages[3]
     page.preset.setCurrentText("本月")
     page.start.setDate(QDate(2026, 1, 1))
     page.end.setDate(QDate(2026, 1, 31))
@@ -160,6 +150,23 @@ def test_relative_date_pages_resync_non_custom_range_on_refresh(
 
     assert page.start.date().toPython() == date(2031, 2, 1)
     assert page.end.date().toPython() == date(2031, 2, 28)
+
+
+def test_reports_resync_selected_year_on_refresh(ctx, qtbot):
+    from PySide6.QtCore import QDate
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[5]
+    page.preset.setCurrentText("全年")
+    page.year.setValue(2031)
+    page.start.setDate(QDate(2026, 1, 1))
+    page.end.setDate(QDate(2026, 1, 31))
+
+    page.refresh()
+
+    assert page.start.date().toPython() == date(2031, 1, 1)
+    assert page.end.date().toPython() == date(2031, 12, 31)
 
 
 
