@@ -90,7 +90,7 @@ class MainWindow(QMainWindow):
         self.navigation.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.navigation.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.navigation.setUniformItemSizes(True)
-        self.navigation.setIconSize(QSize(16, 16))
+        self.navigation.setIconSize(QSize(18, 18))
         self.navigation.setSpacing(0)
         self.nav_items = []
         for i, (title, icon) in enumerate(nav_items):

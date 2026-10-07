@@ -34,17 +34,17 @@ from app.core.validation import validation_message
 APP_DEFAULT_SIZE = (1440, 920)
 APP_MIN_SIZE = (1080, 720)
 APP_MAX_SIZE = (2400, 1600)
-SIDEBAR_WIDTH = 184
-NAV_ITEM_HEIGHT = 30
-PAGE_MARGINS = (16, 14, 16, 14)
-DIALOG_MARGINS = (14, 12, 14, 12)
-SECTION_MARGINS = (10, 12, 10, 10)
-SIDEBAR_MARGINS = (10, 12, 10, 10)
-TOPBAR_MARGINS = (16, 6, 16, 6)
-LAYOUT_SPACING = 8
-TOOLBAR_SPACING = 6
-CONTROL_MIN_HEIGHT = 28
-BUTTON_MIN_WIDTH = 84
+SIDEBAR_WIDTH = 204
+NAV_ITEM_HEIGHT = 40
+PAGE_MARGINS = (18, 16, 18, 16)
+DIALOG_MARGINS = (16, 14, 16, 14)
+SECTION_MARGINS = (14, 14, 14, 12)
+SIDEBAR_MARGINS = (10, 14, 10, 12)
+TOPBAR_MARGINS = (18, 8, 18, 8)
+LAYOUT_SPACING = 10
+TOOLBAR_SPACING = 8
+CONTROL_MIN_HEIGHT = 32
+BUTTON_MIN_WIDTH = 88
 COMPACT_FIELD_MIN_WIDTH = 110
 FILTER_FIELD_MIN_WIDTH = 120
 SEARCH_FIELD_MIN_WIDTH = 240
@@ -56,10 +56,10 @@ DEMO_DIALOG_MIN_SIZE = (620, 560)
 STATUS_PROGRESS_MAX_WIDTH = 150
 REMARK_MAX_HEIGHT = 90
 SIGNATURE_PREVIEW_MIN_HEIGHT = 44
-TABLE_HEADER_HEIGHT = 30
-TABLE_ROW_HEIGHT = 30
-CHART_MIN_HEIGHT = 190
-TOPBAR_MIN_HEIGHT = 40
+TABLE_HEADER_HEIGHT = 36
+TABLE_ROW_HEIGHT = 34
+CHART_MIN_HEIGHT = 200
+TOPBAR_MIN_HEIGHT = 48
 WIDE_LAYOUT_BREAKPOINT = 1100
 
 
@@ -142,7 +142,7 @@ def guarded(function):
 
 
 def button_metrics(*widgets):
-    """Apply the shared Windows desktop button footprint."""
+    """Apply the shared modern desktop button footprint."""
     for widget in widgets:
         widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
         widget.setMinimumWidth(BUTTON_MIN_WIDTH)
@@ -171,7 +171,7 @@ def button(text, callback=None, primary=False, danger=False, icon=None):
 
 
 def control_metrics(*widgets, min_width=None):
-    """Apply shared desktop field metrics without repainting native controls."""
+    """Apply shared modern desktop field metrics."""
     for widget in widgets:
         widget.setMinimumHeight(CONTROL_MIN_HEIGHT)
         if min_width is not None:
@@ -367,7 +367,7 @@ def table(headers):
     widget = QTableWidget(0, len(headers))
     widget.setHorizontalHeaderLabels(headers)
     widget.setAlternatingRowColors(True)
-    widget.setShowGrid(True)
+    widget.setShowGrid(False)
     widget.verticalHeader().setVisible(False)
     widget.verticalHeader().setDefaultSectionSize(TABLE_ROW_HEIGHT)
     widget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)

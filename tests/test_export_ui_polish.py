@@ -74,7 +74,7 @@ def test_export_job_uses_modal_animation_instead_of_statusbar_progress(ctx, qtbo
         qtbot.waitUntil(lambda: window._job is None, timeout=10000)
 
 
-def test_export_completion_keeps_native_dropdown_controls(ctx, qtbot, tmp_path):
+def test_export_completion_keeps_modern_dropdown_theme(ctx, qtbot, tmp_path):
     window = MainWindow(ctx)
     qtbot.addWidget(window)
     window.show()
@@ -85,7 +85,7 @@ def test_export_completion_keeps_native_dropdown_controls(ctx, qtbot, tmp_path):
     assert window._export_message.text() == "导出完成"
     assert str(result) in window._export_message.informativeText()
     stylesheet = QApplication.instance().styleSheet()
-    assert "QComboBox::drop-down" not in stylesheet
-    assert "QComboBox QAbstractItemView::item" not in stylesheet
-    assert "QDateEdit::drop-down" not in stylesheet
+    assert "QComboBox::drop-down" in stylesheet
+    assert "QComboBox QAbstractItemView" in stylesheet
+    assert "QDateEdit," in stylesheet
     window._export_message.close()

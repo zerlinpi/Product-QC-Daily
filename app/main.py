@@ -77,24 +77,22 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     window = MainWindow(reopened)
     if sys.platform == "win32":
         selected_style = preferred_style_name(sys.platform, QStyleFactory.keys())
-        assert selected_style and selected_style.lower() in (
-            "windowsvista",
-            "windows",
-        ), "Windows 原生 Qt style 不可用"
+        assert selected_style and selected_style.lower() == "fusion", "现代 Fusion Qt style 不可用"
     stylesheet = app.styleSheet()
     for selector in (
         "QPushButton {",
-        "QListWidget {",
-        "QLineEdit",
-        "QComboBox",
-        "QDateEdit",
+        "QListWidget#navigation {",
+        "QLineEdit,",
+        "QComboBox,",
+        "QDateEdit,",
         "QMenu {",
         "QTableWidget {",
         "QHeaderView::section",
         "QGroupBox {",
-        "QMessageBox {",
+        "QScrollBar:vertical",
     ):
-        assert selector not in stylesheet
+        assert selector in stylesheet
+    assert "border-radius: 8px" in stylesheet
     controls = dialog_button_box(
         QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
         default=QDialogButtonBox.StandardButton.Save,
@@ -460,10 +458,10 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "export_view_reset": True,
         "export_path_dialog": True,
         "annual_standard_export": True,
-        "native_windows_ui": True,
-        "adaptive_native_layout": True,
-        "native_utility_pages": True,
-        "unified_native_ui": True,
+        "modern_fusion_ui": True,
+        "adaptive_desktop_layout": True,
+        "modern_utility_pages": True,
+        "unified_design_system": True,
         "component_ui_consistency": True,
         "full_ui_style_consistency": True,
         "dialog_ui_consistency": True,
