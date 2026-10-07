@@ -291,7 +291,7 @@ def test_analysis_reports_and_dashboard_show_scope_feedback(ctx, qtbot):
 
 
 
-def test_reports_support_year_month_and_single_day_ranges(ctx, qtbot):
+def test_reports_support_year_month_and_exact_date_ranges(ctx, qtbot):
     from datetime import date
 
     from PySide6.QtCore import QDate
@@ -314,9 +314,16 @@ def test_reports_support_year_month_and_single_day_ranges(ctx, qtbot):
     assert "2024 年 02 月" in page.export_scope.text()
 
     page.preset.setCurrentText("具体日期")
-    page.day.setDate(QDate(2026, 3, 18))
-    assert page.selected_range() == (date(2026, 3, 18), date(2026, 3, 18))
-    assert "2026-03-18" in page.export_scope.text()
+    page.year.setValue(2024)
+    page.day.setDate(QDate(2024, 2, 29))
+    assert page.day.minimumDate().toPython() == date(2024, 1, 1)
+    assert page.day.maximumDate().toPython() == date(2024, 12, 31)
+    assert page.selected_range() == (date(2024, 2, 29), date(2024, 2, 29))
+
+    page.year.setValue(2025)
+    assert page.day.date().toPython() == date(2025, 2, 28)
+    assert page.selected_range() == (date(2025, 2, 28), date(2025, 2, 28))
+    assert "2025-02-28" in page.export_scope.text()
 
 
 def test_reports_invalid_custom_range_disables_export_before_save_dialog(
