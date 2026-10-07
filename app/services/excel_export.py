@@ -47,7 +47,9 @@ HEADERS = [
     "检验员",
     "备注",
     "数据来源",
+    "年份",
     "月份",
+    "日期",
 ]
 
 
@@ -183,7 +185,9 @@ def style_table(ws):
             "K": 14,
             "L": 34,
             "M": 12,
-            "N": 11,
+            "N": 9,
+            "O": 11,
+            "P": 13,
         },
         "不良明细": {"A": 22, "B": 10, "C": 20, "D": 18, "E": 36},
         "不良项目": {"A": 10, "B": 22, "C": 16, "D": 10, "E": 10, "F": 38},
@@ -209,13 +213,14 @@ def style_table(ws):
             )
             ws.cell(row, 2).alignment = Alignment(horizontal="center", vertical="center")
             ws.cell(row, 4).alignment = Alignment(vertical="center", wrap_text=True)
-            for column in (3, 9, 13, 14):
+            for column in (3, 9, 13, 14, 15, 16):
                 ws.cell(row, column).alignment = Alignment(horizontal="center", vertical="center")
             for column in (5, 6, 7):
                 ws.cell(row, column).alignment = Alignment(horizontal="right", vertical="center")
                 ws.cell(row, column).number_format = "#,##0"
             ws.cell(row, 8).alignment = Alignment(vertical="center", wrap_text=True)
             ws.cell(row, 12).alignment = Alignment(vertical="top", wrap_text=True)
+            ws.cell(row, 16).number_format = "yyyy-mm-dd"
             ws.row_dimensions[row].height = max(
                 ws.row_dimensions[row].height or 22,
                 wrapped_row_height(
@@ -1033,7 +1038,14 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         ]
         if not legacy:
             month = stamp.strftime("%Y-%m")
-            values += [row["inspector"], row["remark"], source_label(row["source"]), month]
+            values += [
+                row["inspector"],
+                row["remark"],
+                source_label(row["source"]),
+                stamp.year,
+                month,
+                stamp.date(),
+            ]
             bucket = monthly.setdefault(
                 month,
                 {
