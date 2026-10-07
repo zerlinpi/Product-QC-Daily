@@ -1,6 +1,6 @@
+from datetime import date, time, timedelta
 import logging
 import random
-from datetime import date, time, timedelta
 
 from sqlalchemy import delete, func, select
 
