@@ -367,7 +367,7 @@ def table(headers):
     widget = QTableWidget(0, len(headers))
     widget.setHorizontalHeaderLabels(headers)
     widget.setAlternatingRowColors(True)
-    widget.setShowGrid(True)
+    widget.setShowGrid(False)
     widget.verticalHeader().setVisible(False)
     widget.verticalHeader().setDefaultSectionSize(TABLE_ROW_HEIGHT)
     widget.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
