@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
 )
 
+from app.services.demo_service import suggested_demo_count
 from app.ui.common import (
     DEMO_DIALOG_MIN_SIZE,
     DEMO_DIALOG_SIZE,
@@ -45,7 +46,6 @@ class DemoDialog(QDialog):
         range_group, range_form = form_group("生成范围")
         self.count = QSpinBox()
         self.count.setRange(1, 100_000)
-        self.count.setValue(1000)
         self.count.setSingleStep(100)
         today = QDate.currentDate()
         self.start, self.end = (
@@ -55,6 +55,9 @@ class DemoDialog(QDialog):
         for widget in (self.start, self.end):
             widget.setCalendarPopup(True)
             widget.setDisplayFormat("yyyy-MM-dd")
+        self.sync_suggested_count()
+        self.start.dateChanged.connect(self.sync_suggested_count)
+        self.end.dateChanged.connect(self.sync_suggested_count)
         self.rework, self.defect = QDoubleSpinBox(), QDoubleSpinBox()
         for widget in (self.rework, self.defect):
             widget.setRange(0, 100)
@@ -68,7 +71,7 @@ class DemoDialog(QDialog):
             lambda v: self.pass_rate.setText(f"合格率目标：{100 - v:.1f}%")
         )
         for title, widget in [
-            ("生成数量", self.count),
+            ("生成数量（约 7 条/工作日）", self.count),
             ("开始日期", self.start),
             ("结束日期", self.end),
             ("返工率目标", self.rework),
@@ -89,6 +92,14 @@ class DemoDialog(QDialog):
             self.teams.append(checkbox)
             team_grid.addWidget(checkbox, i // 6, i % 6)
         layout.addWidget(team_group)
+
+        layout.addWidget(
+            label(
+                "整年模拟会覆盖 1–12 月的工作日；默认密度按你上传的成品日检表约 7 条/工作日估算。",
+                "muted",
+                True,
+            )
+        )
 
         defect_group, defect_layout = native_group("不良项目出现频率")
         defect_layout.addWidget(label("数值越大越常出现；0 表示演示数据中不生成该项目。", "muted", True))
@@ -120,6 +131,11 @@ class DemoDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def sync_suggested_count(self, *_):
+        start, end = self.start.date().toPython(), self.end.date().toPython()
+        if start <= end:
+            self.count.setValue(suggested_demo_count(start, end))
 
     def accept(self):
         try:
