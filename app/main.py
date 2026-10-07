@@ -370,10 +370,16 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     reports.preset.setCurrentText("自定义区间")
     reports.start.setDate(QDate(2026, 10, 2))
     reports.end.setDate(QDate(2026, 10, 1))
+    reports.update_scope_text()
+    app.processEvents()
+    assert reports.selected_range() == (date(2026, 10, 2), date(2026, 10, 1))
     assert not reports.original_export.isEnabled()
     assert not reports.detailed_export.isEnabled()
     assert reports.export_scope.text() == "日期范围无效：开始日期不能晚于结束日期"
     reports.end.setDate(QDate(2026, 10, 2))
+    reports.update_scope_text()
+    app.processEvents()
+    assert reports.selected_range() == (date(2026, 10, 2), date(2026, 10, 2))
     assert reports.original_export.isEnabled()
     assert reports.detailed_export.isEnabled()
 
