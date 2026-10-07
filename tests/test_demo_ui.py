@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import date
 from threading import Event
 
@@ -96,7 +97,8 @@ def test_full_year_demo_matches_uploaded_form_calendar_density(ctx):
 
     assert len(expected_days) == 365
     assert count == 365 * 5
-    assert ctx.demo.generate(count, start, end, ["U1"], seed=41) == count
+    teams = [item["name"] for item in ctx.settings.teams(True)]
+    assert ctx.demo.generate(count, start, end, teams, seed=41) == count
 
     rows = list(
         ctx.inspections.iter_records(
@@ -109,8 +111,22 @@ def test_full_year_demo_matches_uploaded_form_calendar_density(ctx):
     assert {day.month for day in dates} == set(range(1, 13))
     assert any(day.weekday() >= 5 for day in dates)
 
-    per_day = {day: dates.count(day) for day in set(dates)}
-    assert set(per_day.values()) == {5}
+    per_day = Counter(dates)
+    assert sum(per_day.values()) == 1825
+    assert min(per_day.values()) >= 1
+    assert len(set(per_day.values())) >= 5
+    assert max(per_day.values()) > min(per_day.values())
+
+    sampling = Counter(row["sampling_quantity"] for row in rows)
+    inspection = Counter(row["inspection_quantity"] for row in rows)
+    team_counts = Counter(row["team"] for row in rows)
+    assert sampling[80] > sampling[20]
+    assert sampling[40] > sampling[30]
+    assert inspection[600] > inspection[480]
+    assert inspection[300] > inspection[200]
+    assert team_counts["U3"] > team_counts["U1"]
+    assert team_counts["U3"] > team_counts["U8"]
+
     assert all(
         row["work_order"].startswith(
             f"DEMO-{date.fromisoformat(row['inspection_date']):%Y%m}-"

@@ -326,6 +326,39 @@ def test_reports_support_year_month_and_exact_date_ranges(ctx, qtbot):
     assert "2025-02-28" in page.export_scope.text()
 
 
+def test_reports_export_uses_chronological_order(ctx, qtbot, monkeypatch, tmp_path):
+    from datetime import date
+
+    from app.ui.dialogs import file_dialogs
+    from app.ui.main_window import MainWindow
+
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[5]
+    output = tmp_path / "annual.xlsx"
+    captured = {}
+
+    monkeypatch.setattr(file_dialogs, "save_excel", lambda *args, **kwargs: (str(output), ""))
+
+    def fake_export(path, filters, legacy=False):
+        captured["path"] = path
+        captured["filters"] = filters
+        captured["legacy"] = legacy
+        return path
+
+    monkeypatch.setattr(ctx.excel, "export", fake_export)
+    monkeypatch.setattr(window, "run_job", lambda title, work, done: done(work()))
+
+    page.preset.setCurrentText("全年")
+    page.year.setValue(2026)
+    page.export(False)
+
+    assert captured["filters"].start == date(2026, 1, 1)
+    assert captured["filters"].end == date(2026, 12, 31)
+    assert captured["filters"].descending is False
+    assert captured["legacy"] is False
+
+
 def test_reports_invalid_custom_range_disables_export_before_save_dialog(
     ctx, qtbot, monkeypatch
 ):

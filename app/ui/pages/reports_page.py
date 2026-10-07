@@ -136,14 +136,14 @@ class ReportsPage(Page):
             lambda: self.export(False),
             icon=QStyle.StandardPixmap.SP_DialogSaveButton,
         )
-        self.detailed_export.setToolTip("适合年度分析：Excel 内可按年份、月份、具体日期继续筛选")
+        self.detailed_export.setToolTip("适合年度分析：按日期升序写入，Excel 内可按年份、月份、具体日期继续筛选")
         export_actions.addStretch()
         export_actions.addWidget(self.detailed_export)
         export_actions.addWidget(self.original_export)
         layout.addLayout(export_actions)
         layout.addWidget(
             label(
-                "需要与你上传的成品日检表一致的版式，请选“按原表导出”；需要全年后再筛月份或具体日期，请选“导出明细报表”。",
+                "需要与你上传的成品日检表一致的版式，请选“按原表导出”；两种导出都会按日期从早到晚写入。需要全年后再筛月份或具体日期，请选“导出明细报表”。",
                 "muted",
                 True,
             )
@@ -330,6 +330,7 @@ class ReportsPage(Page):
             start=start,
             end=end,
             source="demo" if self.source.currentIndex() else "production",
+            descending=False,
         )
         directory = Path(self.ctx.settings.get("export_directory") or self.ctx.paths.exports)
         kind = "原表日检表" if legacy else "检验明细报表"
