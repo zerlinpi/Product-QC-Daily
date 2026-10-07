@@ -127,10 +127,12 @@ class DashboardPage(Page):
             widget.value_label.setText(f"{value:.2%}" if key.endswith("rate") else f"{value:,}")
             difference = f"{delta * 100:+.2f} 个百分点" if key.endswith("rate") else f"{delta:+,}"
             widget.delta.setText(difference + (" · 较上一周期" if monthly else " · 较昨日"))
+        trends = {}
         for days, chart in zip((7, 30), self.charts[:2]):
             trend = self.ctx.statistics.trend(
                 RecordFilter(start=today - timedelta(days=days - 1), end=today, source=source)
             )
+            trends[days] = trend
             chart.draw(
                 [r["date"].strftime("%m/%d") for r in trend],
                 [r["defect_rate"] * 100 for r in trend],
@@ -153,9 +155,7 @@ class DashboardPage(Page):
         self.charts[4].draw(
             ["合格", "返工"], [current["pass_batches"], current["rework_batches"]], bars=True
         )
-        trend = self.ctx.statistics.trend(
-            RecordFilter(start=today - timedelta(days=29), end=today, source=source)
-        )
+        trend = trends[30]
         self.charts[5].draw(
             [r["date"].strftime("%m/%d") for r in trend], [r["inspection_quantity"] for r in trend]
         )
