@@ -5,6 +5,8 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QDialogButtonBox, QGroupBox
 
+from app.core.schemas import RecordFilter
+from app.services.demo_service import demo_workdays, suggested_demo_count
 from app.ui.dialogs.demo_dialog import DemoDialog
 from app.ui.main_window import MainWindow
 
@@ -73,7 +75,37 @@ def test_demo_dialog_uses_desktop_sections_and_clear_primary_action(ctx, qtbot):
     today = date.today()
     assert dialog.start.date().toPython() == date(today.year, 1, 1)
     assert dialog.end.date().toPython() == date(today.year, 12, 31)
+    assert dialog.count.value() == suggested_demo_count(
+        date(today.year, 1, 1), date(today.year, 12, 31)
+    )
 
+
+
+def test_full_year_demo_matches_uploaded_form_workday_density(ctx):
+    start, end = date(2026, 1, 1), date(2026, 12, 31)
+    expected_days = demo_workdays(start, end)
+    count = suggested_demo_count(start, end)
+
+    assert count == len(expected_days) * 7
+    assert ctx.demo.generate(count, start, end, ["U1"], seed=41) == count
+
+    rows, total = ctx.inspections.query(
+        RecordFilter(source="demo", page_size=100_000, descending=False)
+    )
+    assert total == count
+    dates = [date.fromisoformat(row["inspection_date"]) for row in rows]
+    assert set(dates) == set(expected_days)
+    assert {day.month for day in dates} == set(range(1, 13))
+    assert all(day.weekday() < 5 for day in dates)
+
+    per_day = {day: dates.count(day) for day in set(dates)}
+    assert set(per_day.values()) == {7}
+    assert all(
+        row["work_order"].startswith(
+            f"DEMO-{date.fromisoformat(row['inspection_date']):%Y%m}-"
+        )
+        for row in rows
+    )
 
 
 def test_historical_demo_completion_opens_matching_analysis_range(ctx, qtbot):
