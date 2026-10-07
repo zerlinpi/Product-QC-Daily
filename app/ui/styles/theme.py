@@ -372,6 +372,25 @@ def apply_theme(mode="light"):
             selection-color: {accent_text};
             outline: none;
         }}
+        QListView#completionPopup {{
+            color: {text};
+            background: {panel};
+            border: 1px solid {border};
+            border-radius: 6px;
+            outline: none;
+            padding: 4px;
+        }}
+        QListView#completionPopup::item {{
+            border-radius: 4px;
+            padding: 6px 8px;
+        }}
+        QListView#completionPopup::item:hover {{
+            background: {hover};
+        }}
+        QListView#completionPopup::item:selected {{
+            color: {accent_text};
+            background: {accent_soft};
+        }}
         QCalendarWidget QWidget {{
             color: {text};
             background: {panel};
