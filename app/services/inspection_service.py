@@ -10,6 +10,21 @@ from app.database.models import InspectionRecord as R
 
 log = logging.getLogger("qc.inspections")
 
+SORTABLE_COLUMNS = {
+    "inspection_date",
+    "inspection_time",
+    "team",
+    "work_order",
+    "inspector",
+    "judgment",
+    "inspection_quantity",
+    "sampling_quantity",
+    "defect_quantity",
+    "created_at",
+    "inspection_no",
+    "source",
+}
+
 
 def conditions(filters: RecordFilter) -> list:
     clauses = [R.deleted_at.is_not(None) if filters.deleted else R.deleted_at.is_(None)]
@@ -48,6 +63,14 @@ def conditions(filters: RecordFilter) -> list:
     if filters.ids is not None:
         clauses.append(R.id.in_(filters.ids))
     return clauses
+
+
+def record_order(filters: RecordFilter) -> list:
+    column = getattr(R, filters.sort if filters.sort in SORTABLE_COLUMNS else "inspection_date")
+    columns = [column, R.inspection_time] if column is R.inspection_date else [column]
+    ordered = [value.desc() if filters.descending else value.asc() for value in columns]
+    ordered.append(R.id.desc() if filters.descending else R.id.asc())
+    return ordered
 
 
 def record_dict(row: R) -> dict:
@@ -148,42 +171,29 @@ class InspectionService:
 
     def query(self, filters: RecordFilter | None = None) -> tuple[list[dict], int]:
         filters = filters or RecordFilter()
-        allowed = {
-            "inspection_date",
-            "inspection_time",
-            "team",
-            "work_order",
-            "inspector",
-            "judgment",
-            "inspection_quantity",
-            "sampling_quantity",
-            "defect_quantity",
-            "created_at",
-            "inspection_no",
-            "source",
-        }
-        column = getattr(R, filters.sort if filters.sort in allowed else "inspection_date")
-        columns = [column, R.inspection_time] if column is R.inspection_date else [column]
-        order = [c.desc() if filters.descending else c.asc() for c in columns]
+        clauses = conditions(filters)
         with self.db.session() as session:
-            total = session.scalar(select(func.count()).select_from(R).where(*conditions(filters)))
+            total = session.scalar(select(func.count()).select_from(R).where(*clauses))
             rows = session.scalars(
                 select(R)
-                .where(*conditions(filters))
-                .order_by(*order, R.id.desc())
+                .where(*clauses)
+                .order_by(*record_order(filters))
                 .offset((filters.page - 1) * filters.page_size)
                 .limit(filters.page_size)
             )
             return [record_dict(row) for row in rows], total
 
     def iter_records(self, filters: RecordFilter):
-        page = 1
-        while True:
-            rows, total = self.query(filters.model_copy(update={"page": page, "page_size": 500}))
-            yield from rows
-            if page * 500 >= total:
-                break
-            page += 1
+        """Stream a full filtered result without paginated COUNT queries."""
+        statement = (
+            select(R)
+            .where(*conditions(filters))
+            .order_by(*record_order(filters))
+            .execution_options(yield_per=500)
+        )
+        with self.db.session() as session:
+            for row in session.scalars(statement):
+                yield record_dict(row)
 
     def delete(self, ids: list[int]) -> None:
         with self.db.session() as session:

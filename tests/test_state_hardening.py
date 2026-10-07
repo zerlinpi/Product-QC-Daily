@@ -231,3 +231,22 @@ def test_records_invalid_date_range_preserves_last_results_without_query(
     page.end.setDate(QDate(2026, 10, 2))
     assert page.query_button.isEnabled()
     assert "点击“查询”应用" in page.count.text()
+
+
+def test_dashboard_reuses_single_30_day_trend_query(ctx, qtbot, monkeypatch):
+    window = MainWindow(ctx)
+    qtbot.addWidget(window)
+    page = window.pages[0]
+    original = ctx.statistics.trend
+    calls = []
+
+    def wrapped(filters):
+        calls.append((filters.start, filters.end, filters.source))
+        return original(filters)
+
+    monkeypatch.setattr(ctx.statistics, "trend", wrapped)
+    page.refresh()
+
+    assert len(calls) == 2
+    spans = sorted((end - start).days + 1 for start, end, _source in calls)
+    assert spans == [7, 30]
