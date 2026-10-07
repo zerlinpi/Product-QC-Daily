@@ -22,7 +22,6 @@ def test_legacy_export_keeps_full_blank_form_after_last_record(ctx, payload, tmp
     template_ws = template["成品日检表"]
     assert ws["B50"]._style == template_ws["B2"]._style
     assert ws["J50"]._style == template_ws["J2"]._style
-    template.close()
     assert ws["B2"].number_format == template_ws["B2"].number_format
     for column in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"):
         assert ws.column_dimensions[column].width == template_ws.column_dimensions[column].width
@@ -30,6 +29,7 @@ def test_legacy_export_keeps_full_blank_form_after_last_record(ctx, payload, tmp
     assert ws.row_dimensions[1].height == template_ws.row_dimensions[1].height
     for column in range(1, 11):
         assert ws.cell(1, column)._style == template_ws.cell(1, column)._style
+    template.close()
     wb.close()
 
 
