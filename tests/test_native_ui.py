@@ -653,7 +653,7 @@ def test_field_labels_wire_buddies_and_accessible_names_across_pages(ctx, qtbot)
 
 
 def test_table_minimum_rows_use_shared_density_metrics(ctx, qtbot):
-    from app.ui.common import CONTROL_MIN_HEIGHT, TABLE_ROW_HEIGHT
+    from app.ui.common import TABLE_HEADER_HEIGHT, TABLE_ROW_HEIGHT
 
     window = MainWindow(ctx)
     qtbot.addWidget(window)
@@ -668,7 +668,7 @@ def test_table_minimum_rows_use_shared_density_metrics(ctx, qtbot):
         (selector.table, 9),
     ]
     for widget, rows in cases:
-        expected = CONTROL_MIN_HEIGHT + TABLE_ROW_HEIGHT * rows + widget.frameWidth() * 2
+        expected = TABLE_HEADER_HEIGHT + TABLE_ROW_HEIGHT * rows + widget.frameWidth() * 2
         assert widget.minimumHeight() == expected
 
 
