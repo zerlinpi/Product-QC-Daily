@@ -7,26 +7,26 @@ from sqlalchemy import delete, func, select
 from app.core.schemas import InspectionInput
 from app.database.models import InspectionRecord
 
-DEMO_RECORDS_PER_WORKDAY = 7
+DEMO_RECORDS_PER_DAY = 5
 
 
-def demo_workdays(start: date, end: date) -> list[date]:
-    """Return production-like active days, preferring Monday-Friday."""
-    days = [start + timedelta(days=offset) for offset in range((end - start).days + 1)]
-    workdays = [day for day in days if day.weekday() < 5]
-    return workdays or days
+def demo_days(start: date, end: date) -> list[date]:
+    """Return every calendar day in the selected range."""
+    if end < start:
+        return []
+    return [start + timedelta(days=offset) for offset in range((end - start).days + 1)]
 
 
 def suggested_demo_count(start: date, end: date) -> int:
-    """Match the uploaded daily form's roughly seven records per workday density."""
+    """Match the uploaded form's overall density: 460 rows across 92 calendar days."""
     if end < start:
         return 1
-    return min(100_000, max(1, len(demo_workdays(start, end)) * DEMO_RECORDS_PER_WORKDAY))
+    return min(100_000, max(1, len(demo_days(start, end)) * DEMO_RECORDS_PER_DAY))
 
 
 def balanced_demo_dates(start: date, end: date, count: int, rng: random.Random) -> list[date]:
-    """Spread demo records across the full range instead of clustering randomly."""
-    days = demo_workdays(start, end)
+    """Spread demo records across the entire range, including weekends."""
+    days = demo_days(start, end)
     if count <= len(days):
         if count == 1:
             return [days[len(days) // 2]]
