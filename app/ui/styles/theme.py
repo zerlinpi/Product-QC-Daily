@@ -125,6 +125,10 @@ def apply_theme(mode="light"):
             background: {bg};
             color: {text};
         }}
+        QDialog, QMessageBox {{
+            background: {panel};
+            color: {text};
+        }}
         QWidget#pageHeader {{
             background: transparent;
         }}
@@ -135,6 +139,10 @@ def apply_theme(mode="light"):
         }}
         QLabel#subtitle, QLabel#muted, QLabel#empty {{
             color: {muted};
+        }}
+        QLabel#metricTitle {{
+            color: {muted};
+            font-weight: 600;
         }}
         QLabel#summary {{
             color: {muted};
@@ -318,6 +326,7 @@ def apply_theme(mode="light"):
         QDateEdit:hover,
         QTimeEdit:hover,
         QSpinBox:hover,
+        QDoubleSpinBox:hover,
         QTextEdit:hover {{
             border-color: {muted};
         }}
@@ -326,6 +335,7 @@ def apply_theme(mode="light"):
         QDateEdit:focus,
         QTimeEdit:focus,
         QSpinBox:focus,
+        QDoubleSpinBox:focus,
         QTextEdit:focus {{
             border-color: {accent};
         }}
@@ -334,11 +344,22 @@ def apply_theme(mode="light"):
         QDateEdit:disabled,
         QTimeEdit:disabled,
         QSpinBox:disabled,
+        QDoubleSpinBox:disabled,
         QTextEdit:disabled {{
             color: {disabled};
             background: {disabled_bg};
         }}
-        QComboBox::drop-down {{
+        QComboBox::drop-down,
+        QDateEdit::drop-down,
+        QTimeEdit::drop-down {{
+            width: 24px;
+            border: none;
+            background: transparent;
+        }}
+        QSpinBox::up-button,
+        QSpinBox::down-button,
+        QDoubleSpinBox::up-button,
+        QDoubleSpinBox::down-button {{
             width: 24px;
             border: none;
             background: transparent;
@@ -347,6 +368,27 @@ def apply_theme(mode="light"):
             color: {text};
             background: {panel};
             border: 1px solid {border};
+            selection-background-color: {accent_soft};
+            selection-color: {accent_text};
+            outline: none;
+        }}
+        QCalendarWidget QWidget {{
+            color: {text};
+            background: {panel};
+        }}
+        QCalendarWidget QToolButton {{
+            color: {text};
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+        }}
+        QCalendarWidget QToolButton:hover {{
+            background: {hover};
+        }}
+        QCalendarWidget QAbstractItemView {{
+            color: {text};
+            background: {panel};
             selection-background-color: {accent_soft};
             selection-color: {accent_text};
             outline: none;
@@ -371,6 +413,9 @@ def apply_theme(mode="light"):
             border: none;
             padding-left: 6px;
             padding-right: 6px;
+        }}
+        QTableWidget::item:hover {{
+            background: {hover};
         }}
         QTableWidget::item:selected {{
             background: {accent_soft};
