@@ -3,7 +3,7 @@ from datetime import date
 from pathlib import Path
 
 from PySide6.QtCore import QDate, Qt
-from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QSpinBox, QStyle
+from PySide6.QtWidgets import QComboBox, QDateEdit, QFileDialog, QMessageBox, QSpinBox, QStyle
 
 from app.core.labels import import_status_label
 from app.core.schemas import RecordFilter
@@ -105,6 +105,8 @@ class ReportsPage(Page):
 
         self.export_scope = label("", "status", True)
         layout.addWidget(self.export_scope)
+        self.export_counts = label("", "muted", True)
+        layout.addWidget(self.export_counts)
 
         self.preset.currentTextChanged.connect(self.set_range)
         self.year.valueChanged.connect(self._period_changed)
@@ -130,20 +132,20 @@ class ReportsPage(Page):
             primary=True,
             icon=QStyle.StandardPixmap.SP_DialogSaveButton,
         )
-        self.original_export.setToolTip("按所选日期范围写入数据，并完整保留原始表格、公式和 6 张图表布局")
+        self.original_export.setToolTip("按所选数据来源导出，沿用原表四个工作表与 6 张分析图表")
         self.detailed_export = button(
             "导出明细报表",
             lambda: self.export(False),
             icon=QStyle.StandardPixmap.SP_DialogSaveButton,
         )
-        self.detailed_export.setToolTip("适合年度分析：按日期升序写入，Excel 内可按年份、月份、具体日期继续筛选")
+        self.detailed_export.setToolTip("按所选来源生成明细与月度统计、2 张图表，可在 Excel 中继续筛选")
         export_actions.addStretch()
         export_actions.addWidget(self.detailed_export)
         export_actions.addWidget(self.original_export)
         layout.addLayout(export_actions)
         layout.addWidget(
             label(
-                "需要与你上传的成品日检表一致的版式，请选“按原表导出”；两种导出都会按日期从早到晚写入。需要全年后再筛月份或具体日期，请选“导出明细报表”。",
+                "“全年”只指定日期范围，不会自动填满每天的记录。按原表导出保留 6 张原分析图；明细报表含 2 张月度图。两种格式都只使用上方选定的数据来源。",
                 "muted",
                 True,
             )
@@ -274,6 +276,15 @@ class ReportsPage(Page):
             return str(start)
         return f"{start} 至 {end}"
 
+    def _source_counts(self, start, end):
+        """Count actual matching records, not calendar days or assumed demo density."""
+        return {
+            source: self.ctx.inspections.query(
+                RecordFilter(start=start, end=end, source=source, page_size=1)
+            )[1]
+            for source in ("production", "demo")
+        }
+
     def update_scope_text(self, *_):
         self.sync_preset_range()
         start, end = self.selected_range()
@@ -287,10 +298,45 @@ class ReportsPage(Page):
                 f"将导出：{self.scope_description(start, end)} · "
                 f"{start} 至 {end} · {self.source.currentText()}"
             )
+            counts = self._source_counts(start, end)
+            selected = "demo" if self.source.currentIndex() else "production"
+            self.export_counts.setText(
+                f"实际可导出 {counts[selected]} 条；"
+                f"正式数据 {counts['production']} 条 / 演示数据 {counts['demo']} 条（两类数据不会合并）"
+            )
             set_label_kind(self.export_scope, "status")
         else:
             self.export_scope.setText("日期范围无效：开始日期不能晚于结束日期")
+            self.export_counts.setText("请先修正日期范围")
             set_label_kind(self.export_scope, "error")
+
+    def _confirm_source_mismatch(self, selected_source, selected_count, other_count):
+        """Ask explicitly before exporting a sparse source when another is much larger."""
+        chosen = "正式数据" if selected_source == "production" else "演示数据"
+        opposite = "演示数据" if selected_source == "production" else "正式数据"
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Icon.Warning)
+        dialog.setWindowTitle("请核对导出数据来源")
+        dialog.setText(
+            f"当前选中{chosen}，这个日期范围只有 {selected_count} 条记录。"
+            f"同一范围的{opposite}有 {other_count} 条。"
+        )
+        dialog.setInformativeText(
+            "“全年”是日期筛选条件，并不表示已包含整年的记录。请选择正确来源，"
+            "以免生成数据不完整、图表看似错误的报表。"
+        )
+        switch_button = dialog.addButton(f"改为{opposite}导出", QMessageBox.ButtonRole.ActionRole)
+        keep_button = dialog.addButton(
+            f"仍导出{chosen} {selected_count} 条", QMessageBox.ButtonRole.AcceptRole
+        )
+        cancel_button = dialog.addButton("取消导出", QMessageBox.ButtonRole.RejectRole)
+        dialog.setDefaultButton(cancel_button)
+        dialog.exec()
+        if dialog.clickedButton() is switch_button:
+            return "switch"
+        if dialog.clickedButton() is keep_button:
+            return "keep"
+        return "cancel"
 
     def import_file(self):
         path, _ = QFileDialog.getOpenFileName(self, "选择成品日检表", "", "电子表格 (*.xlsx)")
@@ -326,10 +372,22 @@ class ReportsPage(Page):
         if start > end:
             self.update_scope_text()
             return
+        selected = "demo" if self.source.currentIndex() else "production"
+        other = "production" if selected == "demo" else "demo"
+        counts = self._source_counts(start, end)
+        if counts[other] > 0 and (
+            counts[selected] == 0 or counts[other] >= max(30, counts[selected] * 3)
+        ):
+            choice = self._confirm_source_mismatch(selected, counts[selected], counts[other])
+            if choice == "cancel":
+                return
+            if choice == "switch":
+                self.source.setCurrentIndex(1 if other == "demo" else 0)
+                selected = other
         filters = RecordFilter(
             start=start,
             end=end,
-            source="demo" if self.source.currentIndex() else "production",
+            source=selected,
             descending=False,
         )
         directory = Path(self.ctx.settings.get("export_directory") or self.ctx.paths.exports)
