@@ -35,7 +35,7 @@ def test_1825_demo_standard_export_charts_match_every_exported_record(
             )
             assert exported[7] == (expected_codes or None)
         expected_defects = [
-            (record["inspection_no"], defect["code"], defect["name"], defect["quantity"], defect["remark"])
+            (record["inspection_no"], defect["code"], defect["name"], defect["quantity"], defect["remark"] or None)
             for record in source_records
             for defect in record["defects"]
         ]
