@@ -19,7 +19,7 @@ def test_full_year_legacy_export_preserves_all_rows_and_template(
     assert suggested_demo_count(start, end) == expected_count
 
     # Same date and same source range: production must never leak into demo exports.
-    production = payload.model_copy(update={"inspection_date": f"{year}-01-05"})
+    production = payload.model_copy(update={"inspection_date": date(year, 1, 5)})
     saved_production = ctx.inspections.save(production)
     assert ctx.demo.generate(expected_count, start, end, teams, seed=20261008) == expected_count
     filters = RecordFilter(start=start, end=end, source="demo", descending=False)
