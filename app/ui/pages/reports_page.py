@@ -401,6 +401,8 @@ class ReportsPage(Page):
         if path:
             self.window.run_job(
                 "导出质量报表",
-                lambda: self.ctx.excel.export(Path(path), filters, legacy=legacy),
+                lambda: self.ctx.excel.export(
+                    Path(path), filters, legacy=legacy, expected_count=counts[selected],
+                ),
                 self.window.export_completed,
             )

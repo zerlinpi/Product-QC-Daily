@@ -192,6 +192,10 @@ class InspectionService:
             .execution_options(yield_per=500)
         )
         with self.db.session() as session:
+            # sqlite3 legacy transaction mode does not BEGIN for SELECT. Keep
+            # the record cursor and subsequent select-in defect queries in one
+            # WAL read snapshot, including the final batch after cursor EOF.
+            session.connection().exec_driver_sql("BEGIN")
             for row in session.scalars(statement):
                 yield record_dict(row)
 

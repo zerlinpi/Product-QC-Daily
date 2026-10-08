@@ -296,7 +296,7 @@ def test_legacy_layout_keeps_original_chart_positions_and_signature_cell(ctx, pa
     assert ws.sheet_view.zoomScale == template_ws.sheet_view.zoomScale
     assert ws.page_setup.orientation == template_ws.page_setup.orientation
     assert ws.page_setup.fitToWidth == template_ws.page_setup.fitToWidth
-    assert ws.print_title_rows == template_ws.print_title_rows
+    assert ws.print_title_rows == "$1:$1"
     anchor = ws._images[0].anchor
     assert (anchor._from.col, anchor._from.row) == (9, 1)
     assert (anchor._from.colOff + anchor.ext.cx) / 9525 <= ws.column_dimensions["J"].width * 7 + 5

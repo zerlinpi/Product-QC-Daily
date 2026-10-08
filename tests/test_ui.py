@@ -340,7 +340,7 @@ def test_reports_export_uses_chronological_order(ctx, qtbot, monkeypatch, tmp_pa
 
     monkeypatch.setattr(file_dialogs, "save_excel", lambda *args, **kwargs: (str(output), ""))
 
-    def fake_export(path, filters, legacy=False):
+    def fake_export(path, filters, legacy=False, *, expected_count=None):
         captured["path"] = path
         captured["filters"] = filters
         captured["legacy"] = legacy
