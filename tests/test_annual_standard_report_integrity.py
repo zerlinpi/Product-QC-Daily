@@ -21,6 +21,24 @@ def test_1825_demo_standard_export_charts_match_every_exported_record(
         rows = list(wb["检验记录"].values)
         header, data = rows[0], rows[1:]
         assert len(data) == 1825
+        source_records = list(ctx.inspections.iter_records(filters))
+        assert len(source_records) == 1825
+        for exported, source_record in zip(data, source_records, strict=True):
+            assert exported[0] == source_record["inspection_no"]
+            assert exported[4:7] == (
+                source_record["inspection_quantity"],
+                source_record["sampling_quantity"],
+                source_record["defect_quantity"],
+            )
+            assert exported[7] == ";".join(
+                defect["code"] for defect in source_record["defects"]
+            ) or exported[7] is None
+        expected_defects = [
+            (record["inspection_no"], defect["code"], defect["name"], defect["quantity"], defect["remark"])
+            for record in source_records
+            for defect in record["defects"]
+        ]
+        assert list(wb["不良明细"].values)[1:] == expected_defects
         assert header[-3:] == ("年份", "月份", "日期")
         assert all(row[12] == "演示数据" and row[13] == 2026 for row in data)
         assert len({row[15] for row in data}) == 365
