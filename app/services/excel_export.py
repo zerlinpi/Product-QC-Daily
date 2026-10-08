@@ -690,8 +690,8 @@ def label_legacy_chart_scope(ws, start, end):
         period = "区间"
     ws["B2"] = f"{period}出货抽检不良统计表"
     ws["B32"] = "截止周抽检不良统计表"
-    # L32 is Monday; its Thursday determines the ISO week-year.
-    ws["A32"] = '=YEAR(L32+3)&"-W"&TEXT(WEEKNUM(L32,21),"00")'
+    # The ISO Thursday remains correct if the user edits L32 to another weekday.
+    ws["A32"] = '=YEAR(L32-WEEKDAY(L32,2)+4)&"-W"&TEXT(WEEKNUM(L32,21),"00")'
     ws["A61"] = (
         "项目统计为出现批次；不良率=不良件数/抽检件数。逐项已知数量见标准报表。"
         "截止周仅统计本次导出明细内、结束日期所在的周一至周日，不代表全年周度汇总。"

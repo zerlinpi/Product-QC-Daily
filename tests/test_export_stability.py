@@ -113,7 +113,10 @@ def test_six_chart_titles_describe_period_and_only_final_iso_week(
         assert len(titles) == 6
         assert all(period in title for title in titles[:3])
         assert all("截止周" in title for title in titles[3:])
-        assert analysis["A32"].value == '=YEAR(L32+3)&"-W"&TEXT(WEEKNUM(L32,21),"00")'
+        # Use the ISO Thursday even if a user edits L32 to a non-Monday date.
+        assert analysis["A32"].value == (
+            '=YEAR(L32-WEEKDAY(L32,2)+4)&"-W"&TEXT(WEEKNUM(L32,21),"00")'
+        )
         monday = analysis["L32"].value.date()
         assert f"{monday.isocalendar().year}-W{monday.isocalendar().week:02d}" == iso_week
         assert "仅统计本次导出明细" in analysis["A61"].value
