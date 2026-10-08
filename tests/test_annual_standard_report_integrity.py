@@ -1,7 +1,7 @@
 """针对用户年度报表只有少量正式记录的回归：全年演示须完整落在明细及图表。"""
 
 from collections import Counter
-from datetime import date
+from datetime import date, datetime
 
 from openpyxl import load_workbook
 
@@ -24,7 +24,9 @@ def test_1825_demo_standard_export_charts_match_every_exported_record(
         assert header[-3:] == ("年份", "月份", "日期")
         assert all(row[12] == "演示数据" and row[13] == 2026 for row in data)
         assert len({row[15] for row in data}) == 365
-        assert data[0][15] == start and data[-1][15] == end
+        first, last = data[0][15], data[-1][15]
+        assert (first.date() if isinstance(first, datetime) else first) == start
+        assert (last.date() if isinstance(last, datetime) else last) == end
         month_counts = Counter(row[14] for row in data)
         months = wb["月度统计"]
         assert [months.cell(i, 1).value for i in range(2, 14)] == [
