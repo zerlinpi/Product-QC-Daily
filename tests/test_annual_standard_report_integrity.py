@@ -30,9 +30,10 @@ def test_1825_demo_standard_export_charts_match_every_exported_record(
                 source_record["sampling_quantity"],
                 source_record["defect_quantity"],
             )
-            assert exported[7] == ";".join(
+            expected_codes = ";".join(
                 defect["code"] for defect in source_record["defects"]
-            ) or exported[7] is None
+            )
+            assert exported[7] == (expected_codes or None)
         expected_defects = [
             (record["inspection_no"], defect["code"], defect["name"], defect["quantity"], defect["remark"])
             for record in source_records
