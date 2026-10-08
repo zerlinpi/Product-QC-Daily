@@ -62,8 +62,8 @@ def test_full_year_legacy_export_preserves_all_rows_and_template(
             )
         for column in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"):
             assert ws.column_dimensions[column].width == source_ws.column_dimensions[column].width
-        assert ws.print_area == source_ws.print_area
-        assert ws.print_title_rows == source_ws.print_title_rows
+        assert ws.print_area == f"'成品日检表'!$B$1:$K${expected_count + 1}"
+        assert ws.print_title_rows == "$1:$1"
         assert ws.page_setup.orientation == source_ws.page_setup.orientation
         assert ws.sheet_view.topLeftCell == "A1"
         assert ws.freeze_panes == "C2"

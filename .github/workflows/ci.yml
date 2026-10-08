@@ -67,11 +67,24 @@ jobs:
           $result = Get-Content $report -Raw | ConvertFrom-Json
           if (!$result.ok -or !$result.frozen) { throw 'Packaged executable smoke test did not pass' }
           Copy-Item $report 'dist/Product-QC-Daily/verification.json'
+          $office = @{
+            excel_registered = ($null -ne [type]::GetTypeFromProgID('Excel.Application'))
+            wps_registered = ($null -ne [type]::GetTypeFromProgID('ket.Application'))
+            visual_acceptance = 'NOT_COMPLETED_REQUIRES_MANUAL_ACCEPTANCE'
+            commit = $env:GITHUB_SHA
+          }
+          $office | ConvertTo-Json | Set-Content -Encoding utf8 'dist/Product-QC-Daily/office-availability.json'
+          Write-Output ($office | ConvertTo-Json -Compress)
           Compress-Archive -Path 'dist/Product-QC-Daily' -DestinationPath 'Product-QC-Daily-windows-x64.zip'
+          $digest = (Get-FileHash 'Product-QC-Daily-windows-x64.zip' -Algorithm SHA256).Hash.ToLower()
+          "$digest  Product-QC-Daily-windows-x64.zip" | Set-Content -Encoding ascii 'Product-QC-Daily-windows-x64.zip.sha256'
+          Write-Output "Release ZIP SHA256: $digest"
       - uses: actions/upload-artifact@v4
         with:
           name: Product-QC-Daily-windows-x64
-          path: Product-QC-Daily-windows-x64.zip
+          path: |
+            Product-QC-Daily-windows-x64.zip
+            Product-QC-Daily-windows-x64.zip.sha256
           retention-days: 30
       - name: Upload executable diagnostics
         if: failure()
@@ -101,5 +114,6 @@ jobs:
           if gh release view "v$version" >/dev/null 2>&1; then
             echo "Release v$version already exists; keeping its original artifact."
           else
-            gh release create "v$version" Product-QC-Daily-windows-x64.zip --target "$GITHUB_SHA" --title "v$version · 成品日检管理系统" --notes-file docs/release-notes.md
+            sha256sum --check Product-QC-Daily-windows-x64.zip.sha256
+            gh release create "v$version" Product-QC-Daily-windows-x64.zip Product-QC-Daily-windows-x64.zip.sha256 --target "$GITHUB_SHA" --title "v$version · 成品日检管理系统" --notes-file docs/release-notes.md
           fi

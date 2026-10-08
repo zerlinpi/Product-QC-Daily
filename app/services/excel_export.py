@@ -26,10 +26,13 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.units import pixels_to_EMU
 from openpyxl.workbook.properties import CalcProperties
 from openpyxl.workbook.views import BookView
+from openpyxl.worksheet.cell_range import CellRange
+from openpyxl.worksheet.print_settings import PrintArea
 from openpyxl.worksheet.views import Pane, Selection
 
 from app.core.labels import source_label
 from app.services.excel_common import load_compatible, write_text
+from app.services.statistics_service import rates
 
 LEGACY_FORM_ROWS = 500
 
@@ -163,7 +166,10 @@ def style_table(ws):
 
     for row in range(2, last_row + 1):
         ws.row_dimensions[row].height = max(ws.row_dimensions[row].height or 18, 22)
-        for cell in ws[row]:
+        # ws[row] rescans all populated cells to rediscover max_column for
+        # every row. The bounds above already cover the complete table.
+        for column in range(1, last_col + 1):
+            cell = ws.cell(row, column)
             cell.font = Font(name="Microsoft YaHei", size=9)
             cell.border = border
             cell.alignment = Alignment(vertical="center")
@@ -454,11 +460,17 @@ def update_chart_snapshot(snapshot, row):
             snapshot["defect_batches"][code] += 1
 
 
-def embed_legacy_analysis_chart_data(wb, period, week, teams, defect_names):
+def embed_legacy_analysis_chart_data(wb, period, week, teams, defect_names, other_teams=False):
     analysis = wb["数据分析表"]
     team_categories = [teams[index] if index < len(teams) else "" for index in range(8)]
     defect_categories = [defect_names.get(chr(97 + index), "") for index in range(24)]
     totals_categories = ["检验数量", "抽检数", "不良数", "不良率"]
+
+    def team_values(snapshot):
+        result = [snapshot["rework_batches"].get(team, 0) if team else 0 for team in team_categories]
+        if other_teams:
+            result[-1] = sum(snapshot["rework_batches"].values()) - sum(result[:-1])
+        return result
 
     def totals(snapshot):
         rate = (
@@ -476,7 +488,7 @@ def embed_legacy_analysis_chart_data(wb, period, week, teams, defect_names):
     values_by_range = {
         "$F$4:$F$11": (
             team_categories,
-            [period["rework_batches"].get(team, 0) if team else 0 for team in team_categories],
+            team_values(period),
             "#,##0",
         ),
         "$H$4:$K$4": (totals_categories, totals(period), "General"),
@@ -493,7 +505,7 @@ def embed_legacy_analysis_chart_data(wb, period, week, teams, defect_names):
         ),
         "$F$34:$F$41": (
             team_categories,
-            [week["rework_batches"].get(team, 0) if team else 0 for team in team_categories],
+            team_values(week),
             "#,##0",
         ),
     }
@@ -647,6 +659,60 @@ def extend_legacy_form(ws, row_style, row_height, data_rows=0):
             cell = ws.cell(row, col)
             cell._style = copy(style)
             cell.value = None
+
+
+def extend_legacy_print_area(ws, record_count):
+    """Extend only the exported copy; preserve the template's print columns."""
+    last = max(record_count + 1, 2)
+    areas = list(PrintArea.from_string(ws.print_area).ranges) if ws.print_area else [CellRange("B1:K2")]
+    for area in areas:
+        area.min_row = 1
+        area.max_row = max(area.max_row, last)
+    ws.print_area = [str(area) for area in areas]
+    if not ws.print_title_rows:
+        ws.print_title_rows = "1:1"
+
+
+def label_legacy_chart_scope(ws, start, end):
+    """Change title text only, retaining native title and chart formatting."""
+    if start == date(start.year, 1, 1) and end == date(start.year, 12, 31):
+        period = "全年"
+    elif (start.year, start.month) == (end.year, end.month):
+        period = "当日" if start == end else "本月"
+    else:
+        period = "区间"
+    ws["B2"] = f"{period}出货抽检不良统计表"
+    ws["B32"] = "截止周抽检不良统计表"
+    iso_year, iso_week, _ = end.isocalendar()
+    ws["A32"] = f"{iso_year}-W{iso_week:02d}"
+    ws["A61"] = (
+        "项目统计为出现批次；不良率=不良件数/抽检件数。逐项已知数量见标准报表。"
+        "截止周仅统计本次导出明细内、结束日期所在的周一至周日，不代表全年周度汇总。"
+    )
+    titles = {
+        "$F$4:$F$11": f"{period}返工批次",
+        "$H$4:$K$4": f"{period}抽检状况统计",
+        "$B$4:$B$27": f"{period}不良项目批次",
+        "$H$34:$K$34": "截止周抽检状况统计",
+        "$B$34:$B$57": "截止周不良项目批次",
+        "$F$34:$F$41": "截止周返工批次",
+    }
+    for chart in ws._charts:
+        if not chart.series:
+            continue
+        series = chart.series[0]
+        ref = series.val.numRef if series.val is not None else None
+        title = next((value for key, value in titles.items() if ref and ref.f.endswith(key)), None)
+        if title is None:
+            continue
+        rich = chart.title.tx.rich if chart.title and chart.title.tx else None
+        runs = [run for paragraph in rich.p for run in paragraph.r] if rich else []
+        if runs:
+            runs[0].t = title
+            for run in runs[1:]:
+                run.t = ""
+        else:
+            chart.title = title
 
 
 def improve_legacy_sheet_display(ws):
@@ -860,6 +926,7 @@ def repair_analysis(
     record_count: int,
     teams: list[str] | None = None,
     defect_names: dict[str, str] | None = None,
+    other_teams: bool = False,
 ):
     ws = wb["数据分析表"]
     last = max(record_count + 1, 2)
@@ -891,6 +958,8 @@ def repair_analysis(
             if teams is not None:
                 write_text(ws.cell(r, 5), teams[i] if i < len(teams) else "")
             ws.cell(r, 6, f'=COUNTIFS({date_args},{groups},E{r},{judgments},"返工")')
+        if other_teams:
+            ws.cell(first + 7, 6, f'=COUNTIFS({date_args},{judgments},"返工")-SUM(F{first}:F{first + 6})')
         ws.cell(first + 8, 6, f"=SUM(F{first}:F{first + 7})")
         for target, source in (("H", "E"), ("I", "F"), ("J", "G")):
             ws[f"{target}{first}"] = (
@@ -953,7 +1022,7 @@ def recalculate_com(path: Path) -> bool:
                 logging.getLogger("qc.excel").warning("释放 Excel 组件失败", exc_info=True)
 
 
-def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> Path:
+def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, expected_count=None) -> Path:
     path = Path(path)
     if path.suffix.lower() != ".xlsx":
         raise ValueError("导出文件必须使用 .xlsx 扩展名")
@@ -1004,12 +1073,23 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
                 ]
             )
     count, minimum, maximum = 0, None, None
+    exported_totals = dict.fromkeys(
+        ("batches", "inspection_quantity", "sampling_quantity", "defect_quantity",
+         "pass_batches", "rework_batches"), 0,
+    )
     monthly = {}
+    exported_defect_names = {}
     legacy_period = new_chart_snapshot() if legacy else None
     legacy_weeks = {}
     for count, row in enumerate(ctx.inspections.iter_records(filters), 1):
         index = count + 1
+        exported_totals["batches"] += 1
+        for key in ("inspection_quantity", "sampling_quantity", "defect_quantity"):
+            exported_totals[key] += row[key]
+        exported_totals["pass_batches"] += int(row["judgment"] == "合格")
+        exported_totals["rework_batches"] += int(row["judgment"] == "返工")
         codes = [d["code"] for d in row["defects"]]
+        exported_defect_names.update({d["code"]: d["name"] for d in row["defects"]})
         if legacy and any(
             len(code) != 1 or code not in "abcdefghijklmnopqrstuvwx" for code in codes
         ):
@@ -1078,8 +1158,14 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
                 detail.append(
                     [row["inspection_no"], d["code"], d["name"], d["quantity"], d["remark"]]
                 )
+    if expected_count is not None and count != expected_count:
+        wb.close()
+        raise ValueError(
+            f"记录数已变化（预检 {expected_count} 条，当前 {count} 条），请刷新后重新导出；原文件未覆盖"
+        )
     if legacy:
         extend_legacy_form(ws, row_style, row_height, count)
+        extend_legacy_print_area(ws, count)
         duplicate = wb["成品日检表报表"]
         duplicate_style, duplicate_height = legacy_layout["成品日检表报表"]
         extend_legacy_form(duplicate, duplicate_style, duplicate_height, 0)
@@ -1087,11 +1173,18 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
         analysis_start = filters.start or minimum or date.today()
         analysis_end = filters.end or maximum or date.today()
         teams = [team["name"] for team in ctx.settings.teams()][:8]
+        other_teams = any(team not in teams for team in legacy_period["rework_batches"])
+        if other_teams:
+            other_label = "其他组别"
+            while other_label in teams[:7]:
+                other_label += "（合计）"
+            teams = teams[:7] + [other_label]
         defect_names = {
             item["code"]: item["name"]
             for item in ctx.defects.list()
             if item["code"] in "abcdefghijklmnopqrstuvwx"
         }
+        defect_names.update(exported_defect_names)
         repair_analysis(
             wb,
             analysis_start,
@@ -1099,10 +1192,12 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             count,
             teams=teams,
             defect_names=defect_names,
+            other_teams=other_teams,
         )
         for chart in wb["数据分析表"]._charts:
             clear_chart_caches(chart)
             repair_chart_ranges(chart)
+        label_legacy_chart_scope(wb["数据分析表"], analysis_start, analysis_end)
         selected_week = analysis_end - timedelta(days=analysis_end.weekday())
         embed_legacy_analysis_chart_data(
             wb,
@@ -1110,6 +1205,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             legacy_weeks.get(selected_week, new_chart_snapshot()),
             teams,
             defect_names,
+            other_teams=other_teams,
         )
     else:
         summary = wb.create_sheet("统计摘要")
@@ -1125,7 +1221,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True) -> 
             "pass_batches": "合格批次",
             "pass_rate": "合格率",
         }
-        for key, value in ctx.statistics.summary(filters).items():
+        for key, value in rates(exported_totals).items():
             summary.append([labels.get(key, key), value])
             if key.endswith("rate"):
                 summary.cell(summary.max_row, 2).number_format = "0.00%"

@@ -58,8 +58,10 @@ class ExcelService:
                 (self.ctx.paths.signatures / name).unlink(missing_ok=True)
             raise
 
-    def export(self, path, filters, legacy=False, prefer_com=True) -> Path:
-        return export_workbook(self.ctx, path, filters, legacy, prefer_com)
+    def export(self, path, filters, legacy=False, prefer_com=True, *, expected_count=None) -> Path:
+        return export_workbook(
+            self.ctx, path, filters, legacy, prefer_com, expected_count=expected_count,
+        )
 
     def export_issues(self, preview: ImportPreview, path: Path) -> Path:
         wb = Workbook()
