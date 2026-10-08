@@ -93,6 +93,7 @@ def test_annual_print_area_covers_last_record_and_repeats_header(
         (date(2026, 1, 1), date(2026, 12, 31), "全年", "2026-W53"),
         (date(2020, 12, 30), date(2021, 1, 1), "区间", "2020-W53"),
         (date(2024, 2, 1), date(2024, 2, 29), "本月", "2024-W09"),
+        (date(2026, 1, 5), date(2026, 1, 6), "区间", "2026-W02"),
     ],
 )
 def test_six_chart_titles_describe_period_and_only_final_iso_week(
@@ -112,7 +113,9 @@ def test_six_chart_titles_describe_period_and_only_final_iso_week(
         assert len(titles) == 6
         assert all(period in title for title in titles[:3])
         assert all("截止周" in title for title in titles[3:])
-        assert iso_week in analysis["A32"].value
+        assert analysis["A32"].value == '=YEAR(L32+3)&"-W"&TEXT(WEEKNUM(L32,21),"00")'
+        monday = analysis["L32"].value.date()
+        assert f"{monday.isocalendar().year}-W{monday.isocalendar().week:02d}" == iso_week
         assert "仅统计本次导出明细" in analysis["A61"].value
     finally:
         wb.close()
@@ -215,3 +218,114 @@ def test_save_failure_does_not_replace_existing_workbook(
         ctx.excel.export(target, RecordFilter(), legacy=legacy, prefer_com=False)
     assert target.read_bytes() == b"previous good workbook"
     assert not list(tmp_path.glob("tmp*.xlsx"))
+
+
+def test_literal_case_sensitive_team_formulas_and_other_total(ctx, payload, tmp_path):
+    ctx.settings.save_team("U*", team_id=1, sort_order=1)
+    ctx.settings.save_team("u2", sort_order=99)
+    ctx.settings.save_team("U9", sort_order=100)
+    for team in ("U2", "u2", "U9"):
+        ctx.inspections.save(payload.model_copy(update={"team": team, "judgment": "返工"}))
+    wb = load_workbook(
+        ctx.excel.export(tmp_path / "literal.xlsx", RecordFilter(), legacy=True, prefer_com=False)
+    )
+    try:
+        analysis = wb["数据分析表"]
+        categories = [p.v for p in analysis._charts[0].series[0].cat.strRef.strCache.pt]
+        values = [p.v for p in analysis._charts[0].series[0].val.numRef.numCache.pt]
+        assert values[categories.index("U*")] == 0
+        assert values[categories.index("U2")] == 1
+        assert values[-1] == 2 and sum(values) == 3
+        for first in (4, 34):
+            for r in range(first, first + 7):
+                assert analysis.cell(r, 6).value.startswith("=SUMPRODUCT(")
+                assert f"EXACT('成品日检表'!$C$2:$C$4,E{r})" in analysis.cell(r, 6).value
+    finally:
+        wb.close()
+
+
+def test_standard_dictionary_name_matches_stream_snapshot(ctx, payload, tmp_path, monkeypatch):
+    ctx.inspections.save(
+        payload.model_copy(
+            update={
+                "defect_quantity": 1,
+                "defects": [DefectInput(defect_id=1, quantity=1)],
+            }
+        )
+    )
+    original = ctx.inspections.iter_records
+
+    def rename_before_stream(filters):
+        ctx.defects.save({"code": "a", "name": "=快照名称<&>"}, 1)
+        yield from original(filters)
+
+    monkeypatch.setattr(ctx.inspections, "iter_records", rename_before_stream)
+    wb = load_workbook(ctx.excel.export(tmp_path / "dictionary.xlsx", RecordFilter()))
+    try:
+        assert wb["不良明细"]["C2"].value == "=快照名称<&>"
+        assert wb["不良项目"]["B2"].value == "=快照名称<&>"
+        assert wb["不良项目"]["B2"].data_type == "s"
+    finally:
+        wb.close()
+
+
+@pytest.mark.parametrize("legacy", [True, False])
+@pytest.mark.parametrize("configured", [True, False])
+def test_both_formats_protect_original_and_bundled_templates(
+    ctx, tmp_path, monkeypatch, legacy, configured
+):
+    original = tmp_path / "protected-template.xlsx"
+    original.write_bytes(ctx.paths.template.read_bytes())
+    before = original.read_bytes()
+    if configured:
+        ctx.settings.update({"template_path": str(original)})
+    else:
+        monkeypatch.setattr(ctx.paths, "template", original)
+    with pytest.raises(ValueError, match="不能覆盖模板"):
+        ctx.excel.export(original, RecordFilter(), legacy=legacy, prefer_com=False)
+    assert original.read_bytes() == before
+
+
+@pytest.mark.parametrize("change_time", ["before", "after"])
+def test_standard_dictionary_resolves_all_codes_used_by_snapshot(
+    ctx, payload, tmp_path, monkeypatch, change_time
+):
+    row = ctx.inspections.save(
+        payload.model_copy(
+            update={
+                "defect_quantity": 1,
+                "defects": [DefectInput(defect_id=1, quantity=1)],
+            }
+        )
+    )
+    original = ctx.inspections.iter_records
+
+    def change_codes(filters):
+        if change_time == "before":
+            ctx.defects.save({"code": "new-code", "name": "新项目"})
+            item = next(d for d in ctx.defects.list() if d["code"] == "new-code")
+            ctx.inspections.save(
+                payload.model_copy(
+                    update={
+                        "defect_quantity": 1,
+                        "defects": [DefectInput(defect_id=item["id"], quantity=1)],
+                    }
+                ),
+                row["id"],
+            )
+        yield from original(filters)
+        if change_time == "after":
+            ctx.inspections.save(payload, row["id"])
+            ctx.defects.save({"code": "renamed-unused", "name": "改名的闲置项目"}, 1)
+
+    monkeypatch.setattr(ctx.inspections, "iter_records", change_codes)
+    wb = load_workbook(ctx.excel.export(tmp_path / "codes.xlsx", RecordFilter()))
+    try:
+        names = {r[0]: r[1] for r in list(wb["不良项目"].values)[1:]}
+        details = list(wb["不良明细"].values)[1:]
+        assert len(details) == 1
+        for detail in details:
+            assert names[detail[1]] == detail[2]
+        assert details[0][1] == ("new-code" if change_time == "before" else "a")
+    finally:
+        wb.close()

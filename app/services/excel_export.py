@@ -1,5 +1,6 @@
 import logging
 import os
+from calendar import monthrange
 from copy import copy
 from datetime import date, datetime, timedelta
 from io import BytesIO
@@ -677,14 +678,20 @@ def label_legacy_chart_scope(ws, start, end):
     """Change title text only, retaining native title and chart formatting."""
     if start == date(start.year, 1, 1) and end == date(start.year, 12, 31):
         period = "全年"
-    elif (start.year, start.month) == (end.year, end.month):
-        period = "当日" if start == end else "本月"
+    elif start == end:
+        period = "当日"
+    elif (
+        (start.year, start.month) == (end.year, end.month)
+        and start.day == 1
+        and end.day == monthrange(end.year, end.month)[1]
+    ):
+        period = "本月"
     else:
         period = "区间"
     ws["B2"] = f"{period}出货抽检不良统计表"
     ws["B32"] = "截止周抽检不良统计表"
-    iso_year, iso_week, _ = end.isocalendar()
-    ws["A32"] = f"{iso_year}-W{iso_week:02d}"
+    # L32 is Monday; its Thursday determines the ISO week-year.
+    ws["A32"] = '=YEAR(L32+3)&"-W"&TEXT(WEEKNUM(L32,21),"00")'
     ws["A61"] = (
         "项目统计为出现批次；不良率=不良件数/抽检件数。逐项已知数量见标准报表。"
         "截止周仅统计本次导出明细内、结束日期所在的周一至周日，不代表全年周度汇总。"
@@ -957,7 +964,12 @@ def repair_analysis(
             r = first + i
             if teams is not None:
                 write_text(ws.cell(r, 5), teams[i] if i < len(teams) else "")
-            ws.cell(r, 6, f'=COUNTIFS({date_args},{groups},E{r},{judgments},"返工")')
+            # COUNTIFS treats * and ? as wildcards and ignores case. SQLite
+            # team keys do neither, and the other-team remainder must be disjoint.
+            ws.cell(r, 6, (
+                f'=SUMPRODUCT(--({dates}>=$L${control}),--({dates}<($M${control}+1)),'
+                f'--EXACT({groups},E{r}),--({judgments}="返工"))'
+            ))
         if other_teams:
             ws.cell(first + 7, 6, f'=COUNTIFS({date_args},{judgments},"返工")-SUM(F{first}:F{first + 6})')
         ws.cell(first + 8, 6, f"=SUM(F{first}:F{first + 7})")
@@ -1026,13 +1038,13 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
     path = Path(path)
     if path.suffix.lower() != ".xlsx":
         raise ValueError("导出文件必须使用 .xlsx 扩展名")
+    template = Path(ctx.settings.get("template_path") or ctx.paths.template)
+    if path.resolve() in {template.resolve(), ctx.paths.template.resolve()}:
+        raise ValueError("导出不能覆盖模板，请选择新文件名")
     path.parent.mkdir(parents=True, exist_ok=True)
     if legacy:
-        template = Path(ctx.settings.get("template_path") or ctx.paths.template)
         if not template.is_file():
             raise ValueError("Excel 模板不存在，请在设置中选择正确模板")
-        if path.resolve() == template.resolve():
-            raise ValueError("导出不能覆盖模板，请选择新文件名")
         wb = load_compatible(template)
         if not {"成品日检表", "成品日检表报表", "数据分析表", "工具"} <= set(wb.sheetnames):
             raise ValueError("模板缺少必要工作表")
@@ -1061,17 +1073,6 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
         detail.append(["填写ID", "编码", "名称", "已知件数（空=未知）", "备注"])
         dictionary = wb.create_sheet("不良项目")
         dictionary.append(["编码", "名称", "分类", "启用", "排序", "说明"])
-        for item in ctx.defects.list():
-            dictionary.append(
-                [
-                    item["code"],
-                    item["name"],
-                    item["category"],
-                    item["enabled"],
-                    item["sort_order"],
-                    item["description"],
-                ]
-            )
     count, minimum, maximum = 0, None, None
     exported_totals = dict.fromkeys(
         ("batches", "inspection_quantity", "sampling_quantity", "defect_quantity",
@@ -1208,6 +1209,16 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
             other_teams=other_teams,
         )
     else:
+        remaining_names = dict(exported_defect_names)
+        for item in ctx.defects.list():
+            dictionary.append([
+                item["code"], remaining_names.pop(item["code"], item["name"]),
+                item["category"], item["enabled"], item["sort_order"], item["description"],
+            ])
+        # A used item could be renamed after its record was changed externally.
+        # Retain the exported code/name even if no current dictionary row has it.
+        for code, name in remaining_names.items():
+            dictionary.append([code, name, "", None, None, ""])
         summary = wb.create_sheet("统计摘要")
         summary.append(["指标", "数值"])
         labels = {
