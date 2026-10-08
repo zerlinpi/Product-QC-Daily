@@ -138,7 +138,7 @@ class ReportsPage(Page):
             lambda: self.export(False),
             icon=QStyle.StandardPixmap.SP_DialogSaveButton,
         )
-        self.detailed_export.setToolTip("按所选来源生成明细与月度统计、2 张图表，可在 Excel 中继续筛选")
+        self.detailed_export.setToolTip("按所选来源生成明细与月度统计、2 张图表，可在 Excel 中按年份、月份、具体日期筛选")
         export_actions.addStretch()
         export_actions.addWidget(self.detailed_export)
         export_actions.addWidget(self.original_export)
