@@ -13,6 +13,7 @@
 | 中文换行后仍被遮住 | `extend_legacy_form()` 重置已写记录行高。新增两项中文名称的精确行高断言先失败。 | 保留已计算行高，只按需要扩展；原列宽、字体、边框、填充保持不变，签名在最终行高内缩放。 |
 | 模板分组列宽被意外改变 | H 原本继承 E:I 的宽11；读取不存在的 `column_dimensions['H']` 会创建默认宽13。XML 增加一条不应有的 H 定义。 | 从现有列范围读取有效宽度，不创建新列定义；窄模板宽9回归验证4行高度62。模板审计新增禁止未授权列定义的断言。 |
 | 筛选排序可能拆散记录 | 初版筛选范围漏掉隐藏编码，原表也漏掉填写ID与来源。按声明范围重排两行后，名称与编码错位；随后真实重算把一月的a项目计为b。 | 原表筛选范围 A:O，明细 A:Q，完整记录一起排序。打印范围独立保持 B:K/A:P；原表 L/M 空表头不增加筛选箭头。实际 Excel/WPS 菜单操作仍需人工验收。 |
+| 打包自检仍检查旧筛选边界 | Windows CI 的真实 EXE 自检失败；隔离目录的源码自检也在 `app/main.py` 同一断言失败，旧断言要求筛选到 P 列。 | 更新为完整 Q 列筛选，同时严格断言打印仍到 P 列；新增真实中文项目、隐藏编码、原表月份控件与六图检查，不跳过自检。 |
 | EXE 发布者不受信任 | 原打包流程没有 Authenticode 签名步骤。启动自检不能证明 Windows 发布者信任。 | 接入可配置的 Azure Artifact Signing OIDC 签名与发布前校验；扫描全部 EXE/DLL/PYD，保留有效第三方签名，报告真实状态。未提供可信身份时明确保持未签名，不宣称提示已消失。 |
 
 ## 用户操作
@@ -34,7 +35,7 @@
 
 ## 测试与发布
 
-本地初轮全套 `pytest -q` 为286 passed（444.26秒）；复核期间补充分组列宽回归，当前 Excel 专项42 passed。Ruff通过。最终发布仍须以 PR 最终提交及合并后精确 main SHA 的完整 CI 为依据，运行结果与 Release SHA-256 记录在 PR/Actions/Release 中。
+本地最终全套 `pytest -q` 为287 passed（442.58秒），包括新增分组列宽回归；Ruff通过。隔离目录的启动器自检已复现旧筛选边界失败，修正并增加上述断言后完整通过。最终发布仍须以 PR 最终提交及合并后精确 main SHA 的完整 CI 为依据，运行结果与 Release SHA-256 记录在 PR/Actions/Release 中。
 
 门禁顺序：Windows/Ubuntu pytest + Ruff → Ubuntu 实际重算 → Windows PyInstaller onedir → 真实未签名构建的签名校验/拒绝未签名失败路径 → 可配置签名与校验 → 实际 EXE self-test → main SHA Release。签名启用后，配置缺失、无效签名或未签名二进制、主EXE发布者不符/缺时间戳均阻止发布。ZIP 内附 `signature-verification.json`、`verification.json`、`office-availability.json`，外部提供 ZIP SHA-256。
 

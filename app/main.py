@@ -26,7 +26,7 @@ from app import __version__
 from app.core.context import AppContext
 from app.core.logger import setup_logging
 from app.core.paths import AppPaths, resource_path
-from app.core.schemas import InspectionInput, RecordFilter
+from app.core.schemas import DefectInput, InspectionInput, RecordFilter
 from app.services.excel_common import file_sha256
 from app.services.excel_export import header_footer_text
 from app.ui.common import (
@@ -61,12 +61,15 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     """Real packaged-EXE test using an explicitly isolated data directory."""
     if not os.environ.get("QC_DATA_DIR"):
         raise ValueError("自检必须通过 QC_DATA_DIR 指定独立测试目录")
+    smoke_defect = ctx.defects.list(enabled_only=True)[0]
     record = ctx.inspections.save(
         InspectionInput(
             team="U1",
             work_order="PACKAGED-SMOKE",
             inspection_quantity=100,
             sampling_quantity=20,
+            defect_quantity=1,
+            defects=[DefectInput(defect_id=smoke_defect["id"], quantity=1)],
             inspector="打包自检",
             source="demo",
         )
@@ -421,6 +424,18 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert sheet.sheet_view.topLeftCell == "A1"
     assert sheet.freeze_panes == "C2"
     assert sheet.sheet_view.selection[-1].activeCell == "C2"
+    # The original template retains unused styled rows beyond the one record.
+    assert sheet.auto_filter.ref == "A1:O2"
+    assert sheet.print_area == "'成品日检表'!$B$1:$K$2"
+    assert sheet["H2"].value == smoke_defect["name"]
+    assert sheet["O1"].value == "不良项目编码"
+    assert sheet["O2"].value == smoke_defect["code"]
+    assert sheet.column_dimensions["O"].hidden
+    analysis = workbook["数据分析表"]
+    assert analysis["A2"].value == "全部"
+    assert any("A2" in rule.sqref for rule in analysis.data_validations.dataValidation)
+    assert "QC_ExportMonths" in workbook.defined_names
+    assert len(analysis._charts) == 6
     workbook.close()
     preview = reopened.excel.preview(output)
     assert preview.file_hash == file_sha256(output)
@@ -440,9 +455,13 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
     assert workbook["检验记录"]["N1"].value == "年份"
     assert workbook["检验记录"]["O1"].value == "月份"
     assert workbook["检验记录"]["P1"].value == "日期"
-    assert workbook["检验记录"].auto_filter.ref.endswith(
-        f"P{workbook['检验记录'].max_row}"
-    )
+    sheet = workbook["检验记录"]
+    assert sheet.auto_filter.ref == f"A1:Q{sheet.max_row}"
+    assert sheet.print_area == f"'检验记录'!$A$1:$P${sheet.max_row}"
+    assert sheet["H2"].value == smoke_defect["name"]
+    assert sheet["Q1"].value == "不良项目编码"
+    assert sheet["Q2"].value == smoke_defect["code"]
+    assert sheet.column_dimensions["Q"].hidden
     monthly = workbook["月度统计"]
     assert monthly.max_row == 14
     assert monthly["A14"].value == "合计"
@@ -474,6 +493,9 @@ def smoke_test(ctx: AppContext, app: QApplication, report_path: Path | None) -> 
         "export_path_dialog": True,
         "annual_standard_export": True,
         "annual_month_day_export_filters": True,
+        "export_chinese_defect_names": True,
+        "export_sort_identity_and_print_bounds": True,
+        "legacy_month_selector": True,
         "modern_fusion_ui": True,
         "adaptive_desktop_layout": True,
         "modern_utility_pages": True,
