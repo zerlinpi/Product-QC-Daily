@@ -25,9 +25,11 @@ from openpyxl.formatting.rule import DataBarRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.units import pixels_to_EMU
+from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.workbook.properties import CalcProperties
 from openpyxl.workbook.views import BookView
 from openpyxl.worksheet.cell_range import CellRange
+from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.worksheet.print_settings import PrintArea
 from openpyxl.worksheet.views import Pane, Selection
 
@@ -109,7 +111,7 @@ def style_table(ws):
     original layout remains byte-for-byte independent from standard styling.
     """
     last_row, last_col = max(ws.max_row, 1), max(ws.max_column, 1)
-    last_letter = get_column_letter(last_col)
+    last_letter = "P" if ws.title == "检验记录" else get_column_letter(last_col)
     border = Border(
         left=Side(style="thin", color="D9E2F3"),
         right=Side(style="thin", color="D9E2F3"),
@@ -653,7 +655,7 @@ def extend_legacy_form(ws, row_style, row_height, data_rows=0):
     """Keep the original form visually continuous after the last saved record."""
     last_row = max(LEGACY_FORM_ROWS + 1, data_rows + 1)
     for row in range(2, last_row + 1):
-        ws.row_dimensions[row].height = row_height
+        ws.row_dimensions[row].height = max(ws.row_dimensions[row].height or row_height, row_height)
         if row <= data_rows + 1:
             continue
         for col, style in enumerate(row_style, 1):
@@ -676,25 +678,15 @@ def extend_legacy_print_area(ws, record_count):
 
 def label_legacy_chart_scope(ws, start, end):
     """Change title text only, retaining native title and chart formatting."""
-    if start == date(start.year, 1, 1) and end == date(start.year, 12, 31):
-        period = "全年"
-    elif start == end:
-        period = "当日"
-    elif (
-        (start.year, start.month) == (end.year, end.month)
-        and start.day == 1
-        and end.day == monthrange(end.year, end.month)[1]
-    ):
-        period = "本月"
-    else:
-        period = "区间"
+    period = "所选期间"
     ws["B2"] = f"{period}出货抽检不良统计表"
     ws["B32"] = "截止周抽检不良统计表"
     # The ISO Thursday remains correct if the user edits L32 to another weekday.
     ws["A32"] = '=YEAR(L32-WEEKDAY(L32,2)+4)&"-W"&TEXT(WEEKNUM(L32,21),"00")'
     ws["A61"] = (
+        f"导出范围：{start} 至 {end}。A2 选择月份，选“全部”查看整个范围。"
         "项目统计为出现批次；不良率=不良件数/抽检件数。逐项已知数量见标准报表。"
-        "截止周仅统计本次导出明细内、结束日期所在的周一至周日，不代表全年周度汇总。"
+        "截止周仅统计本次导出明细内、所选期间结束日期所在周，不代表全年周度汇总。"
     )
     titles = {
         "$F$4:$F$11": f"{period}返工批次",
@@ -720,6 +712,72 @@ def label_legacy_chart_scope(ws, start, end):
                 run.t = ""
         else:
             chart.title = title
+
+
+def configure_legacy_month_filter(wb, start, end):
+    """Restore the template's existing selector without macros or extra sheets."""
+    ws, tool = wb["数据分析表"], wb["工具"]
+    periods = [("全部", start, end)]
+    for month in month_keys(start, end):
+        first = date.fromisoformat(month + "-01")
+        last = date(first.year, first.month, monthrange(first.year, first.month)[1])
+        periods.append((month, max(start, first), min(end, last)))
+    for column, label in enumerate(("统计月份", "开始日期", "结束日期"), 4):
+        tool.cell(1, column, label)
+        tool.column_dimensions[get_column_letter(column)].hidden = True
+    for row, values in enumerate(periods, 2):
+        for column, value in enumerate(values, 4):
+            tool.cell(row, column, value)
+            if column > 4:
+                tool.cell(row, column).number_format = "yyyy-mm-dd"
+    last = len(periods) + 1
+    name = "QC_ExportMonths"
+    wb.defined_names.add(DefinedName(name, attr_text=f"'工具'!$D$2:$D${last}"))
+    # Month is now the only input; E/H mirror it and week follows the selected
+    # period's end. Remove rules from those six cells, preserving other cells
+    # even when the template combines them in the same validation range.
+    for validation in list(ws.data_validations.dataValidation):
+        ranges = list(validation.sqref.ranges)
+        for address in ("A2", "E2", "H2", "A32", "E32", "H32"):
+            cell = ws[address]
+            remaining = []
+            for area in ranges:
+                if address not in area:
+                    remaining.append(area)
+                    continue
+                left, top, right, bottom = area.bounds
+                for bounds in (
+                    (left, top, right, cell.row - 1),
+                    (left, cell.row + 1, right, bottom),
+                    (left, cell.row, cell.column - 1, cell.row),
+                    (cell.column + 1, cell.row, right, cell.row),
+                ):
+                    a, b, c, d = bounds
+                    if a <= c and b <= d:
+                        remaining.append(CellRange(min_col=a, min_row=b, max_col=c, max_row=d))
+            ranges = remaining
+        if ranges:
+            validation.sqref = " ".join(str(area) for area in ranges)
+        else:
+            ws.data_validations.dataValidation.remove(validation)
+    validation = DataValidation(type="list", formula1=name, allow_blank=False)
+    validation.showDropDown = False
+    validation.showErrorMessage = True
+    validation.errorStyle = "stop"
+    validation.errorTitle = "请选择导出范围内的月份"
+    validation.error = "请使用下拉列表选择年月，或选择“全部”。"
+    validation.showInputMessage = True
+    validation.promptTitle = "切换统计月份"
+    validation.prompt = "选择年月查看该月；选择“全部”查看整个导出范围。"
+    ws.add_data_validation(validation)
+    validation.add(ws["A2"])
+    ws["A1"], ws["A2"] = "统计月份", "全部"
+    ws["E2"] = ws["H2"] = "=$A$2"
+    for cell, column in (("L2", 2), ("M2", 3)):
+        ws[cell] = f"=VLOOKUP($A$2,'工具'!$D$2:$F${last},{column},FALSE)"
+    ws["L32"] = "=$M$2-WEEKDAY($M$2,2)+1"
+    ws["M32"] = "=$L$32+6"
+    ws["E32"] = ws["H32"] = "=$A$32"
 
 
 def improve_legacy_sheet_display(ws):
@@ -938,7 +996,8 @@ def repair_analysis(
     ws = wb["数据分析表"]
     last = max(record_count + 1, 2)
     dates = f"'成品日检表'!$B$2:$B${last}"
-    codes = f"'成品日检表'!$H$2:$H${last}"
+    code_column = "O" if wb["成品日检表"]["O1"].value == "不良项目编码" else "H"
+    codes = f"'成品日检表'!${code_column}$2:${code_column}${last}"
     groups = f"'成品日检表'!$C$2:$C${last}"
     judgments = f"'成品日检表'!$I$2:$I${last}"
     ws["L2"], ws["M2"] = start, end
@@ -988,7 +1047,6 @@ def repair_analysis(
     # Keep the template's visible layout untouched. L/M are helper cells used
     # only by formulas; writing values must not resize, re-align, or restyle
     # the user's source form.
-    ws.data_validations.dataValidation.clear()
     wb.calculation = CalcProperties(calcId=191029, fullCalcOnLoad=True, forceFullCalc=True)
 
 
@@ -1073,6 +1131,9 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
         detail.append(["填写ID", "编码", "名称", "已知件数（空=未知）", "备注"])
         dictionary = wb.create_sheet("不良项目")
         dictionary.append(["编码", "名称", "分类", "启用", "排序", "说明"])
+    code_column = 15 if legacy else 17
+    write_text(ws.cell(1, code_column), "不良项目编码")
+    ws.column_dimensions[get_column_letter(code_column)].hidden = True
     count, minimum, maximum = 0, None, None
     exported_totals = dict.fromkeys(
         ("batches", "inspection_quantity", "sampling_quantity", "defect_quantity",
@@ -1113,7 +1174,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
             row["inspection_quantity"],
             row["sampling_quantity"],
             row["defect_quantity"],
-            ("" if legacy else ";").join(codes),
+            "；".join(d["name"] for d in row["defects"]),
             row["judgment"],
             "",
         ]
@@ -1152,6 +1213,16 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
         if legacy:
             write_text(ws.cell(index, 14), source_label(row["source"]))
             ws.row_dimensions[index].height = row_height
+            if row["defects"]:
+                cell = ws.cell(index, 8)
+                alignment = copy(cell.alignment)
+                alignment.wrap_text = True
+                cell.alignment = alignment
+                ws.row_dimensions[index].height = wrapped_row_height(
+                    (cell.value, ws.column_dimensions["H"].width),
+                    base=row_height, line_height=(cell.font.sz or 10) * 1.4, maximum=409.5,
+                )
+        write_text(ws.cell(index, code_column), ";".join(codes))
         if row["signature_path"]:
             add_signature(ws, index, ctx.paths.signatures / row["signature_path"], legacy)
         if not legacy:
@@ -1167,6 +1238,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
     if legacy:
         extend_legacy_form(ws, row_style, row_height, count)
         extend_legacy_print_area(ws, count)
+        ws.auto_filter.ref = f"B1:K{max(count + 1, 2)}"
         duplicate = wb["成品日检表报表"]
         duplicate_style, duplicate_height = legacy_layout["成品日检表报表"]
         extend_legacy_form(duplicate, duplicate_style, duplicate_height, 0)
@@ -1195,6 +1267,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
             defect_names=defect_names,
             other_teams=other_teams,
         )
+        configure_legacy_month_filter(wb, analysis_start, analysis_end)
         for chart in wb["数据分析表"]._charts:
             clear_chart_caches(chart)
             repair_chart_ranges(chart)

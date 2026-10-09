@@ -55,7 +55,10 @@ def audit(paths):
                                 ), (name, key, attr)
                     target, source = result["成品日检表"], original["成品日检表"]
                     for row in (2, 500, 501, 502, 1826):
-                        assert target.row_dimensions[row].height == source.row_dimensions[2].height
+                        if target.cell(row, 8).value:
+                            assert source.row_dimensions[2].height <= target.row_dimensions[row].height <= 409.5
+                        else:
+                            assert target.row_dimensions[row].height == source.row_dimensions[2].height
                         for column in range(1, 12):
                             a, b = target.cell(row, column), source.cell(2, column)
                             for attr in (
@@ -66,7 +69,10 @@ def audit(paths):
                                 "number_format",
                                 "protection",
                             ):
-                                assert copy(getattr(a, attr)) == copy(getattr(b, attr)), (
+                                expected = copy(getattr(b, attr))
+                                if column == 8 and attr == "alignment" and a.value:
+                                    expected.wrap_text = True  # Chinese names now wrap within original width.
+                                assert copy(getattr(a, attr)) == expected, (
                                     row,
                                     column,
                                     attr,
@@ -113,6 +119,7 @@ def audit(paths):
                             "sheets": 4,
                             "charts": 6,
                             "layout_styles_print_views": "PASS",
+                            "authorized_display_change": "不良项目显示中文；仅有内容的 H 列换行并按需增加行高",
                             "source_unchanged": True,
                             "wps_private_image_objects": wps_objects,
                             "office_visual_acceptance": "未完成实机验收",

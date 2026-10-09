@@ -29,6 +29,7 @@ ALIASES = {
     "不良数": "defect_quantity",
     "不良数量": "defect_quantity",
     "不良项目": "codes",
+    "不良项目编码": "defect_codes",
     "判定": "judgment",
     "图片": "signature",
     "签名": "signature",
@@ -173,6 +174,12 @@ def _preview_loaded_workbook(ctx, path: Path, wb, file_hash: str) -> ImportPrevi
     if ws.max_row > 100_010 or ws.max_column > 200:
         raise ValueError("导入单表最多 10 万行、200 列，请拆分工作簿")
     dictionaries = {d["code"]: d for d in ctx.defects.list()}
+    exported_names = {}
+    dictionary_sheet = "不良项目" if title == "检验记录" else "工具"
+    if "defect_codes" in mapping and dictionary_sheet in wb:
+        for code, name in wb[dictionary_sheet].iter_rows(min_row=2, max_col=2, values_only=True):
+            if code is not None and name is not None:
+                exported_names[str(code)] = str(name)
     teams = {t["name"] for t in ctx.settings.teams(enabled_only=True)}
     images = wps_images(path)
     floating = {}
@@ -205,9 +212,19 @@ def _preview_loaded_workbook(ctx, path: Path, wb, file_hash: str) -> ImportPrevi
                 raise ValueError("记录编号为空或过长")
             timestamp = parse_datetime(fields["datetime"], wb.epoch)
             try:
-                codes = parse_codes(
-                    fields.get("codes"), set(dictionaries), legacy=title != "检验记录"
-                )
+                if "defect_codes" in mapping:
+                    codes = parse_codes(fields.get("defect_codes"), set(dictionaries), legacy=False)
+                    names = "；".join(
+                        exported_names.get(code, dictionaries[code]["name"]) for code in codes
+                    )
+                    if str(fields.get("codes") or "") != names:
+                        raise ValueError("不良项目名称与编码不一致，请核对该行及不良项目字典后重新导入")
+                else:
+                    # Old original forms use compact letters; older standard
+                    # reports use separated codes. Both remain importable.
+                    codes = parse_codes(
+                        fields.get("codes"), set(dictionaries), legacy=title != "检验记录"
+                    )
             except ValueError as exc:
                 item.status, item.message = "unrecognized", str(exc)
                 continue

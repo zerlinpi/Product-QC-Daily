@@ -33,14 +33,19 @@ def test_1825_demo_standard_export_charts_match_every_exported_record(
             expected_codes = ";".join(
                 defect["code"] for defect in source_record["defects"]
             )
-            assert exported[7] == (expected_codes or None)
+            assert exported[7] == (
+                "；".join(defect["name"] for defect in source_record["defects"]) or None
+            )
+            assert exported[16] == (expected_codes or None)
         expected_defects = [
             (record["inspection_no"], defect["code"], defect["name"], defect["quantity"], defect["remark"] or None)
             for record in source_records
             for defect in record["defects"]
         ]
         assert list(wb["不良明细"].values)[1:] == expected_defects
-        assert header[-3:] == ("年份", "月份", "日期")
+        assert header[13:16] == ("年份", "月份", "日期")
+        assert header[16] == "不良项目编码"
+        assert wb["检验记录"].column_dimensions["Q"].hidden
         assert all(row[12] == "演示数据" and row[13] == 2026 for row in data)
         assert len({row[15] for row in data}) == 365
         first, last = data[0][15], data[-1][15]
