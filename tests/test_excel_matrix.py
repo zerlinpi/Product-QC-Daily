@@ -3,6 +3,7 @@
 import posixpath
 import sqlite3
 from collections import Counter, defaultdict
+from copy import copy
 from datetime import date, datetime, time, timedelta
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
@@ -215,10 +216,13 @@ def assert_export(ctx, tmp_path, start, end, legacy, source="production", delete
                 row["inspection_quantity"],
                 row["sampling_quantity"],
                 row["defect_quantity"],
-                ("" if legacy else ";").join(d["code"] for d in row["defects"]) or None,
+                "；".join(d["name"] for d in row["defects"]) or None,
                 row["judgment"],
             )
             assert values[9] is None  # Signatures are image anchors, not arbitrary strings.
+            assert values[14 if legacy else 16] == (
+                ";".join(d["code"] for d in row["defects"]) or None
+            )
             if legacy:
                 assert values[13] == (
                     "演示数据"
@@ -237,7 +241,7 @@ def assert_export(ctx, tmp_path, start, end, legacy, source="production", delete
                     if row["source"] == "manual"
                     else "表格导入",
                 )
-                assert values[13:] == (
+                assert values[13:16] == (
                     int(row["inspection_date"][:4]),
                     row["inspection_date"][:7],
                     datetime.fromisoformat(row["inspection_date"]),
@@ -250,10 +254,24 @@ def assert_export(ctx, tmp_path, start, end, legacy, source="production", delete
             assert ws.column_dimensions["A"].hidden and ws.column_dimensions["N"].hidden
             assert wb["成品日检表报表"].sheet_state == "hidden"
             assert wb["数据分析表"].merged_cells.ranges
-            for n in {2, 500, 501, 502, len(rows) + 1} & set(range(2, len(rows) + 2)):
-                assert ws.row_dimensions[n].height == ws.row_dimensions[2].height
-                for col in range(1, 11):
-                    assert ws.cell(n, col)._style == ws.cell(2, col)._style
+            original = load_workbook(ctx.paths.template)
+            try:
+                template = original["成品日检表"]
+                for n in {2, 500, 501, 502, len(rows) + 1} & set(range(2, len(rows) + 2)):
+                    if not ws.cell(n, 8).value:
+                        assert ws.row_dimensions[n].height == template.row_dimensions[2].height
+                    else:
+                        assert template.row_dimensions[2].height <= ws.row_dimensions[n].height <= 409.5
+                    for col in range(1, 11):
+                        actual, expected = ws.cell(n, col), template.cell(2, col)
+                        for attr in ("font", "border", "fill", "number_format", "protection"):
+                            assert copy(getattr(actual, attr)) == copy(getattr(expected, attr))
+                        alignment = copy(expected.alignment)
+                        if col == 8 and actual.value:
+                            alignment.wrap_text = True
+                        assert actual.alignment == alignment
+            finally:
+                original.close()
         else:
             assert list(wb["不良明细"].values)[1:] == [
                 (r["inspection_no"], d["code"], d["name"], d["quantity"], d["remark"] or None)

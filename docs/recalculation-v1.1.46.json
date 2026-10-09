@@ -1,0 +1,60 @@
+{
+  "engine": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+  "cases": [
+    {
+      "case": "annual",
+      "selection": "全部",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    },
+    {
+      "case": "january",
+      "selection": "2026-01",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    },
+    {
+      "case": "february",
+      "selection": "2026-02",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    },
+    {
+      "case": "empty-month",
+      "selection": "2026-03",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    },
+    {
+      "case": "december",
+      "selection": "2026-12",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    },
+    {
+      "case": "cross-year",
+      "selection": "全部",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    },
+    {
+      "case": "cross-year-january",
+      "selection": "2021-01",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    },
+    {
+      "case": "leap-day",
+      "selection": "2024-02",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    },
+    {
+      "case": "back-to-all",
+      "selection": "全部",
+      "statistics": "PASS",
+      "six_chart_caches": "PASS"
+    }
+  ],
+  "excel_wps_visual_acceptance": "未完成实机验收"
+}

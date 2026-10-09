@@ -57,9 +57,11 @@ def test_full_year_legacy_export_preserves_all_rows_and_template(
             assert ws.cell(row_no, 2).number_format == source_ws["B2"].number_format
             assert ws.cell(row_no, 2).style_id == ws["B2"].style_id
             assert ws.cell(row_no, 4).style_id == ws["D2"].style_id
-            assert ws.row_dimensions[row_no].height == pytest.approx(
-                source_ws.row_dimensions[2].height
-            )
+            if ws.cell(row_no, 8).value:
+                assert ws.cell(row_no, 8).alignment.wrap_text
+                assert source_ws.row_dimensions[2].height <= ws.row_dimensions[row_no].height <= 409.5
+            else:
+                assert ws.row_dimensions[row_no].height == source_ws.row_dimensions[2].height
         for column in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J"):
             assert ws.column_dimensions[column].width == source_ws.column_dimensions[column].width
         assert ws.print_area == f"'成品日检表'!$B$1:$K${expected_count + 1}"
@@ -74,8 +76,10 @@ def test_full_year_legacy_export_preserves_all_rows_and_template(
         assert f"$B${last}" in analysis["B4"].value
         assert f"$B${last}" in analysis["B34"].value
         assert f"$E${last}" in analysis["H4"].value
-        assert analysis["L2"].value.date() == start
-        assert analysis["M2"].value.date() == end
+        assert analysis["A2"].value == "全部"
+        assert analysis["L2"].data_type == analysis["M2"].data_type == "f"
+        assert wb["工具"]["E2"].value.date() == start
+        assert wb["工具"]["F2"].value.date() == end
         assert analysis["C4"].value.endswith("$B$4:$B$27,0)")
         assert analysis["B58"].value == "=SUM(B34:B57)"
 

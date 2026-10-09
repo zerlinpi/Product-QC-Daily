@@ -88,16 +88,16 @@ def test_annual_print_area_covers_last_record_and_repeats_header(
 
 
 @pytest.mark.parametrize(
-    "start,end,period,iso_week",
+    "start,end,iso_week",
     [
-        (date(2026, 1, 1), date(2026, 12, 31), "全年", "2026-W53"),
-        (date(2020, 12, 30), date(2021, 1, 1), "区间", "2020-W53"),
-        (date(2024, 2, 1), date(2024, 2, 29), "本月", "2024-W09"),
-        (date(2026, 1, 5), date(2026, 1, 6), "区间", "2026-W02"),
+        (date(2026, 1, 1), date(2026, 12, 31), "2026-W53"),
+        (date(2020, 12, 30), date(2021, 1, 1), "2020-W53"),
+        (date(2024, 2, 1), date(2024, 2, 29), "2024-W09"),
+        (date(2026, 1, 5), date(2026, 1, 6), "2026-W02"),
     ],
 )
 def test_six_chart_titles_describe_period_and_only_final_iso_week(
-    ctx, tmp_path, start, end, period, iso_week
+    ctx, tmp_path, start, end, iso_week
 ):
     wb = load_workbook(
         ctx.excel.export(
@@ -111,14 +111,16 @@ def test_six_chart_titles_describe_period_and_only_final_iso_week(
         analysis = wb["数据分析表"]
         titles = ["".join(chart.title.to_tree().itertext()) for chart in analysis._charts]
         assert len(titles) == 6
-        assert all(period in title for title in titles[:3])
+        assert all("所选期间" in title for title in titles[:3])
         assert all("截止周" in title for title in titles[3:])
         # Use the ISO Thursday even if a user edits L32 to a non-Monday date.
         assert analysis["A32"].value == (
             '=YEAR(L32-WEEKDAY(L32,2)+4)&"-W"&TEXT(WEEKNUM(L32,21),"00")'
         )
-        monday = analysis["L32"].value.date()
-        assert f"{monday.isocalendar().year}-W{monday.isocalendar().week:02d}" == iso_week
+        assert analysis["L32"].value == "=$M$2-WEEKDAY($M$2,2)+1"
+        assert analysis["M32"].value == "=$L$32+6"
+        period_end = wb["工具"]["F2"].value.date()
+        assert f"{period_end.isocalendar().year}-W{period_end.isocalendar().week:02d}" == iso_week
         assert "仅统计本次导出明细" in analysis["A61"].value
     finally:
         wb.close()

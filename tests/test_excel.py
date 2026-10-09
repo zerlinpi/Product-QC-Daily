@@ -452,8 +452,10 @@ def test_annual_demo_standard_export_supports_month_filter_and_charts(ctx, tmp_p
     wb = load_workbook(path)
     records = wb["检验记录"]
     headers = [cell.value for cell in records[1]]
-    assert headers[-3:] == ["年份", "月份", "日期"]
-    assert records.auto_filter.ref.endswith(f"P{records.max_row}")
+    assert headers[13:16] == ["年份", "月份", "日期"]
+    assert headers[16] == "不良项目编码"
+    assert records.column_dimensions["Q"].hidden
+    assert records.auto_filter.ref == f"A1:Q{records.max_row}"
     years = {records.cell(row, 14).value for row in range(2, records.max_row + 1)}
     months = {records.cell(row, 15).value for row in range(2, records.max_row + 1)}
     dates = {records.cell(row, 16).value for row in range(2, records.max_row + 1)}
@@ -574,7 +576,7 @@ def test_standard_export_is_print_ready_and_visually_grouped(ctx, payload, tmp_p
     records = wb["检验记录"]
     assert records.page_setup.orientation == "landscape"
     assert not records.sheet_view.showGridLines
-    assert records.auto_filter.ref.endswith(f"P{records.max_row}")
+    assert records.auto_filter.ref == f"A1:Q{records.max_row}"
     assert records.column_dimensions["D"].width >= 22
     assert records.column_dimensions["L"].width >= 34
     assert records["L2"].alignment.wrap_text

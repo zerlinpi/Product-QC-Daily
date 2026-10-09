@@ -1,0 +1,26 @@
+[
+  {
+    "template": "成品日检表(4).xlsx",
+    "sha256": "4a3010809b18659656b38882c330a88f976e80553a0e04e8a0e9d935110d3ce1",
+    "records": 1825,
+    "sheets": 4,
+    "charts": 6,
+    "layout_styles_print_views": "PASS",
+    "authorized_display_change": "不良项目显示中文；仅有内容的 H 列换行并按需增加行高",
+    "source_unchanged": true,
+    "wps_private_image_objects": true,
+    "office_visual_acceptance": "未完成实机验收"
+  },
+  {
+    "template": "成品日检表(5).xlsx",
+    "sha256": "4a3010809b18659656b38882c330a88f976e80553a0e04e8a0e9d935110d3ce1",
+    "records": 1825,
+    "sheets": 4,
+    "charts": 6,
+    "layout_styles_print_views": "PASS",
+    "authorized_display_change": "不良项目显示中文；仅有内容的 H 列换行并按需增加行高",
+    "source_unchanged": true,
+    "wps_private_image_objects": true,
+    "office_visual_acceptance": "未完成实机验收"
+  }
+]

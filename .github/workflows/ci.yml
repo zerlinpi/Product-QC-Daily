@@ -20,7 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
@@ -35,16 +35,28 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m ruff check .
       - run: python -m pytest -q --junitxml=test-results.xml
+      - name: Recalculate month controls and six chart caches
+        if: runner.os == 'Linux'
+        env:
+          PYTHONPATH: .
+        run: |
+          sudo apt-get install -y libreoffice-calc
+          python scripts/check_excel_recalculation.py --output recalculation.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: tests-${{ matrix.os }}
-          path: test-results.xml
+          path: |
+            test-results.xml
+            recalculation.json
 
   windows-package:
     needs: validate
     runs-on: windows-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -54,6 +66,61 @@ jobs:
       - run: python -m pip install -r requirements-dev.txt
       - name: Build onedir Windows EXE
         run: python -m PyInstaller --noconfirm --clean Product-QC-Daily.spec
+      - name: Test signature gate against the unsigned build
+        shell: pwsh
+        run: ./scripts/test_windows_signatures.ps1 -Folder 'dist/Product-QC-Daily'
+      - name: Configure release signing
+        id: signing
+        shell: pwsh
+        env:
+          QC_SIGNING_ENABLED: ${{ vars.QC_SIGNING_ENABLED }}
+          QC_IS_MAIN_PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          QC_SIGNING_ENDPOINT: ${{ vars.QC_SIGNING_ENDPOINT }}
+          QC_SIGNING_ACCOUNT: ${{ vars.QC_SIGNING_ACCOUNT }}
+          QC_SIGNING_PROFILE: ${{ vars.QC_SIGNING_PROFILE }}
+          QC_SIGNING_PUBLISHER: ${{ vars.QC_SIGNING_PUBLISHER }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          if ($env:QC_SIGNING_ENABLED -notin '', 'false', 'true') { throw 'QC_SIGNING_ENABLED must be true, false or empty.' }
+          $enabled = $env:QC_IS_MAIN_PUSH -eq 'true' -and $env:QC_SIGNING_ENABLED -eq 'true'
+          if ($enabled) {
+            foreach ($name in @('QC_SIGNING_ENDPOINT', 'QC_SIGNING_ACCOUNT', 'QC_SIGNING_PROFILE', 'QC_SIGNING_PUBLISHER', 'AZURE_CLIENT_ID', 'AZURE_TENANT_ID', 'AZURE_SUBSCRIPTION_ID')) {
+              if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) { throw "Signing is enabled but $name is missing." }
+            }
+          } else {
+            Write-Warning 'No release signing for this build; Windows trust prompts may remain.'
+          }
+          "enabled=$($enabled.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          ./scripts/verify_windows_signatures.ps1 -Folder 'dist/Product-QC-Daily' -Report (Join-Path $env:RUNNER_TEMP 'signatures-before.json') -Catalog (Join-Path $env:RUNNER_TEMP 'qc-signing-files.txt')
+      - name: Authenticate signing identity with OIDC
+        if: steps.signing.outputs.enabled == 'true'
+        uses: Azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Sign unsigned application binaries
+        if: steps.signing.outputs.enabled == 'true'
+        uses: Azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2
+        with:
+          endpoint: ${{ vars.QC_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ vars.QC_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.QC_SIGNING_PROFILE }}
+          files-catalog: ${{ runner.temp }}/qc-signing-files.txt
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+          exclude-environment-credential: true
+          exclude-azure-cli-credential: false
+      - name: Verify signatures before executable self-test and ZIP
+        shell: pwsh
+        env:
+          QC_SIGNING_REQUIRED: ${{ steps.signing.outputs.enabled }}
+          QC_SIGNING_PUBLISHER: ${{ vars.QC_SIGNING_PUBLISHER }}
+        run: |
+          ./scripts/verify_windows_signatures.ps1 -Folder 'dist/Product-QC-Daily' -Report 'dist/Product-QC-Daily/signature-verification.json' -RequireSigned:($env:QC_SIGNING_REQUIRED -eq 'true') -ExpectedPublisher $env:QC_SIGNING_PUBLISHER
       - name: Test the actual packaged executable
         shell: pwsh
         run: |
@@ -94,6 +161,9 @@ jobs:
           path: |
             ${{ runner.temp }}/qc-packaged-report.json
             ${{ runner.temp }}/qc-packaged-test/logs
+            ${{ runner.temp }}/signatures-before.json
+            ${{ runner.temp }}/qc-signature-gate-test
+            dist/Product-QC-Daily/signature-verification.json
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
