@@ -1,5 +1,6 @@
 param([Parameter(Mandatory)][string]$Folder)
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $false
 $testRoot = Join-Path $env:RUNNER_TEMP 'qc-signature-gate-test'
 New-Item -ItemType Directory -Force $testRoot | Out-Null
 $verifier = Join-Path $PSScriptRoot 'verify_windows_signatures.ps1'

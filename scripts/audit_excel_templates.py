@@ -35,6 +35,10 @@ def audit(paths):
                     assert result.sheetnames == original.sheetnames
                     for name in result.sheetnames:
                         target, source = result[name], original[name]
+                        allowed_columns = {
+                            "成品日检表": {"N", "O"}, "工具": {"D", "E", "F"},
+                        }.get(name, set())
+                        assert set(target.column_dimensions) - set(source.column_dimensions) <= allowed_columns
                         assert target.page_margins == source.page_margins
                         assert target.page_setup == source.page_setup
                         assert target.merged_cells == source.merged_cells

@@ -30,6 +30,7 @@ from openpyxl.workbook.properties import CalcProperties
 from openpyxl.workbook.views import BookView
 from openpyxl.worksheet.cell_range import CellRange
 from openpyxl.worksheet.datavalidation import DataValidation
+from openpyxl.worksheet.filters import AutoFilter, FilterColumn
 from openpyxl.worksheet.print_settings import PrintArea
 from openpyxl.worksheet.views import Pane, Selection
 
@@ -149,7 +150,8 @@ def style_table(ws):
 
     filter_sheets = {"检验记录", "不良明细", "不良项目", "月度统计"}
     if ws.title in filter_sheets:
-        ws.auto_filter.ref = f"A1:{last_letter}{last_row}"
+        # Filter-menu sorting must move hidden identity columns with the row.
+        ws.auto_filter.ref = f"A1:{get_column_letter(last_col)}{last_row}"
     else:
         ws.auto_filter.ref = None
     ws.sheet_view.zoomScale = {
@@ -1122,6 +1124,12 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
                 if index > 1:
                     del sheet.row_dimensions[index]
         row_style, row_height = legacy_layout["成品日检表"]
+        # H can inherit a grouped E:I width. Indexing column_dimensions["H"]
+        # would create a new default-width column and alter the template.
+        legacy_defect_width = ws.sheet_format.defaultColWidth or ws.sheet_format.baseColWidth
+        for dimension in ws.column_dimensions.values():
+            if dimension.min <= 8 <= dimension.max:
+                legacy_defect_width = dimension.width
     else:
         wb = Workbook()
         ws = wb.active
@@ -1219,7 +1227,7 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
                 alignment.wrap_text = True
                 cell.alignment = alignment
                 ws.row_dimensions[index].height = wrapped_row_height(
-                    (cell.value, ws.column_dimensions["H"].width),
+                    (cell.value, legacy_defect_width),
                     base=row_height, line_height=(cell.font.sz or 10) * 1.4, maximum=409.5,
                 )
         write_text(ws.cell(index, code_column), ";".join(codes))
@@ -1238,7 +1246,11 @@ def export_workbook(ctx, path: Path, filters, legacy=False, prefer_com=True, *, 
     if legacy:
         extend_legacy_form(ws, row_style, row_height, count)
         extend_legacy_print_area(ws, count)
-        ws.auto_filter.ref = f"B1:K{max(count + 1, 2)}"
+        ws.auto_filter = AutoFilter(
+            ref=f"A1:O{max(count + 1, 2)}",
+            # Preserve the template's visible empty L/M headers without arrows.
+            filterColumn=[FilterColumn(colId=i, hiddenButton=True, showButton=False) for i in (11, 12)],
+        )
         duplicate = wb["成品日检表报表"]
         duplicate_style, duplicate_height = legacy_layout["成品日检表报表"]
         extend_legacy_form(duplicate, duplicate_style, duplicate_height, 0)

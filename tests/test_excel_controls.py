@@ -33,12 +33,20 @@ def test_export_shows_defect_names_and_roundtrips_identity(
         assert ws.column_dimensions[code_column].hidden
         assert ws["H2"].alignment.wrap_text
         if legacy:
-            # Two six-character Chinese names need three lines at the original
-            # 13-character width; keep the template width, font and all text.
-            assert ws.column_dimensions["H"].width == 13
+            # H inherits E:I's width; accessing a missing dimension must not
+            # silently create a different column width in the exported XML.
+            assert "H" not in ws.column_dimensions
+            assert ws.column_dimensions["E"].width == 11
             assert ws["H2"].font.sz == 10
             assert ws.row_dimensions[2].height == 48
-        assert ws.auto_filter.ref == ("B1:K2" if legacy else "A1:P2")
+        # Sorting through a filter must move ID, source and hidden codes with
+        # the visible record; the narrower print area is deliberately separate.
+        assert ws.auto_filter.ref == ("A1:O2" if legacy else "A1:Q2")
+        assert ws.print_area == ("'成品日检表'!$B$1:$K$2" if legacy else "'检验记录'!$A$1:$P$2")
+        if legacy:
+            hidden_buttons = {c.colId for c in ws.auto_filter.filterColumn if c.hiddenButton}
+            assert {11, 12} <= hidden_buttons
+            assert not ws.column_dimensions["L"].hidden and not ws.column_dimensions["M"].hidden
     finally:
         wb.close()
     preview = ctx.excel.preview(path)
@@ -89,6 +97,30 @@ def test_exported_names_remain_importable_after_dictionary_rename(ctx, payload, 
     assert row.data is not None, row.message
     assert [d.defect_id for d in row.data.defects] == [1]
     assert row.data.defects[0].quantity is None
+
+
+def test_legacy_chinese_names_use_effective_grouped_column_width(ctx, payload, tmp_path):
+    template = tmp_path / "narrow-template.xlsx"
+    wb = load_workbook(ctx.paths.template)
+    sheet = wb["成品日检表"]
+    assert "H" not in sheet.column_dimensions
+    assert (sheet.column_dimensions["E"].min, sheet.column_dimensions["E"].max) == (5, 9)
+    sheet.column_dimensions["E"].width = 9
+    wb.save(template)
+    wb.close()
+    ctx.settings.update({"template_path": str(template)})
+    ctx.inspections.save(payload.model_copy(update={
+        "defect_quantity": 2,
+        "defects": [DefectInput(defect_id=1), DefectInput(defect_id=2)],
+    }))
+    path = ctx.excel.export(tmp_path / "narrow.xlsx", RecordFilter(), legacy=True, prefer_com=False)
+    wb = load_workbook(path)
+    sheet = wb["成品日检表"]
+    assert "H" not in sheet.column_dimensions
+    assert sheet.column_dimensions["E"].width == 9
+    assert sheet.row_dimensions[2].height == 62  # Four lines at the template's narrower width.
+    assert sheet["H2"].value == "端子包角不良；走线槽漏扎带"
+    wb.close()
 
 
 def test_month_control_preserves_unrelated_validation_and_removes_stale_week_input(ctx, tmp_path):
@@ -145,6 +177,6 @@ def test_original_form_keeps_working_month_selector(ctx, tmp_path, start, end, l
         assert ws["E2"].value == ws["H2"].value == "=$A$2"
         assert len(ws._charts) == 6
         assert all("所选期间" in "".join(c.title.to_tree().itertext()) for c in ws._charts[:3])
-        assert wb["成品日检表"].auto_filter.ref == "B1:K2"
+        assert wb["成品日检表"].auto_filter.ref == "A1:O2"
     finally:
         wb.close()
